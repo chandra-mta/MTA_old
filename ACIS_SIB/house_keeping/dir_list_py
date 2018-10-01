@@ -1,0 +1,13 @@
+'/data/mta/Script/ACIS/SIB/Correct_excess/'                 : main_dir
+'/data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr/'        : bin_dir
+'/data/mta/Script/ACIS/SIB/Data/'                           : data_dir
+'/data/mta/Script/ACIS/SIB/Data_lev2/'                      : data_dir2
+'/data/mta/www/mta_sib/'                                    : web_dir
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/'            : lev1_dir 
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev2/'            : lev2_dir 
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/Data/'       : data1_dir 
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev2/Data/'       : data2_dir 
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/Plots/'      : plot1_dir 
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev2/Plots/'      : plot2_dir 
+'/data/mta/Script/ACIS/SIB/house_keeping/'                  : house_keeping
+'/data/mta/Script/Python_script2.7/'                        : mta_dir

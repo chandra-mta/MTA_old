@@ -1,0 +1,95 @@
+    ###########
+    Weekly Task: #LDATE_S# , #YEAR#
+    ###########
+
+    -------------------------
+    creating focal temp plot:
+    --------------------------
+
+    run:
+    get_ftemp_wrap_script
+
+
+    Then in another window:
+   
+    ssh mta@c3pov-v
+    cd /data/mta4/Matlab
+
+    cp /data/mta1/isobe/Wreport/Weekly/#LDATE#/plot_erad_time.pro . 
+    cp /data/mta1/isobe/Wreport/Weekly/#LDATE#/*fits .
+   
+    setenv IDL_PATH "+/usr/local/rsi/user_contrib/astron_Oct09/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser"
+    plot_erad_time.pro
+
+    cd /data/mta1/isobe/Wreport/
+    cp /data/mta4/Matlab/plot_erad_time.gif #DDATE#_fptemp.gif
+
+    ---------------------------
+    extract photon information:
+    ---------------------------
+
+    setascds 			
+    perl /data/mta4/MTA/bin/weekly_obs2html.pl 8 photons
+
+    -------
+    Bad_pix
+    -------
+    perl /data/mta1/isobe/Wreport/read_bad_pix_new.perl
+
+
+    --------------
+    telemetry data
+    ---------------
+
+    cd /data/mta4/www/REPORTS/2007/Telem_comp/
+    setenv IDL_PATH "+/usr/local/rsi/user_contrib/astron_Oct09/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser"
+    idl
+    #TELM_CMD#
+
+
+
+    edit header
+    #DAYLIST#
+
+    Test
+	5. perl telem.pl telem.txt telem.html -notab > zzz
+		(perl telem.pl telem.txt telem.html /proj/cm/Release/install.DS8.4/config/mta/data/op_limits.db -notab > zzz)
+
+	6. perl ./zx_find_error.perl zzz > zx_error_list	---- try this one first
+	6a. perl ./zx_find_error2.perl zzz > zx_error_list
+	
+	7. perl ./zx_remove.perl > clean_list
+
+	8. perl telem.pl clean_list telem.html  -notab
+		(perl telem.pl clean_list telem.html /proj/cm/Release/install.DS8.4/config/mta/data/op_limits.db -notab)
+	
+	9. rm -rf  zzz zx_error_list clean_list
+
+
+##    perl telem.pl telem.txt telem.html /proj/cm/Release/install.DS8.3/config/mta/data/op_limits.db -notab 
+    perl telem.pl telem.txt telem.html /proj/cm/Release/install.DS8.4/config/mta/data/op_limits.db -notab 
+
+    Final
+    perl /data/mta4/MTA/bin/telem.pl  telem.txt telem.html 
+
+
+----------
+Combine all
+----------
+
+perl subst3.perl this_week  bad_pix_list BAD_PIXEL_TABLE > zout
+perl subst3.perl zout          photons      PHOTON_TABLE    > zout2
+perl subst3.perl zout2    /data/mta4/www/REPORTS/2007/Telem_comp/telem.html           TELEM_TABLE     > #DDATE#.html
+rm zout zout2
+
+
+cd /data/mta4/www/REPORTS/#YEAR#
+cp /data/mta1/isobe/Wreport/Weekly/#LDATE#/#DDATE#* .
+chmod 775  #DDATE#*
+chgrp mtagroup #DDATE#*
+
+
+Edit: /data/mta4/REPORTS/index.html
+#INDEX#
+
+

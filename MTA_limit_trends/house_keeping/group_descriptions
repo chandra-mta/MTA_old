@@ -1,0 +1,94 @@
+#ACIS
+ACISTEMP::ACIS Thermal Control                        
+ACISELECA::ACIS Electronics Side A         
+ACISELECB::ACIS Electronics Side B                         
+ACISMECH::ACIS Mechanism Controller                       
+DEAHK_TEMP::DEA/DPA HK Temperatures                         
+DEAHK_ELEC::DEA/DPA HK Electronics
+
+#COMP
+COMPACISPWR::ACIS Electronics                        
+COMPACISCENT::ACIS Thermal                        
+COMPEPHKEY::Ephin Key Rates L1                      
+COMPSIMOFFSET::SIM Thermal Side A/B                        
+COMPGRADKODAK::HRMA Computed Averages
+
+#EPHIN
+EPHHK::EPHIN HoUsekeeping                      
+EPHTV::EPHIN Temperatures and Voltages           
+EPHRATE::EPHIN Rates                         
+EPHKEY::EPHIN Key Rates                         
+
+#AXIAL, RADIAL, DIAMETRAL GRADIENTS
+GRADCAP::HRMA CAP                        
+GRADFAP::HRMA FAP                        
+GRADAHET::HRMA AFT Heater Plt.                        
+GRADHHFLEX::HRMA H-Flexure                      
+GRADHPFLEX::HRMA P-Flexure                      
+GRADPCOLB::HRMA PreCol. Baffle Plt                         
+GRADHSTRUT::HRMA Struts                         
+GRADOCYL::HSA Outer Cylinder                      
+GRADAINCYL::OBA AFT Inner Cyl.                      
+GRADABLK::OBA AFT Bulkhead                        
+GRADHCONE::OBA Cone                        
+GRADFBLK::OBA FWD Bulkhead                        
+GRADPERI::Periscope                       
+GRADSSTRUT::Spacecraft Struts                       
+GRADTFTE::TFTE
+
+#GRATINGS
+GRATGEN::Grating Voltages & Rotation Angles All
+GRATGEN_I_H::Grating Voltages & Rotation Angle HETG/Insertion
+GRATGEN_R_H::Grating Voltages & Rotation Angle HETG/Retraction
+GRATGEN_I_L::Grating Voltages & Rotation Angle LETG/Insertion
+GRATGEN_R_L::Grating Voltages & Rotation Angle LETG/Retraction
+GRATGEN_NA::Grating Voltages & Rotation Angle Inactive
+
+#HRC
+HRCTEMP::HRC Temperatures                        
+HRCELEC::HRC Electronics All Cases
+HRCELEC_I::HRC Electronics HRC-I in Use                        
+HRCELEC_S::HRC Electronics HRC-S in Use                        
+HRCELEC_OFF::HRC Electronics HRC not in Use                      
+HRCVETO::HRC Veto Counting Rates                         
+HRCVETO_I::HRC Veto Counting Rate HRC-I in Use
+HRCVETO_S::HRC Veto Counting Rate HRC-S in Use
+HRCVETO_OFF::HRC Veto Counting Rates HRC not in Use                         
+HRCVETO_EPH::HRC Shield Rates vs. EPHIN Rates                        
+HRCHK::HRC HoUsekeeping
+
+#PCAD
+PCADTEMP::ACA Thermal                         
+PCADITV::IRU Temperatures and Electronics                        
+PCADGRATE::PCAD Gyro Rates                         
+PCADFTSGRAD::FTS Temp & Gradient                         
+PCADRWRATE::PCAD Reaction Wheel Rates                       
+PCADGDRIFT::Drift Rate Updates to Gyros                         
+MUPS::MUPS
+
+#SIM
+SIMTEMP::SIM Thermal                         
+SIMELEC::SIM Electronics                         
+SIMACTU::SIM Actuator Use
+
+#SPC
+EPSBATT::Battery Usage                       
+SC_MAIN_TEMP::Spacecraft Temperatures Sc_main_temp                        
+SC_ANC_TEMP::Spacecraft Temperatures Sc_anc_temp                         
+BATT_TEMP::Spacecraft Temperatures Batt_temp                       
+SPCELEC::Spacecraft Electronics                      
+SPCELECA::Spacecraft Electronics Side A                       
+SPCELECB::Spacecraft Electronics Side B
+
+#OBA Thermal
+OBAHEATERS::OBA Heaters                      
+OBAGRAD::OBA Grad                         
+HRMAHEATERS::HRMA Heaters                         
+HRMAGRAD::HRMA Grad
+
+#HRMA Thermal
+HRMATHERM::HRMA Thermal                       
+HRMASTRUTS::HRMA Truts                      
+OBFWDBULKHEAD::OB Fwd Bulkhead                       
+PRECOLL::Precoll
+

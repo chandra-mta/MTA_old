@@ -1,0 +1,10 @@
+infile,f,a,"/tmp/mta/dataseek_1478785881/dataseek_avg.fits",,,"Input dataset/block specification"
+filelist,f,a,"/tmp/mta/dataseek_1478785881/ed_avg.list",,,"Edit list file name"
+operation,s,a,"add",,,"Operation"
+key,s,a,"EXTNAME",,,"Keyword"
+value,s,a,"DATASEEK",,,"Value for keyword"
+datatype,s,h,"indef",string|double|float|long|short|ulong|ushort|boolean|indef,,"Keyword data type"
+unit,s,h,"",,,"Unit for keyword"
+comment,s,h,"",,,"Comment for keyword"
+verbose,i,h,0,0,5,"Verbosity Level(0-5)"
+mode,s,h,"ql",,,

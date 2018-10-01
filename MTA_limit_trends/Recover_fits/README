@@ -1,0 +1,10 @@
+
+these scripts are used to recover the data. just give <msid_list> 
+in the <house_keeping> direcotry. the recovered fits data files will
+be deposited in ./Outdir/.
+
+rerun_long_ver2.py ---- use this when rerun_long.py fails. it seems
+                        the failure happens due to the largeness of
+                        the data set downloaded. 
+                        the speed is far slower than rerun_long.py
+                        and hece use of rerun_long.py is preferable.

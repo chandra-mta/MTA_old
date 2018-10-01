@@ -1,0 +1,320 @@
+<tr style="text-align:center"><td>Previously Unknown Bad Pixels</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+(388,375)
+(825,500)
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Current Warm  Pixels</td>
+<!-- ccd0 -->
+<td>
+(153,205)
+(143,700)
+</td>
+<!-- ccd1 -->
+<td>
+(910,239)
+(802,665)
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+(21,95)
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+(335,412)
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Flickering Warm Pixels</td>
+<!-- ccd0 -->
+<td>
+(692,141)
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+(726,537)
+(526,66)
+</td>
+<!-- ccd3 -->
+<td>
+(811,637)
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+(607,281)
+(357,303)
+(369,376)
+(669,577)
+(263,317)
+(367,511)
+(161,206)
+(258,797)
+(341,427)
+</td>
+<!-- ccd6 -->
+<td>
+(1000,214)
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+(182,474)
+(197,241)
+(881,53)
+</td>
+<!-- ccd9 -->
+<td>
+(40,49)
+(636,819)
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Current Hot Pixels</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Flickering Hot Pixels</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Warm column candidates</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+884
+</td>
+<!-- ccd5 -->
+<td>
+510
+512
+1022
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+512
+1022
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Flickering Warm Column Candidates</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+</table>

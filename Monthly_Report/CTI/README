@@ -1,0 +1,18 @@
+
+monthly_report_cti_avg_plots.py will create averaged cti trend data and plots for 
+monthly report. Set the following environment first:
+
+ setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages"
+
+then simply run:
+
+    monthly_report_cti_avg_plots.py
+    monthly_report_cti_avg_plots_two_section.py
+
+This will create data in ./Data directory and plots in ./Plots directory.
+
+You may need to copy "month_cti_data.html" from ./Data directory to monthly report
+directory when you copy the data to the location. 
+
+
+*****last update: May 20, 2014 *****

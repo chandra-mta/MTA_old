@@ -1,0 +1,6 @@
+cd /data/mta/Script/MTA_limit_trends/Scripts/Recover_fits
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages"
+
+
+/data/mta/Script/MTA_limit_trends/Scripts/Recover_fits/rerun_long.py  msid_list_test_5

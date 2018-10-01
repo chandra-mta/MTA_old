@@ -1,0 +1,12 @@
+ACIS<>#ATHERMAL#:#DTHERMAL#:#DELEC#<>ACIS Thermal:DEA/DPA Thermal:DEA/DPA Electronics<>acistemp.html:deahk_temp.html:deahk_elec.html<>
+EPHIN<>#EPHIN#<>EPHIN Temperatures and Voltages<>ephtv.html<>
+Gratings<>#GRATING#<>Grating<>gratgen.html<>grating_input
+Ground_Computations<>#ACISCOMP#<>ACIS Electronics<>compacispwr.html<>acis_comp
+Ground_Computed_Gradients<>#HRMACAP#:#HRMAFAP#:#SCSTRUTS#<>HRMA CAP:HRMA FAP:SC Struts<>gradcap.html:gradfap.html:gradsstrut.html<>
+HRC<>#HRCT#:#HRCH#<>HRC Thermal:HRC Housekeeping<>hrctemp.html:hrchk.html<>
+HRMA_Thermal<>#HRMAT#:#HRMATQ#:#HRMAS#:#HRMASQ#<>HRMA Thermal:HRMA Thermal Q:HRMA Struts:HRMA Struts Q<>hrmatherm.html:hrmatherm_qtr.html:hrmastruts.html:hrmastruts_qtr.html<>
+OBA_Thermal<>#OBAH#:#OBAHQ#:#HRMAH#:#HRMAHQ#<>OBA Heaters:OBA Heaters Q:>HRMA Heaters:>HRMA Heaters Q<>obaheaters.html:obaheaters_qtr.html:hrmaheaters.html:hrmaheaters_qtr.html<>
+PCAD<>#IRUTEMP#:#PCADDRIFT#:#PCADDRIFTQ#<>IRU Temperatures:Drift rate:Drift rate Q<>pcaditv.html:pcadgdrift.html:pcadgdrift_qtr.html<>
+SIM<>#SIM#<>SIM Thermal<>simtemp.html<>
+Spacecraft_Bus_and_Subsystem_Trends<>#BATTERY#:#BATTERYQ#:#SCMAIN#:#SCMAINQ#:#SCANC#:#SCANCQ#<>Battery Usage:Battery Usage Q:S/C Main:S/C Main Q:S/C Anc:S/C Anc Q<>epsbatt.html:epsbatt_qtr.html:sc_main_temp.html:sc_main_temp_qtr.html:sc_anc_temp.html:sc_anc_temp_qtr.html<>
+Sun_Angle_Correlations<>#ACIST#:#PCADT#:#OBAH#<>ACIS Thermal:PCAD Thermal:OBA Heaters<>acistemp_att.html:pcadtemp_att.html:obaheaters_att.html<>

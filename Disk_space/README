@@ -1,0 +1,102 @@
+
+*********************
+Disk Space Monitoring
+*********************
+
+This set of scripts monitor disk spaces and if the capacity of a disk is over a threshold, 
+send out warning email.
+
+########
+cron job
+########
+0 12  * * * cd /data/mta/Script/Disk_check/Exc;  /data/mta/Script/Disk_check/Scripts/disk_space_wrap_script  >> $HOME/Logs/disk_space.cron 2>&1
+0  1  * * * cd /data/mta/Script/Disk_check/Exc;  /data/mta/Script/Disk_check/Scripts/disk_space_wrap_script2 >> $HOME/Logs/disk_space.cron 2>&1
+
+
+The first task finds disk usages (it may takes more than 2 hrs), and the second one extracts
+data and plots them.
+
+
+###########
+Directories
+###########
+/data/mta/Script/Disk_check/house_keeping/dir_list_py
+
+'/data/mta/Script/Disk_check/Scripts/'        :bin_dir
+'/data/mta/Script/Disk_check/house_keeping/'  :house_keeping
+'/data/mta/Script/Python_script2.7/'          :mta_dir
+'/data/mta/Script/Disk_check/Exc/'            :run_dir
+'/data/mta/Script/Disk_check/Data/'           :data_out
+'/data/mta_www/mta_disk_space/'               :web_dir
+'/data/mta_www/mta_disk_space/Figs/'          :fig_out
+'usr/local/bin/'                              :op_dir
+
+
+
+#######
+Scripts
+#######
+
+-----------------------
+disk_space_wrap_script
+-----------------------
+A wrap script for "disk_space_main_script"
+
+-----------------------
+disk_space_wrap_script2
+-----------------------
+A wrap script for "disk_space_main_script2"
+
+------------------------
+disk_space_main_script
+------------------------
+A control script for "disk_space_check_size.py"
+
+------------------------
+disk_space_main_script
+------------------------
+A control script for "disk_space_run_dusk.py" etc
+
+------------------------
+check_disk_space.py
+------------------------
+This script cehck /data/mta* disk space and set out email if they are getting full.
+
+Input:		None but read from the system directory
+
+Output:
+            /data/mta/Script/Disk_check/Data/disk_space_data
+
+------------------------
+disk_space_run_dusk.py
+------------------------
+This script runs dusk in each directory to get disk size information.
+
+Input:  None but read directory from system using /usr/local/bin/dusk 
+
+Output:	 in <exc_dir>, dusk_mta, dusk_mta4, dusk_mays, dusk_www  files (as of Sep 18, 2014)
+
+-------------------------
+disk_space_read_dusk.py
+-------------------------
+This script read data useage from ./dusk_* and update the database, then plot time trends. 
+
+Input:
+        dusk_mta, dusk_mta4, dusk_mays, dusk_www
+
+Output:
+        disk_data_mays, disk_data_mta, disk_data_mta4, disk_data_www
+
+        In /data/mta/www/mta_disk/Figs
+        time trend plots in png format
+
+--------------------------
+update_html_page.html
+--------------------------
+This script updates html page. 
+
+Input:
+        /data/mta/Script/Disk_space/hosue_keeping/disk_space_backup_py.html
+
+Output:
+        /data/mta/www/mta_disk_space/disk_space.html

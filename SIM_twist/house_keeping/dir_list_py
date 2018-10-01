@@ -1,0 +1,8 @@
+'/data/mta/Script/ALIGNMENT/Sim_twist/Alignment_sim_twist/'     : bin_dir
+'/data/mta/MTA/data/'                                           : bdata_dir
+'/data/mta_www/mta_sim_twist/'                                  : web_dir
+'/data/mta/Script/ALIGNMENT/Sim_twist/Data/'                    : data_dir
+'/data/mta/Script/ALIGNMENT/Sim_twist/house_keeping/'           : house_keeping
+'/usr/local/bin/'                                               : op_dir
+'/data/mta4/CUS/www/Usint/Pass_dir/'                            : pass_dir
+'/data/mta/Script/Python_script2.7/'                            : mta_dir

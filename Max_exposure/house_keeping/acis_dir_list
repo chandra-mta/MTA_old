@@ -1,0 +1,16 @@
+'/data/mta/Script/Exposure/house_keeping/'              :house_keeping
+'/data/mta/Script/Exposure/Scripts/ACIS_Scripts/'       :bin_dir
+'/data/mta/Script/Exposure/house_keeping/Info_dir/'     :bindata_dir
+'/data/mta/www/mta_max_exp/'                            :web_dir
+'/data/mta/www/mta_max_exp/Data/'                       :data_out
+'/data/mta/www/mta_max_exp/Plots/'                      :plot_dir
+'/data/mta/www/mta_max_exp/Images/'                     :img_dir
+'/data/mta/www/mta_max_exp/Month/'                      :mon_dir
+'/data/mta/www/mta_max_exp/Cumulative/'                 :cum_dir
+'/data/mta/Script/Python_script2.7/'                    :mta_dir
+'/data/mta/Script/Exposure/Test_out/'                   :test_web_dir
+'/data/mta/Script/Exposure/Test_out/Data/'              :test_data_out
+'/data/mta/Script/Exposure/Test_out/Plots/'             :test_plot_dir
+'/data/mta/Script/Exposure/Test_out/Images/'            :test_img_dir
+'/data/mta/Script/Exposure/Test_out/Month/'             :test_mon_dir
+'/data/mta/Script/Exposure/Test_out/Cumulative/'        :test_cum_dir

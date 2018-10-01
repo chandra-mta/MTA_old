@@ -1,0 +1,25 @@
+How to run:
+
+DO NOT SET ASCDS ENVIRONMENT!!!
+
+create_config_plot.py 2014:305:00:00:00 2014:335:00:00:00
+
+It does not like the change of year; for the Dec plot, do the following:
+
+create_config_plot.py 2014:335:00:00:00 2014:365:23:59:59
+
+
+/data/mta/Script/Ephem/README
+
+http://www.swpc.noaa.gov/wingkp/wingkp_list.txt         --- USAF 15-minute Wing Kp Geomagnetic Activity Index
+
+
+
+IF IT GETS THE ERROR MESSAGE, IT IS PROBABLY DUE TO DATASEEKER. TRY:
+
+1. setascds
+2.  /home/ascds/DS.release/bin/dataseeker.pl infile=test outfile=ztemp.fits search_crit="columns=_shevart_avg timestart=565315195 timestop=567993594" loginFile=house_keeping/loginfile
+(time must be converted by axTime3)
+3.comment out line 563 of Scripts/extract_radiation_data.py
+4. run the script
+

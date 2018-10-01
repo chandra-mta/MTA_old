@@ -1,0 +1,95 @@
+
+This directory contains the script to create weekly report. You may want to upate
+weekly trend input, and also check the radiation environment and if it is not "quet"
+add a sentence or two.
+
+Dir: /data/mta/Script/Weekly
+See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_weekly_report.html
+
+How to run:
+-----------
+
+1. go to: /data/mta/Script/Weekly/Templates/Headers/Dsave
+
+2. find which one will be on this week's report 
+   (from /data/mta/Script/Weekly/Templates/trending_order)
+
+3. add or remove msids from the list
+
+4. go to /data/mta/Script/Weekly/
+
+5. set environment (see bloew)
+
+6. run:
+        create_weekly_report.py mmdd yyyy
+
+        where mmdd is, e.g., 0910
+              yyyy is, e.g,, 2015
+
+7. edit /data/mta4/www/REPORTS/index.html and addd the link
+
+Scripts
+-------
+weekly_wrap_script  ---- a wrapping script to run main script
+
+weekly_main_script  ---- a main script to set environment and run the script
+
+create_weekly_report.py  actual python script to create the weekly report
+
+in Focal direocty:
+run_temp            ---- idl butch command script
+get_ftemp_data.perl ---- a perl script to extract focal plane temp fits data
+                         symbolic linked to  /data/mta/Script/Weekly/get_ftemp_data.per
+                         must be able to access Dataseeker
+                         it also need to access: /data/mta4/Matlab/mk_rdb2.out
+plot_erad_time.pro  ---  script to create the focal plane plot
+                         this one is updated weekly by the main script
+
+in Telem directory:
+run_all             ---  idl batch command script
+complete_telem.perl ---  clean up the output appropriate for the weekly report
+weekly_telem.pro    ---  idl script to extract data
+                         symbolic linked to /data/mta4/CVS_test/Weekly_report/weekly_telem.pro
+telem.pl            ---  converte the output to html page
+zx_find_error.perl  ---  find unwanted entries and make a list
+zx_remove.perl      ---  remove the upwanted elements from the list
+reduce_entry.perl   ---  farther reduced the list by removing un-interesting entries
+
+/data/mta4/MTA/bin/weekly_obs2html.pl  ---- get recent observation list
+
+Directories
+-----------
+Focal           --- focal temperature related scripts/data are kept here
+Telem           --- telemetory computation related scripts are kept here
+Prev_Reports    --- Save older weekly report direcotries
+Templates       --- Templates and others are saved
+                    templates:  get_ftemp_data.perl
+                                get_ftemp_main_script
+                                get_ftemp_wrap_script
+                                instruction
+                                this_week
+                                plot_erad_time.pro
+
+                    trending_order --- contain a list of date and trending choice
+                                       for the week
+Templates/Headers --- containing files containing headers of the trending table
+Templates/Headers/Dsave --- containing the list of msids for the trending table
+                            you should modify the msids in the list before runing
+                            the weekly report script
+Templates/Headers/Dsave/Base_list --- save basic list of the msid list. 
+                                      you can copy this to ../Dsave and run 
+                                      the script
+Templates/Headers/Dsave/Scripts   --- contains a script used to create the msid lists
+                    
+
+Environmental Setting:
+----------------------
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:"
+
+setenv IDL_PATH "+/usr/local/rsi/user_contrib/astron_Oct09/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser"
+
+
+Cron job (run on every Thu night)
+--------
+15 23 * * 4 cd /data/mta/Script/Weekly; /data/mta/Script/Weekly/weekly_wrap_script >> $HOME/Logs/weekly_report.cron 2>&1
+

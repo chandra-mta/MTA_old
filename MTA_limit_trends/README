@@ -1,0 +1,335 @@
+
+###############
+MTA MSID Trend
+###############
+
+This set of scripts extract msid data and plot their trend. 
+
+
++++++++++++++++++
+Script Directory
++++++++++++++++++
+/data/mta/Script/MTA_limit_trends/Scripts/
+
+----------------------------
+Data Update Related Scripts
+----------------------------
+update_msid_data.py                         #----   data update from SKA database
+
+-----------------------
+DEA related data update                     #----  the data are from /dsops/GOT/input/*Dump_EM*.gz
+-----------------------
+./DEA/find_new_dump.py                      #----   find which data are not processed yet
+./DEA/convert_dea_data_to_fits.py           #----   convert ascii data into fits data
+./DEA/prep.perl                             #----   the control script to process dump data
+./DEA/getnrt                                #----   the main script written by P. Ford (MIT) 
+./DEA/out2in.pl                             #----   preparing data for average<#>.pl
+./DEA/deahk.pl                              #----   extract dea data from the dump data
+./DEA/average1.pl                           #----   create 5 min average data
+./DEA/average2.pl                           #----   create 1 hr  average data
+./DEA/average3.pl                           #----   create 1 day average data
+./DEA/lib/acisEng.ttm                       #----   telemetry format file
+./DEA/RDB/*.rdb                             #----   ascii data
+./DEA/past_dump_list                        #----   the list of prcoessed dump data
+./DEA/today_dump_file                       #----   the data list to be processed
+./DEA/extract_from_acheive.perl             #----   supplemental script: extract data from archive (arc5gl)
+
+-------------------------
+Comp and Grad data udpate                   #----   the data are obtained from /data/mta_www/mp_reports/*
+-------------------------
+./Comp/update_grad_and_comp_data.py         #----   the script to extract comp/grad dataq from mp_report
+./Comp/compute_acis_power.py                #----   supplemental script: compute acis power from asicelec data
+./Comp/compute_sim_flex.p                   #----   supplemental script: compute sim flex from sim temp data
+./Comp/convert_acistemp_into_c.ps           #----   supplemental script: convert acis temp from K to C
+
+------------------------------------
+Gratings data in different positions
+------------------------------------
+./Gratgen/create_otg_time_list.py           #----   create otg time start stop time list files (in <hosue_keeping>
+./Gratgen/gratgen_categorize_data           #----   separate gratgen data into different categories
+
+---------------
+HRC data upate
+---------------
+./HRC/update_hrchk_elec_data.py             #----   extract hrc elec related data from archive (using arc5gl)
+./HRC/classify_hrc_data.py                  #----   classify hrc elec data depend on which instruments are on/off
+
+---------------------
+HRC veto data update
+---------------------
+./Hrcveto/extract_hrcveto_data.py           #----   extract hrc veto data from archive (using arc5gl)
+./Hrcveto/classify_hrcveto_data.py          #----   classify hrcveto data depend on which instruments are on/off
+
+-----------------------
+EPH related data updata
+-----------------------
+./EPH/update_ephhk_data.py                  #----   extract eph related data from archive
+./EPH/update_eph_data_from_comm.py          #----   extract eph related data from /data/mta_www/mp_reports/*
+./EPH/update_ephkey_l1_data.py              #----   update ephkey L1 data
+./EPH/Old/eph_hk_entry_arc5gl.py            #----   supplemental script: extract eph hk data from achive
+./EPH/Old/eph_rate_entry_arc5gl.py          #----   supplemental script: extract eph rate data from achive
+
+----------------------------------------
+SIM Actuator/Electronics mis data update    #----   extract those not in SKA database
+----------------------------------------
+./Simdiag/update_simdiag_data.py            #----   extract sim actuator/elec data from archive
+./Simdiag/extract_simgdiag_data.py          #----   supplemental script: extract sim data from archive
+
+-------------------------------------
+Sun Angle Data Update Related Scripts
+-------------------------------------
+
+./Sun_angle/update_sun_angle_file.py        #----   update <data_dir>/sun_angle.fits data file
+./Sun_angle/create_msid_sun_angle_file.py   #----   create <sun angle>--<msid> value data fits file 
+./Sun_angle/sun_angle_plot.py               #----   create sun angle plots
+./Sun_angle/create_sun_angle_html_page.py   #----   create sun angle html pages
+
+-----------------------------------
+Tephin Temparature Related Scripts
+-----------------------------------
+
+./Tephin_eph/check_ephtemp_plotting_range.py #---   check ephtemp plotting range
+./Tephin_eph/create_ephin_leak_html_page.py #----   create tephin - eph quantity page
+./Tephin_eph/create_top_ephin_leak_html.py  #----   creating the top ephin-eph   html page
+./Tephin_eph/tephin_leak_data_update.py     #----   update tephin - ephin rate/leak current data
+./Tephin_eph/tephin_plot.py                 #----   create tephin vs msid plot and derivative plot
+
+------------------------
+Shield Rate vs Eph Rate
+------------------------
+
+./Hrcveto_eph/create_hrcveto_eph_page.py    #----   create shevart - eph key plot page
+./Hrceeto_eph/hrcveto_eph_plot.py           #----   create shevart vs eph key value plot and derivative plot
+
+-------------------------t
+Html Page Related Scripts
+-------------------------
+run_all_trend_scripts.py                    #---    run the plotting routine several different way base on
+                                                    the day of the week
+create_html_page.py                         #----   create indivisual html pages for msids in database
+    Usage:  create_html_page(qtype=<inter/static> msid_list=<list name> ds=<week/short/long/all> ms=<mid/min/max/all>
+update_sub_html_pages.py                    #----   create html pages for different categories of msids
+create_top_html.py                          #----   create the top html page
+create_top_sun_angle_html.py                #----   create the top sun angle htlm page
+date_update.py                              #----   update html page footer date to today
+
+-----------------------
+Derivative Plot Script
+-----------------------
+create_derivative_plots.py                  #----   create derivative plots using data of the trending plots 
+
+-----------------------------------------
+Interactive Page Creation Related Scripts
+-----------------------------------------
+create_interactive_page.py                  #----   create interactive html page for a given msid
+    Usage: create_interactive_page.py <msid> <group> <start> <stop> <bin size>
+                <start> and <stop> are seconds from 1998.1.1 and <bin size> is in seconds
+remove_html_from_interactive_dir.py         #----   remove interactive html files older than one day old
+
+/data/mta4/www/MSID_Trends/Interactive/msid_data_interactive.php
+                                            #----   this script creates an interactive plot
+                                                    this must be in this location
+
+-------------------
+Depository Scirpts
+-------------------
+./Deposit/update_acis_ctemp.py              #---- update full resolution acis temp data in C
+./Deposit/update_acis_power.py              #---- update full resolution acis electirc power data
+./Deposit/update_eph_l1.py                  #---- update full resolution eph L1 data
+./Deposit/update_grad_data.py               #---- update full resolution grad data
+./Deposit/update_sim_flex.py                #---- update full resolution sim flex diff data
+./Deposit/update_update_compgradkodak.py    #---- update full resolution compgreadkodak data
+./Deposit/dea_full_data_update.py           #---- update full (300 sec) resolution deahk data
+
+---- data are saved in Comp_save or Grad_save and the resolution is around 30 seconds
+
+-------------
+Data Recovery
+-------------
+./Recover_fits/rerun_long.py                #---- recover long term data from the beginning to today
+./Recover_fits/rerun_short.py               #---- recover short term data from a year ago to today
+./Recover_fits/rerun_week.py                #---- recover short term data from a week ago to today
+                                                  (these work on both ska database and mta local database)
+------
+Others
+------
+check_file_update_date.py                   #----   find the files which are not updated for a while
+                                                    and notify the admin
+create_top_html.py                          #----   create the top level html page
+glimmon_sql_read.py                         #----   extract limit information from glimmon database
+read_mta_limits_db.py                       #----   read mta_limit_db; return yellow and red lower and upper limits
+violation_estimate_data.py                  #----   save violation estimated times in sqlite database v_table
+
+-------------------------------------------------------
+Collections of Functions Used by More than One Scripts
+-------------------------------------------------------
+envelope_common_function.py                 #----   collection of functions used in the msid trending
+create_html_suppl.py                        #----   collection of functions used to created html page
+update_database_suppl.py                    #----   collection of functions used to update databases
+
+----------------
+Control Scripts
+----------------
+mta_limit_fetch_wrap_script                 #----   run the main SKA data extraction
+mta_limit_fetch_main_script                 
+
+mta_limit_data_wrap_script                  #----   run the all other data extraction
+mta_limit_data_main_script
+
+mta_limit_<wday>_wrap_script                #----   run the plotting routines <wday>: sun,..., sat
+mta_limit_<wday>_main_script                  
+
+mta_sun_angle_wrap_script                   #----   run the sun angle related scripts
+mta_sun_angle_main_script                   
+
+mta_tephin_warp_script                      #----   run tephin - eph related scripts
+mta_tephin_main_script
+
+
+------------------------
+house_keeping directory
+------------------------
+
+msid_list                                   #----   the list of all msids to be plotted
+msid_list_fetch                             #----   the list of msids to be extracted from SKA datab ase
+msid_list_hrchk                             #----   the list of hrchk related msids
+msid_list_simdiag                           #----   the list of sim actu/elec msids extracted from achive
+msid_list_eph_tephin                        #----   the list of eph - tephin temp plot related msids
+msid_list_sun_angle                         #----   the list of the sun angle plot related msids
+msid_list_gratgen                           #----   the list of the grating movement related msids
+msid_list_ephkey                            #----   the list of the L1 eph key value related msids
+msid_list_veto                              #----   the list of the hrc veto related msids
+msid_list_ephtv                             #----   the list of eph hk related msids
+msid_list_comp                              #----   the list of comp temp related msids (all in C)
+msid_list_p<#>[_supple]                     #----   the list of msdids to be processed on <#> day of the week
+mp_process_list                             #----   the list of msids used by Comp related scripts
+eph_list                                    #----   the list of eph related list
+description_supple                          #----   the description of msids
+dir_list                                    #----   the directory list
+glimmon_special_limit                       #----   the special case of the limits
+group_descriptions                          #----   the descriptions of the msid groups (create top html page link)
+group_descriptions_sun_angle                #----   the descriptions of the sun angle/msid 
+imbpast_list                                #----   the liit of imbpast timing
+sptpast_list                                #----   the list of sptpast timing
+tscpos_list                                 #----   the list of tscpos  timing
+unit_list                                   #----   the list of units
+unit_list_supple                            #----   the uspplemental list of uints
+v_table.sqlite3                             #----   sqlite database to keep msid violation cases
+
+retr_hetg                                   #----   the time periods in which hetg is retriving
+retr_letg                                   #----   the time periods in which hetg is inserting
+insr_hetg                                   #----   the time periods in which letg is retriving
+insr_letg                                   #----   the time periods in which letg is inserting
+grat_active                                 #----   the time periods in which grating is active
+grat_inactive                               #----   the time periods in which grating is inactive
+tscpos_list                                 #----   the time periods in which tsc pos is hrc
+hrc_off_list                                #----   the time periods in wich hrc is off
+sptpast_list                                #----   the time periods in which sptpast is in position
+
+
+sub_html_list_all                           #----   the list of groups and their html data page names
+
+no_data.png                                 #----   a png file which tells no data
+Templates                                   #----   the directory contains templates of html pages
+
+--------------
+Execution Logs
+--------------
+/home/mta/Logs contains results of cron jobs.
+            msid_trend_fetch_data.cron
+            msid_trend_suppl_data.cron
+            msid_trend_plot_sun_data.cron
+            msid_trend_plot_mon_data.cron
+            msid_trend_plot_tus_data.cron
+            msid_trend_plot_wed_data.cron
+            msid_trend_plot_thu_data.cron
+            msid_trend_plot_fri_data.cron
+            msid_trend_plot_sat_data.cron
+            msid_trend_sun_angle.cron
+            msid_trend_tephin.cron
+
++++++++++++++++
+Data Directory
++++++++++++++++
+/data/mta4/Deriv/MTA_msid_trend/Data/
+
+<Group Name>/<msid>_data.fits           #--- 1 day averaged data for the entier period
+<Group Name>/<msid>_short_data.fits     #--- 1 hour averaged data for the past one year
+<Group Name>/<msid>_week_data.fits      #--- 5 minute averaged for the past 7 days
+                                             excecpt those from none ska souces. if that
+                                             is the case, it covers the entier period
+Interactive                             #--- the directory to keep the interactive data
+                                             crated on request. it is kept only one day
+sun_angle.fits                          #--- the 5 miniute averaged sun angle data
+
+
+/data/mta/Script/MTA_limit_trends/Deposit/
+Comp_save                               #--- full resolution data related Comp
+Grad_save                               #--- full resolution data related Grad
+                                                    full resolution is around 30 sec bin
+
+
++++++++++++++
+Web Directory
++++++++++++++
+/data/mta4/www/MSID_Trends/
+
+mta_trending_main.html                  #--- the main html page
+mta_trending_sun_angle_main.html        #--- the main html page for sun angle trends
+mta_trending_eph_tephin_main.html       #--- the main html page for ephin - eph relation
+how_to_create_plots.html                #--- the explanation pop up html page
+how_to_create_sun_angle.html            #--- the explanation pop up html page for sun angle
+how_to_create_eph_tephin.html           #--- the explanation pop up html page for tephin - eph 
+interactive_note.html                   #--- the explanation pop up html page for interactive page
+
+Interactive/<msid>_inter_avg.html       #--- the interactive page created on request
+                                             it is kept only one day after the creation
+
+Under <Group Name> name (e.g. Acistemp):
+<group>_<mtype>_static_<ltype>_main.html        #--- html page linking to each msid
+                                                mtype: mid, max, min
+                                                ltype:  week                --- 5 min average 
+                                                        short (3 month)     --- 1 hr average
+                                                        one (1 year)        --- 1 hr average
+                                                        five (5 years)      --- 1 day average
+                                                        long (full period)  --- 1 day average
+
+<msid>/<msid>_<mtype>_static_<ltype>_plot.html  #--- html page for the msid with different mtype/ltype
+<msid>/Plots/<msid>_<ltyp>_<mtype>.png          #--- trending plot
+<msid>/Plots/<msid>_<ltyp>_<mtype>_div.png      #--- derivative plot
+
+Limit_table/<msid>_limit_table.html             #--- a pop up limit table html page for <msid>
+
+Web Address:     https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.html
+
+
+++++++++++++++++++++++
+Environmental Setting
+++++++++++++++++++++++
+
+Most scripts need to access SKA python libraries:
+    source /proj/sot/ska/bin/ska_envs.csh
+
+
+++++++++++
+Cron Jobs
+++++++++++
+
+on r2d2-v as mta
+
+24 0 * * * cd /data/mta/Script/MTA_limit_trends/Exc;  /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_fetch_wrap_script
+36 1 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_data_wrap_script
+14 3 * * 0 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_sun_wrap_script
+14 3 * * 1 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_mon_wrap_script
+14 3 * * 2 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_tus_wrap_script
+14 3 * * 3 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_wed_wrap_script
+14 3 * * 4 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_thu_wrap_script
+14 3 * * 5 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_fri_wrap_script
+14 3 * * 6 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_sat_wrap_script
+24 9 * * * cd /data/mta/Script/MTA_limit_trends/Exc;  /data/mta/Script/MTA_limit_trends/Scripts/mta_sun_angle_wrap_script
+24 11 * * 0 cd /data/mta/Script/MTA_limit_trends/Exc; /data/mta/Script/MTA_limit_trends/Scripts/mta_tephin_wrap_script
+
+
+
+
+

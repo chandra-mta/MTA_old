@@ -1,0 +1,10 @@
+this dir contains the script to fix warning ranges on an exisiting data fits file. 
+it won't fix statistics part, but useful for fixing the plotting warning area.
+
+Usage:
+
+ck_and_dirty_limit_fix.py <fits file name> <yellow lower> < yellow upper> < red lower> <red upper> 
+                          <start time of the fixing range> <stopping time of the fixing range> 
+
+
+time is seconds from 1998.1.1

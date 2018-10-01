@@ -1,0 +1,8 @@
+rm -rf param
+mkdir param
+source /home/mta/bin/reset_param
+
+source /proj/sot/ska/bin/ska_envs.csh
+
+/data/mta/Script/Interrupt/Scripts/sci_run_get_radiation_data.py
+/data/mta/Script/Interrupt/Scripts/sci_run_get_rad_zone_info.py

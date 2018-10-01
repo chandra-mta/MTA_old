@@ -1,0 +1,11 @@
+cd /data/mta/Script/Exposure/Exc
+
+rm -rf param
+mkdir param
+source /home/mta/bin/reset_param
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages"
+setenv LD_LIBRARY_PATH /soft/ciao-4.6/lib:/soft/ciao-4.6/ots/lib
+
+/data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_dose_control.py
+/data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_dose_plot_exposure_stat.py

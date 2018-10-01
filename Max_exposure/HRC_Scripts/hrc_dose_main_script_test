@@ -1,0 +1,11 @@
+cd /data/mta/Script/Exposure/Exc_h
+rm -rf param
+mkdir param
+
+source /proj/sot/ska/bin/ska_envs.csh
+
+/data/mta/Script/Exposure/Scripts/HRC_Scripts/hrc_prep_test.py
+
+/data/mta/Script/Exposure/Scripts/HRC_Scripts/hrc_dose_run.py test
+/data/mta/Script/Exposure/Scripts/HRC_Scripts/hrc_dose_plot_exposure_stat.py test
+/data/mta/Script/Exposure/Scripts/HRC_Scriptshrc_dose_plot_monthly_report.py test

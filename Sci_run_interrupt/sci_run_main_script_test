@@ -1,0 +1,6 @@
+source /home/mta/.ascrc
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:$PYTHONPATH"
+
+/data/mta/Script/Interrupt/Scripts/sci_run_get_radiation_data.py   test
+/data/mta/Script/Interrupt/Scripts/sci_run_get_rad_zone_info.py    test

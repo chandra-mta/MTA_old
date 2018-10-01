@@ -1,0 +1,97 @@
+<table border=0 width=100%>
+<tr><th><u>OBSID</u></th>
+    <th><u>DETECTOR</u></th>
+    <th><u>GRATING</u></th>
+    <th align=left><u>TARGET</u></th>
+    <th><u>ANALYSIS</u></th>
+    <th><u>ACA</u></th></tr>
+
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17297">17297</a></td>
+<td>ACIS-012367
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17297/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17297/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17524">17524</a></td>
+<td>ACIS-01236
+</td>
+<td>NONE</td>
+<td align=left>Cygnus A - E Hotspot
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17524/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17524/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17162">17162</a></td>
+<td>ACIS-01236
+</td>
+<td>NONE</td>
+<td align=left>RM J211849.1+003337.2
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17162/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17162/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17219">17219</a></td>
+<td>ACIS-012357
+</td>
+<td>NONE</td>
+<td align=left>ESO 3060170 Offset
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17219/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17219/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17298">17298</a></td>
+<td>ACIS-012367
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17298/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17298/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=16824">16824</a></td>
+<td>ACIS-01237
+</td>
+<td>NONE</td>
+<td align=left>2FGL J0858.3-4333
+</td>
+<td><a href="/mta_days/ap_report/events/acis/16824/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/16824/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17299">17299</a></td>
+<td>ACIS-012367
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17299/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17299/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17007">17007</a></td>
+<td>ACIS-3678
+</td>
+<td>NONE</td>
+<td align=left>NGC 7457
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17007/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17007/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=16957">16957</a></td>
+<td>ACIS-56789
+</td>
+<td>NONE</td>
+<td align=left>PSR J2055+2539 nebula
+</td>
+<td><a href="/mta_days/ap_report/events/acis/16957/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/16957/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17300">17300</a></td>
+<td>ACIS-01237
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17300/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17300/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17302">17302</a></td>
+<td>ACIS-01237
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/mp_reports/events/acis/17302/event.html">OK</a></td>
+<td><a href="/mta_days/mp_reports/events/aca/17302/aca.html">OK</a></td></tr>
+</table>

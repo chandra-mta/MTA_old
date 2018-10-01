@@ -1,0 +1,10 @@
+'/data/mta/Script/MTA_limit_trends/Scripts/'                    :bin_dir
+'/data/mta4/Deriv/MTA_msid_trend/Data/'                         :data_dir
+'/data/mta/Script/MTA_limit_trends/Exc/'                        :exc_dir
+'/data/mta/Script/MTA_limit_trends/Deposit/'                    :deposit_dir
+'/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/'      :house_keeping
+'/data/mta/Script/Python_script2.7/'                            :mta_dir
+'/data/mta/Script/MSID_limit/'                                  :glim_dir
+'/data/mta4/MTA/data/op_limits/'                                :mlim_dir
+'/data/mta4/www/MSID_Trends/'                                   :web_dir
+'cxc.cfa.harvard.edu/mta/MSID_Trends/'                          :web_address

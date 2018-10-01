@@ -1,0 +1,26 @@
+cd /data/mta/Script/MTA_limit_trends/Exc3
+
+rm -rf param
+mkdir param
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages"
+
+/data/mta/Script/MTA_limit_trends/Scripts/date_update.py
+
+echo "process starting: " `date`
+
+/data/mta/Script/MTA_limit_trends/Scripts/create_html_page.py qtype=static msid_list=msid_list     ds=week  ms=all
+echo "week plot finished: " `date`
+
+/data/mta/Script/MTA_limit_trends/Scripts/create_html_page.py qtype=static msid_list=msid_list_p1  ds=short ms=all
+echo "short plot finished: " `date`
+
+/data/mta/Script/MTA_limit_trends/Scripts/create_html_page.py qtype=static msid_list=msid_list_p1  ds=long  ms=all
+echo "long plot finished: " `date`
+
+/data/mta/Script/MTA_limit_trends/Scripts/update_sub_html_pages.py
+/data/mta/Script/MTA_limit_trends/Scripts/create_top_html.py
+echo "sub html page updated: " `date`
+
+/data/mta/Script/MTA_limit_trends/Scripts/remove_html_from_interactive_dir.py
+/data/mta/Script/MTA_limit_trends/Scripts/check_file_update_date.py

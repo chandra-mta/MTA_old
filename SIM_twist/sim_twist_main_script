@@ -1,0 +1,14 @@
+cd /data/mta/Script/ALIGNMENT/Sim_twist/Exec/
+
+rm -rf param
+mkdir param
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages"
+
+/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/alignment_sim_twist_extract.py
+/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/fid_light_data_extract.py
+
+/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/fid_light_trend_plot.py
+/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/sim_twist_trend_plot.py
+
+chgrp mtagroup /data/mta/Script/ALIGNMENT/Sim_twist/Data/*

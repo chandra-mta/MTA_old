@@ -1,0 +1,9 @@
+cd /data/mta/Script/Disk_check/Exc
+
+source /proj/sot/ska/bin/ska_envs.csh
+
+
+/data/mta/Script/Disk_check/Scripts/disk_space_check_size.py
+
+/data/mta/Script/Disk_check/Scripts/disk_space_run_quota.py
+

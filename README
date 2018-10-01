@@ -1,0 +1,40 @@
+
+This repository contains the sets of scripts related to Monitoring and Trending Analysis. 
+
+
+Abs_pointing    --- celestial location monitoring routine
+ACE_GOES_data   --- import ACE and GOES data from NOAA and extracts data
+ACIS_bad_pix    --- ACIS Bad Pixel Detection and ACIS Bias Computation
+ACIS_Count_Rate --- extracts ACIS count rates for each CCD and creates trend plots
+ACIS_CTI        --- extract cti data, estimate trends, and plots the trends
+ACIS_ft         --- create ACSI focal plane temerature trend plots
+ACIS_gain       --- extract and compute acis gain, and plot the trend
+ACIS_hist       --- extract acis histram mode information and plots the trends
+ACIS_memo       --- contains scripts used to create ACIS memos
+ACIS_sci_run    --- retrieve ACIS science run data from MIT web site, check event rate, error rate,and drop rate and plot trends
+ACIS_SIB        --- compute ACIS SIB
+Cron_check      --- reads cron job entries and check whether the cron jobs are running as it is supposed to be
+Disk_space      --- monitoring disk space usage
+EdE_Trends      --- create an E/dE trend page plots, table, and the page itself
+Envelope_trending   --- create MSID Envelope Trending
+Ephen_RDB       --- update of geomagnetic related data
+Ftp_clean       --- remove unwanted files from /stage/xmmops_ftp
+Gyro_drift      --- create trend plots of stability of the spacecraft around the grating movement
+HRC_gain        --- create Ar Lac PHA Distribution Trend
+HRC_SIB         --- create HRC SIB trending plot
+HRC_temperature --- extract HRC temperature information from dataseeker database, and plot them
+Limit_table     --- estimates yellow and red limits of all msids from the past data.
+Max_exposure    --- extract ACIS and HRC exposure dose data and create statistics, plots, images, and html pages
+Monthly_Report  --- creates a monthly report
+MSID_limit      --- updates op_limits.db
+MTA_limit_trends    --- extract msid data and plot their trend
+Orbital         --- extract orbital element related data from archived data and create rdb files
+Python_scripts  --- python functions used by other python scripts
+Sci_run_interrupt   --- generate plots of ACE, Ephin, and GOES radiation plots around science run interruptions
+Script_descriptions --- create html pages showing the descriptions of MTA tasks
+SIM_extract     --- update ..../sim_data.out
+SIM_twist       --- update sim twist and fid light trending
+Sol_panel       --- create solar panel/spacecraft electric power a and fine sensor temperature evolution along the time
+State_trends    --- extracts and plots SIM and other state conditions
+Trending_Script --- extract needed information from /data/mta/www/mp_reports/ and update mta databas
+Weekly_report   --- create weekly report

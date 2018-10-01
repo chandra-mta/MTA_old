@@ -1,0 +1,14 @@
+#----------------------------------------------------------------------#
+#                                                                      #
+#            Parameter file for "mtadb2fits" program                   #
+#                                                                      #
+#----------------------------------------------------------------------#
+username,s,a,"mtabrowse",,,"Database username"
+password,s,a,"aTcfeSge",,,"Database password"
+server,s,a,"sqlocc",,,"Database server name"
+command,s,a,"select distinct time,_shevart_avg from mtahrc..hrcveto_avg where ( time >= 591667200 and time < 594345600 ) order by time",,,"Database command"
+outfile,s,a,"/tmp/mta/dataseek_1478785881/mtahrc..hrcveto_avg.0.fits",,,"Output fits filename"
+extname,s,a,"mtahrc..hrcveto_avg",,,"FITS table's EXTNAME value"
+verbose,i,h,0,,,"verbosity (0-5)"
+
+mode,s,h,"ql",,,

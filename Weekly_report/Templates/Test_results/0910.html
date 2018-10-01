@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html>
+
+
+<head>
+    <title>M&TA Monitoring Report 09/04/15 - 09/10/15 </title>						<!-- ### update ### -->
+
+    <link rel="stylesheet" type="text/css" href='https://cxc.cfa.harvard.edu/mta/REPORTS/Template/mta.css' />
+
+    <script language="JavaScript">
+    	function WindowOpener(imgname) {
+    		msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=no,status=no,,width=1229,height=936,resize=no");
+    		msgWindow.document.clear();
+    		msgWindow.document.write("<html><title>Trend plot:   "+imgname+"</TITLE>");
+    		msgWindow.document.write("<body bgcolor='black'>");
+    		msgWindow.document.write("<img src='/mta/DAILY/mta_deriv/"+imgname+"' border =0 ><p></p></body></html>")
+    		msgWindow.document.close();
+    		msgWindow.focus();
+    	}
+    </script>
+
+</head>
+
+
+
+<body>
+
+<!-- ### REPORT STARTS HERE ### -->
+
+<h1>   MTA Monitoring Report 09/04/15 - 09/10/15    </h1>						<!-- ### update ### -->
+
+
+<p style='text-align:right'>
+<a href ="/mta/REPORTS/"> <strong>Archive of all weekly reports</strong> </a>
+<br />
+<a href="/mta/REPORTS/MONTHLY"> <strong>Archive of monthly reports</strong></a>
+</p>
+
+<hr />
+
+<!-- ### READIATION REPORT ### -->
+<h2><a href="/mta/RADIATION">Radiation</a></h2>
+<!--
+<p>
+Observing stopped by ground activation of SCS-107 at 2015:173:22:40z.
+</p>
+<p>
+<img src='./20150622_goes.png', width='80%'>
+</p>
+-->
+
+<p>
+Quiet
+</p>
+
+
+<!-- ### CTI REPORT ### -->
+
+<h2><a href="/mta_days/mta_cti/cti_page.html">Detrended CTI </a></h2>
+
+<p>
+Although we prefer to quote CTI values of the cleanest data (FT <= -119.7 C, int time > 7000sec), 
+the data that fulfills these conditions are getting rare. We now quote CTI based on temperature 
+corrected data for Focal plane temperature <= -118.5 C).
+
+</p>
+
+<p>
+The unit is now CTI/year not CTI/day.
+</p>
+
+<p>
+<table class='emshift'>
+<tr>
+<th>Average of ACIS-I CCDs (MnKa) slope: </th><td> 1.592e-02 CTI/year </td><td> (4.361e-05 CTI/day) </td>	
+</tr><tr>
+<th>Detrended slope:                     </th><td> 1.582e-02 CTI/year </td><td> (4.335e-05 CTI/day) </td>
+</tr>
+</table>
+</p>
+
+
+<!-- ### BAD PIXEL REPORT ### -->
+
+<h2><a href="/mta_days/mta_bad_pixel/mta_bad_pixel_list.html"> ACIS Warm Pixels </a></h2>
+
+<p>
+We display all bad pixels that have showed up in past, and, if any, previously unknown bad pixels appeared 
+in the last 14 days. We also list hot pixels (defined as 1000 above the average of bias background). Warm 
+columns 509-514 are probably due to boundaries.
+</p>
+<p style='font-color:orange'>
+New definitions of warm pixels and flickering pixels (May 15, 2014). If a pixel displays the level beyond 
+a threshold for more than 70% of the time in the past two weeks, the pixel is categorized as a "warm" pixel. 
+If a pixel is above the threshold more than 30% of time but less than 70% of the time in the past two weeks, 
+the pixel is categorized as a "flickering" pixel.
+</p>
+
+<table border=1 cellpadding=3>
+<tr align=center><th>&#160<th>CCD0<th>CCD1<th>CCD2<th>CCD3<th>CCD4<th>CCD5<th>CCD6<th>CCD7<th>CCD8<th>CCD9</tr>
+<!-- BAD PIXEL TABLE START -->
+
+
+<tr style="text-align:center"><td>Previously Unknown Bad Pixels</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+(388,375)
+(825,500)
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Current Warm  Pixels</td>
+<!-- ccd0 -->
+<td>
+(153,205)
+(143,700)
+</td>
+<!-- ccd1 -->
+<td>
+(910,239)
+(802,665)
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+(21,95)
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+(335,412)
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Flickering Warm Pixels</td>
+<!-- ccd0 -->
+<td>
+(692,141)
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+(726,537)
+(526,66)
+</td>
+<!-- ccd3 -->
+<td>
+(811,637)
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+(607,281)
+(357,303)
+(369,376)
+(669,577)
+(263,317)
+(367,511)
+(161,206)
+(258,797)
+(341,427)
+</td>
+<!-- ccd6 -->
+<td>
+(1000,214)
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+(182,474)
+(197,241)
+(881,53)
+</td>
+<!-- ccd9 -->
+<td>
+(40,49)
+(636,819)
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Current Hot Pixels</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Flickering Hot Pixels</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Warm column candidates</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+884
+</td>
+<!-- ccd5 -->
+<td>
+510
+512
+1022
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+512
+1022
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+<tr style="text-align:center"><td>Flickering Warm Column Candidates</td>
+<!-- ccd0 -->
+<td>
+&#160
+</td>
+<!-- ccd1 -->
+<td>
+&#160
+</td>
+<!-- ccd2 -->
+<td>
+&#160
+</td>
+<!-- ccd3 -->
+<td>
+&#160
+</td>
+<!-- ccd4 -->
+<td>
+&#160
+</td>
+<!-- ccd5 -->
+<td>
+&#160
+</td>
+<!-- ccd6 -->
+<td>
+&#160
+</td>
+<!-- ccd7 -->
+<td>
+&#160
+</td>
+<!-- ccd8 -->
+<td>
+&#160
+</td>
+<!-- ccd9 -->
+<td>
+&#160
+</td>
+</tr>
+
+</table>
+
+
+
+<!-- BAD PIXEL TABLE END  -->
+
+<br>
+
+<!-- ### FOCAL TEMPERATURE REPORT ### -->
+
+<h2><a href="/mta_days/mta_temp/mta_fp/main_fp_temp.html"> ACIS Focal Plane Temperature </a></h2>
+<p>
+For this period, 0  peaks are  observed. 									<!-- ### update ### -->
+</p>
+
+<ul>
+<table class='emshift'>
+<tr><th class='uline'>Day (DOY)</th><th class='uline'>Temp (C)</th><th class='uline'>Width (Days)</th><th>&#160</th></tr>
+
+<!-- ////  EXAMPLE INPUT LINE ///
+<tr align=center><td> 356.83 </td><td> -107.09 </td><td> 0.29 <td align=left>&#160</td></tr>	
+-->
+
+</table>
+<br />
+</ul>
+
+<p>
+Weekly focal plane temperature with sun angle, earth angle, and altitude overplotted.  
+Sun angle is the solar array angle, that is the angle between the sun and the optical axis (+X axis).  
+The earth angle is the angle between earth and the ACIS radiator (+Z axis).  
+Altitude varies from 34 kkm to 128 kkm.
+</p>
+<br />
+
+<div style='text-align:center'>
+<img src="0910_fptemp.gif"/><br /> 				      					<!-- ### update ### -->
+</div>
+
+
+
+<!-- ### SIM MOVEMENT ### -->
+
+<h2><a href ="/mta_days/mta_sim/">SIM Movements</a></h2>
+
+<p>
+7 TSC moves this period<br />
+<ul>
+<table class='emshift'>
+<tr>
+<th style='text-align:left'>weekly average time/step</th><td>  0.00126 s </td> 				<!-- ### update ### -->
+</tr><tr> 
+<th style='text-align:left'>mission average time/step</th><td> 0.00136 s </td>				<!-- ### update ### -->
+
+</tr>
+</table>
+</ul>
+</p>
+
+
+<!-- ### TELEMETRY ### -->
+
+<h2><a href="/mta_days/ap_report/mta_days.html">Telemetry</a></h2>
+<p>
+New violations or new extrema are shown in <em style='font-style:normal; color:#0000ff'>blue cells</em>.
+</p>
+
+<!-- START INSERT TELEM TABLE HERE -->
+
+<table border=1>
+<tr><td>MSID
+<td>09/04/15</td>
+<td>09/05/15</td>
+<td>09/06/15</td>
+<td>09/07/15</td>
+<td>09/08/15</td>
+<td>09/09/15</td>
+<td>09/10/15</td>
+<td><em class='yellow'>yellow limits<br />(lower)<br />upper</em>
+<td><em class='red'>red limits<br />(lower)<br />upper</em>
+<td>Units <td>Description
+</table>
+
+
+<!-- END INSERT TELEM TABLE HERE -->
+</ul>
+
+<br /><br />
+
+ 
+<!-- ###  IRU REPORT ### -->
+
+<H2><a href="/mta_days/mta_pcad/IRU/bias.html"> IRUs</a></H2>
+<ul>
+<li><a href="/mta_days/mta_pcad/IRU/Plots/2015_246_252_bias.gif">Gyro Bias Drift</a>		<!-- ### update ### -->
+<li><a href="/mta_days/mta_pcad/IRU/Plots/$IRUSPAN2#_hist.gif">Gyro Bias Drift Histogram</a>	<!-- ### update ### -->
+</ul>
+
+
+<!-- ### RECENT OBSERVATIONS ### -->
+
+<h2> <a href="/mta_days/ap_report/events/mta_events.html"> Recent Observations</a></h2>
+
+<p>
+<!--
+<table border=0 width=100%>
+<tr><th class='uline'>OBSID</th>
+    <th class='uline'>DETECTOR</th>
+    <th class='uline'>GRATING</th>
+    <th class='uline' style='text-align:left'>TARGET</th>
+    <th class='uline'>ANALYSIS</th>
+    <th class='uline'>ACA</th></tr>
+-->
+
+<!-- PHOTON SUMMARY BEGIN -->
+
+<table border=0 width=100%>
+<tr><th><u>OBSID</u></th>
+    <th><u>DETECTOR</u></th>
+    <th><u>GRATING</u></th>
+    <th align=left><u>TARGET</u></th>
+    <th><u>ANALYSIS</u></th>
+    <th><u>ACA</u></th></tr>
+
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17297">17297</a></td>
+<td>ACIS-012367
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17297/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17297/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17524">17524</a></td>
+<td>ACIS-01236
+</td>
+<td>NONE</td>
+<td align=left>Cygnus A - E Hotspot
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17524/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17524/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17162">17162</a></td>
+<td>ACIS-01236
+</td>
+<td>NONE</td>
+<td align=left>RM J211849.1+003337.2
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17162/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17162/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17219">17219</a></td>
+<td>ACIS-012357
+</td>
+<td>NONE</td>
+<td align=left>ESO 3060170 Offset
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17219/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17219/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17298">17298</a></td>
+<td>ACIS-012367
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17298/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17298/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=16824">16824</a></td>
+<td>ACIS-01237
+</td>
+<td>NONE</td>
+<td align=left>2FGL J0858.3-4333
+</td>
+<td><a href="/mta_days/ap_report/events/acis/16824/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/16824/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17299">17299</a></td>
+<td>ACIS-012367
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17299/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17299/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17007">17007</a></td>
+<td>ACIS-3678
+</td>
+<td>NONE</td>
+<td align=left>NGC 7457
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17007/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17007/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=16957">16957</a></td>
+<td>ACIS-56789
+</td>
+<td>NONE</td>
+<td align=left>PSR J2055+2539 nebula
+</td>
+<td><a href="/mta_days/ap_report/events/acis/16957/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/16957/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17300">17300</a></td>
+<td>ACIS-01237
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/ap_report/events/acis/17300/event.html">OK</a></td>
+<td><a href="/mta_days/ap_report/events/aca/17300/aca.html">OK</a></td></tr>
+<tr align=center><td><a href="http://acis.mit.edu/cgi-bin/get-obsid?id=17302">17302</a></td>
+<td>ACIS-01237
+</td>
+<td>NONE</td>
+<td align=left>UDS
+</td>
+<td><a href="/mta_days/mp_reports/events/acis/17302/event.html">OK</a></td>
+<td><a href="/mta_days/mp_reports/events/aca/17302/aca.html">OK</a></td></tr>
+</table>
+
+
+<!-- PHOTON SUMMARY END -->
+
+</p>
+
+<!-- ### TRENDING ### -->
+
+<h2><a href ="/mta/DAILY/mta_deriv/">Trending</a> </h2>
+
+
+<p>
+This week's focus is
+<em  style='font-style:normal; color:#B0E0E6'>
+<strong>Sun Angle Correlations</strong>							<!-- ### update ### -->
+</em>
+</p>
+
+<p>
+Last reported on
+<a href ="/mta/REPORTS/0618.html">Jun 18</a>. <br>						<!-- ### update ### -->
+</p>
+
+<p>
+Only the most interesting or representative msids are shown below.
+For a full listing choose the bulletted link.<br>
+</p>
+
+<p>
+Min/max envelopes in dark blue appear on the trending plots. The envelopes are 4th degree 
+fits to the monthly minimum and maximum values for each MSID.
+
+The final polynomial form and binning are still being experimented with.  We will soon add 
+to the trending pages a report of the fits and predictions they give on future limit violations.  
+The light blue curve is our original smoothing of all the data over 30 day moving boxcars.  
+The green/yellow line is a linear fit to all the data; the break occurs at a limit change.
+</p>
+<br />
+
+
+<!-- ### EXAMPLE ###
+<ul>
+<div style="color:#FFFFFF"><li><a href="/mta/DAILY/mta_deriv/xxxxx.html">xxxx</a></li></div>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7></tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+
+</table>
+</ul>
+
+
+ ####### DON'T FORGET QTR ENTRIES!!!! ####### 
+
+-->
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/acistemp_att.html">ACIS Thermal</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>vs. Sun Angle</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/DEG<td> DELTA/DEG/DEG<td> UNITS<td>DESCRIPTION</tr>
+
+
+<tr><td><a href="javascript:WindowOpener('_1cbat_avgT.gif')">1CBAT</a></td>
+<td><font color="#FFFFFF">  208.29</font></td>
+<td><font color="#FFFFFF">    3.14</font></td>
+<td><font color="#FFFFFF">    0.01</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>CAMERA BODY TEMP. A</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1cbbt_avgT.gif')">1CBBT</a></td>
+<td><font color="#FFFFFF">  209.83</font></td>
+<td><font color="#FFFFFF">    4.00</font></td>
+<td><font color="#FFFFFF">    0.01</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>CAMERA BODY TEMP. B</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1crat_avgT.gif')">1CRAT</a></td>
+<td><font color="#FFFFFF">  146.12</font></td>
+<td><font color="#FFFFFF">    1.55</font></td>
+<td><font color="#FFFFFF">    0.01</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>COLD RADIATOR TEMP. A</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1crbt_avgT.gif')">1CRBT</a></td>
+<td><font color="#FFFFFF">  146.66</font></td>
+<td><font color="#FFFFFF">    1.92</font></td>
+<td><font color="#FFFFFF">    0.02</font></td>
+<td><font color="#FFFFFF">    0.00</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>COLD RADIATOR TEMP. B</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1dactbt_avgT.gif')">1DACTBT</a></td>
+<td><font color="#FFFFFF">  257.38</font></td>
+<td><font color="#FFFFFF">    2.02</font></td>
+<td><font color="#FFFFFF">-2.196e-03</font></td>
+<td><font color="#FFFFFF">      -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>DA COLLIMATOR TEMP. B</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1deamzt_avgT.gif')">1DEAMZT</a></td>
+<td><font color="#FFFFFF">  284.76</font></td>
+<td><font color="#FFFFFF">    5.38</font></td>
+<td><font color="#FFFFFF">    0.08</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>DEA -Z PANEL TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1dpamyt_avgT.gif')">1DPAMYT</a></td>
+<td><font color="#FFFFFF">  286.17</font></td>
+<td><font color="#FFFFFF">    5.68</font></td>
+<td><font color="#FFFFFF">    0.09</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>DPA -Y PANEL TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1dpamzt_avgT.gif')">1DPAMZT</a></td>
+<td><font color="#FFFFFF">  289.41</font></td>
+<td><font color="#FFFFFF">    5.37</font></td>
+<td><font color="#FFFFFF">    0.08</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>DPA -Z PANEL TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1oahat_avgT.gif')">1OAHAT</a></td>
+<td><font color="#FFFFFF">  243.60</font></td>
+<td><font color="#FFFFFF">    1.83</font></td>
+<td><font color="#FFFFFF"> 5.819e-03</font></td>
+<td><font color="#FFFFFF">      -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>OPEN ACTUATOR HOUSING TEMP. A</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1oahbt_avgT.gif')">1OAHBT</a></td>
+<td><font color="#FFFFFF">  240.06</font></td>
+<td><font color="#FFFFFF">    1.81</font></td>
+<td><font color="#FFFFFF"> 4.043e-03</font></td>
+<td><font color="#FFFFFF">      -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>OPEN ACTUATOR HOUSING TEMP. B</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1pdeaat_avgT.gif')">1PDEAAT</a></td>
+<td><font color="#FFFFFF">  304.39</font></td>
+<td><font color="#FFFFFF">    7.76</font></td>
+<td><font color="#FFFFFF">   -0.08</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>PSMC DEA PS A TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1pdeabt_avgT.gif')">1PDEABT</a></td>
+<td><font color="#FFFFFF">  295.71</font></td>
+<td><font color="#FFFFFF">    7.57</font></td>
+<td><font color="#FFFFFF">   -0.07</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>PSMC DEA PS B TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1pin1at_avgT.gif')">1PIN1AT</a></td>
+<td><font color="#FFFFFF">  290.66</font></td>
+<td><font color="#FFFFFF">    6.90</font></td>
+<td><font color="#FFFFFF">   -0.06</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>PSMC TEMP 1A</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1wrat_avgT.gif')">1WRAT</a></td>
+<td><font color="#FFFFFF">  190.09</font></td>
+<td><font color="#FFFFFF">    2.18</font></td>
+<td><font color="#FFFFFF">    0.02</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>WARM RADIATOR TEMP. A</td></tr>
+<tr><td><a href="javascript:WindowOpener('_1wrbt_avgT.gif')">1WRBT</a></td>
+<td><font color="#FFFFFF">  189.88</font></td>
+<td><font color="#FFFFFF">    2.21</font></td>
+<td><font color="#FFFFFF">    0.02</font></td>
+<td><font color="#FFFFFF">    -NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>WARM RADIATOR TEMP. B</td></tr>
+</table>
+</ul >
+<br />
+
+
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/pcadtemp_att.html">PCAD Thermal</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>vs. Sun Angle</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/DEG<td> DELTA/DEG/DEG<td> UNITS<td>DESCRIPTION</tr>
+
+
+<tr><td><a href="javascript:WindowOpener('aacbppt_avgT.gif')">AACBPPT</a></td>
+<td><font color="#FFFFFF">  296.01</font></td>
+<td><font color="#FFFFFF">    2.74</font></td>
+<td><font color="#FFFFFF">    0.01</font></td>
+<td><font color="#FFFFFF">     NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC BASEPLATE TEMP (PRIME)</td></tr>
+<tr><td><a href="javascript:WindowOpener('aacbprt_avgT.gif')">AACBPRT</a></td>
+<td><font color="#FFFFFF">  291.98</font></td>
+<td><font color="#FFFFFF">    2.18</font></td>
+<td><font color="#FFFFFF"> 7.712e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC BASEPLATE TEMP (RDNT)</td></tr>
+<tr><td><a href="javascript:WindowOpener('aacccdpt_avgT.gif')">AACCCDPT</a></td>
+<td><font color="#FFFFFF">  258.42</font></td>
+<td><font color="#FFFFFF">    3.74</font></td>
+<td><font color="#FFFFFF">   -0.02</font></td>
+<td><font color="#FFFFFF">     NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC CCD TEMP (PRI)</td></tr>
+<tr><td><a href="javascript:WindowOpener('aacccdrt_avgT.gif')">AACCCDRT</a></td>
+<td><font color="#FFFFFF">  291.39</font></td>
+<td><font color="#FFFFFF">    2.36</font></td>
+<td><font color="#FFFFFF"> 8.439e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC CCD TEMP (RDNT)</td></tr>
+<tr><td><a href="javascript:WindowOpener('aach1t_avgT.gif')">AACH1T</a></td>
+<td><font color="#FFFFFF">  289.41</font></td>
+<td><font color="#FFFFFF">    1.83</font></td>
+<td><font color="#FFFFFF"> 6.450e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC HOUSING TEMP (ACH1)</td></tr>
+<tr><td><a href="javascript:WindowOpener('aach2t_avgT.gif')">AACH2T</a></td>
+<td><font color="#FFFFFF">  289.47</font></td>
+<td><font color="#FFFFFF">    1.83</font></td>
+<td><font color="#FFFFFF"> 6.493e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC HOUSING TEMP (ACH2)</td></tr>
+<tr><td><a href="javascript:WindowOpener('aaotalt_avgT.gif')">AAOTALT</a></td>
+<td><font color="#FFFFFF">  289.17</font></td>
+<td><font color="#FFFFFF">    1.78</font></td>
+<td><font color="#FFFFFF"> 6.479e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC OPT TEL ASSY LENS TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('aaotapmt_avgT.gif')">AAOTAPMT</a></td>
+<td><font color="#FFFFFF">  288.66</font></td>
+<td><font color="#FFFFFF">    1.74</font></td>
+<td><font color="#FFFFFF"> 6.214e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC OPT TEL ASSY PRIMARY MIRROR TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('aaotasmt_avgT.gif')">AAOTASMT</a></td>
+<td><font color="#FFFFFF">  288.78</font></td>
+<td><font color="#FFFFFF">    1.73</font></td>
+<td><font color="#FFFFFF"> 6.290e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC OPT TEL ASSY SECONDARY MIRROR TEMP</td></tr>
+<tr><td><a href="javascript:WindowOpener('aaoth2mt_avgT.gif')">AAOTH2MT</a></td>
+<td><font color="#FFFFFF">  289.09</font></td>
+<td><font color="#FFFFFF">    1.79</font></td>
+<td><font color="#FFFFFF"> 6.187e-03</font></td>
+<td><font color="#FFFFFF">       NaN</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>AC OPT TEL ASSY SECONDARY MIRROR TEMP (HRMA)</td></tr>
+</table>
+</ul >
+<br />
+
+
+<ul>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/obaheaters_att.html">OBA Heaters</a></li></font>
+<table border=1 cellpadding=3>
+<tr align=center><td colspan=7>vs. Sun Angle</tr>
+<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/DEG<td> DELTA/DEG/DEG<td> UNITS<td>DESCRIPTION</tr>
+
+
+<tr><td><a href="javascript:WindowOpener('oobthr01_avgT.gif')">OOBTHR01</a></td>
+<td><font color="#FFFFFF">  509.36</font></td>
+<td><font color="#FFFFFF">   28.87</font></td>
+<td><font color="#FFFFFF">    0.01</font></td>
+<td><font color="#FFFFFF">    0.00</font></td>
+<td><font color="#FFFFFF">CNT</font></td>
+<td>IP INTERNAL CALIBRATION OBA CH. 0</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr02_avgT.gif')">OOBTHR02</a></td>
+<td><font color="#FFFFFF">  284.28</font></td>
+<td><font color="#FFFFFF">    1.03</font></td>
+<td><font color="#FFFFFF">-1.566e-04</font></td>
+<td><font color="#FFFFFF"> 4.808e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 25: HRMA STRUT</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr03_avgT.gif')">OOBTHR03</a></td>
+<td><font color="#FFFFFF">  287.41</font></td>
+<td><font color="#FFFFFF">    1.70</font></td>
+<td><font color="#FFFFFF"> 7.387e-04</font></td>
+<td><font color="#FFFFFF"> 7.917e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 26: HRMA STRUT</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr04_avgT.gif')">OOBTHR04</a></td>
+<td><font color="#FFFFFF">  289.80</font></td>
+<td><font color="#FFFFFF">    2.38</font></td>
+<td><font color="#FFFFFF"> 5.907e-04</font></td>
+<td><font color="#FFFFFF"> 6.766e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 27: HRMA STRUT</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr05_avgT.gif')">OOBTHR05</a></td>
+<td><font color="#FFFFFF">  290.07</font></td>
+<td><font color="#FFFFFF">    2.32</font></td>
+<td><font color="#FFFFFF"> 4.628e-04</font></td>
+<td><font color="#FFFFFF"> 5.101e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 28: HRMA STRUT</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr06_avgT.gif')">OOBTHR06</a></td>
+<td><font color="#FFFFFF">  288.19</font></td>
+<td><font color="#FFFFFF">    1.75</font></td>
+<td><font color="#FFFFFF"> 7.729e-04</font></td>
+<td><font color="#FFFFFF"> 7.672e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 29: HRMA STRUT</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr07_avgT.gif')">OOBTHR07</a></td>
+<td><font color="#FFFFFF">  285.06</font></td>
+<td><font color="#FFFFFF">    1.05</font></td>
+<td><font color="#FFFFFF">-4.643e-04</font></td>
+<td><font color="#FFFFFF"> 1.101e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 30: HRMA STRUT</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr08_avgT.gif')">OOBTHR08</a></td>
+<td><font color="#FFFFFF">  287.67</font></td>
+<td><font color="#FFFFFF">    3.40</font></td>
+<td><font color="#FFFFFF">-4.998e-03</font></td>
+<td><font color="#FFFFFF">-2.440e-04</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 31: OBA CONE</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr09_avgT.gif')">OOBTHR09</a></td>
+<td><font color="#FFFFFF">  287.32</font></td>
+<td><font color="#FFFFFF">    3.13</font></td>
+<td><font color="#FFFFFF">-4.516e-03</font></td>
+<td><font color="#FFFFFF">-1.830e-04</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 32: OBA CONE</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr10_avgT.gif')">OOBTHR10</a></td>
+<td><font color="#FFFFFF">  286.50</font></td>
+<td><font color="#FFFFFF">    2.88</font></td>
+<td><font color="#FFFFFF">-3.113e-03</font></td>
+<td><font color="#FFFFFF">-9.318e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 33: OBA CONE</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr11_avgT.gif')">OOBTHR11</a></td>
+<td><font color="#FFFFFF">  285.93</font></td>
+<td><font color="#FFFFFF">    2.86</font></td>
+<td><font color="#FFFFFF">-2.830e-03</font></td>
+<td><font color="#FFFFFF"> 4.809e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 34: OBA CONE</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr12_avgT.gif')">OOBTHR12</a></td>
+<td><font color="#FFFFFF">  286.10</font></td>
+<td><font color="#FFFFFF">    2.79</font></td>
+<td><font color="#FFFFFF">-3.326e-03</font></td>
+<td><font color="#FFFFFF"> 5.296e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 35: OBA CONE</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr13_avgT.gif')">OOBTHR13</a></td>
+<td><font color="#FFFFFF">  284.57</font></td>
+<td><font color="#FFFFFF">    2.31</font></td>
+<td><font color="#FFFFFF">-3.628e-03</font></td>
+<td><font color="#FFFFFF"> 7.498e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 36: OBA CONE</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr14_avgT.gif')">OOBTHR14</a></td>
+<td><font color="#FFFFFF">  286.07</font></td>
+<td><font color="#FFFFFF">    2.79</font></td>
+<td><font color="#FFFFFF">-3.876e-03</font></td>
+<td><font color="#FFFFFF"> 1.154e-05</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 37: OBA CONE</td></tr>
+<tr><td><a href="javascript:WindowOpener('oobthr15_avgT.gif')">OOBTHR15</a></td>
+<td><font color="#FFFFFF">  286.37</font></td>
+<td><font color="#FFFFFF">    2.90</font></td>
+<td><font color="#FFFFFF">-3.746e-03</font></td>
+<td><font color="#FFFFFF"> 3.585e-06</font></td>
+<td><font color="#FFFFFF">K</font></td>
+<td>RT 38: OBA CONE</td></tr>
+</table>
+</ul >
+<br />
+
+
+
+
+<hr />
+<p>
+<em>
+If you have any questions, please contact:
+<a href='mailto:swolk@head.cfa.harvard.edu'>swolk@head.cfa.harvard.edu</a>
+</em>
+</p>
+
+</body>
+</html>

@@ -1,0 +1,3 @@
+cd /data/mta/Script/Cron_check/Scripts/
+
+/data/mta/Script/Cron_check/Scripts/send_error_list_email.py

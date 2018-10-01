@@ -1,0 +1,60 @@
+
+########################
+Monthly Report Creation
+########################
+
+This directory contains scripts creates a monthly report.
+
+Dir: /data/mta/Script/Month/Scripts
+See also:
+https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_monthly_fp_temp.html
+https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_monthly_sib.html
+
+=======
+Scripts
+=======
+
+monthly_wrap_script:    a environment setting script
+monthly_main_script:    the main script to run the python script
+create_monthly.py:      the python script which actually runs all needed tasks
+dose_map_creation.py:   the python script to created cleaner ACIS and HRC dose maps
+
+create_monthly.py uses other python scripts saved in:
+
+    /data/mta/Script/Month/Config
+    /data/mta/Script/Month/CTI
+    /data/mta/Script/Month/FOCAL
+    /data/mta/Script/Month/SIB
+    /data/mta/Script/Month/SIMI
+
+All have their own REAME files (usually in Scripts dir); please refer it for more details.
+
+============================
+How to Create Monthly Report
+============================
+
+The monthly report is automatically created by cron job on 3rd of every month.
+However, it cannot run ds9 without the screen and you need to run it manually. 
+
+    1. open a clean window (no ascds)
+    2. source /proj/sot/ska/bin/ska_envs.csh
+    3. run:  /data/mta/Script/Month/Scripts/dose_map_creation.py
+
+If you like to run the entier process manually:
+
+    1. open a clean window (no ascds)
+    2. source /proj/sot/ska/bin/ska_envs.csh
+    3. run: /data/mta/Script/Month/Scripts/create_monthly.py
+
+For the latter, you don't need to run dose_map_creation.py separately. 
+
+You can also run a specific month by:
+
+    3. run: /data/mta/Script/Month/Scripts/create_monthly.py <yyyy> <m>
+        e.g., /data/mta/Script/Month/Scripts/create_monthly.py 2016 5
+
+
+Cron job:
+On r2d2-v as mta:
+40 6 3 * *  cd /data/mta/Script/Month; /data/mta/Script/Month/monthly_wrap_script > /data/mta/Script/Month/report_creation.cron
+    

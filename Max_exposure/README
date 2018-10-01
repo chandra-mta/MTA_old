@@ -1,0 +1,515 @@
+
+
+This directory contains sets of python scripts which extract ACIS and HRC exposure dose data and create statistics, plots, images, and
+html pages.
+
+Dir: /data/mta/Script/Exposure/Scripts/
+See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_exposure_map.html
+
+################
+How to Run Them
+################
+
+1. ssh into c3po-v as mta
+2. Go to /data/mta/Script/Exposure/Exc
+3a. For ACIS, run:
+	/data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_dose_wrap_script
+3b. For HRC run:
+	/data/mta/Script/Exposure/Scripts/HRC_Scripts/hrc_dose_wrap_script
+
+    These processes will run the entire process and extract/manupilate the previous month's results
+    For example, if today is Jul 3rd 2012, the the scripts extract Jun 2012 data and process them.
+    Note that it is better to run this script after 3rd of the month, since input data are not ready
+    till 2nd of the month and occasionally delayed to 3rd. 
+
+4. If you like to run a specific year/month, then set the environment first:
+
+    setenv HEADAS /soft/lheasoft/headas/x86_64-pc-linux;
+    source $HEADAS/headas-init.csh
+	source /home/mta/.ascrc
+	rm -rf param
+	mkdir param
+	source /home/mta/bin/reset_param
+#	setenv PFILE "${PDIR}"
+	setenv PYTHONPATH "/usr/local/lib/python2.6/site-packages:$PYTHONPATH"
+
+   then run:
+	/data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_dose_control_step.py
+   or
+	/data/mta/Script/Exposure/Scripts/HRC_Scripts/hrc_dose_control_step.py
+
+   These scripts will ask several questions before running the scripts so that you can choose
+   processes you want to run.
+
+----> DON'T FORGET TO COPY FULL HRC FITS FILES TO /data/mays/MTA/Exposure/Hrc/Month_hrc and Cumulative_hrc !!!
+
+#######
+Output 
+#######
+mon_dir:  monthly combined data for ACIS.
+	ACIS_<month>_<year>.fits.gz: AICS data for <month>/<year> 
+	ACIS_<month>_<year>_i2.fits.gz: AICS data for <month>/<year>, CCD I2
+	ACIS_<month>_<year>_i3.fits.gz: AICS data for <month>/<year>, CCD I3
+	ACIS_<month>_<year>_s2.fits.gz: AICS data for <month>/<year>, CCD S2
+	ACIS_<month>_<year>_s3.fits.gz: AICS data for <month>/<year>, CCD S3
+
+cum_dir: cumulative data for ACIS
+	ACIS_07_1999_<month>_<year>.fits.gz: AICS data for <month>/<year> 
+	ACIS_07_1999_<month>_<year>_i2.fits.gz: AICS data for <month>/<year>, CCD I2
+	ACIS_07_1999_<month>_<year>_i3.fits.gz: AICS data for <month>/<year>, CCD I3
+	ACIS_07_1999_<month>_<year>_s2.fits.gz: AICS data for <month>/<year>, CCD S2
+	ACIS_07_1999_<month>_<year>_s3.fits.gz: AICS data for <month>/<year>, CCD S3
+
+hrc_mon_dir: monthly combined data for HRC (center).
+	HRCI_<month>_<year>.fits.gz: HRC I data for <month>/<year>
+	HRCS_<month>_<year>.fits.gz: HRC S data for <month>/<year>
+
+hrc_cum_dir: cumulative data for HRC (center).
+	HRCI_08_1999_<month>_<year>.fits.gz: HRC I data for <month>/<year>
+	HRCS_08_1999_<month>_<year>.fits.gz: HRC S data for <month>/<year>
+
+hrc_mon_dir_full: monthly combined data for HRC (full image).
+	HRCI_<month>_<year>_<section>.fits.gz: HRC I data for <month>/<year>. section: 0 - 8
+	HRCS_<month>_<year_<section>>.fits.gz: HRC S data for <month>/<year>. section: 0 - 9
+
+hrc_cum_dir_full: cumulative data for HRC (full image).
+	HRCI_08_1999_<month>_<year>_<section>.fits.gz: HRC I data for <month>/<year>. section: 0 - 8
+	HRCS_08_1999_<month>_<year>_<section>.fits.gz: HRC S data for <month>/<year>. section: 0 - 9
+
+data_out: Contains histrical data for acis and hrc.
+	i_<ccd>_n_<section>_dff_out: monthly history for acis
+	i_<ccd>_n_<section>_acc_out: cumulative history for acis
+	hrci_dff_out:                hrc i monthly history
+	hrci_acc_out:                hrc i cumulative history
+	hrcs_dff_out:                hrc s monthly history
+	hrcs_acc_out:                hrc s cumulative history
+
+	i_<ccd>_n_<section>.html:   acis <ccd>, <section> html page
+	hrci.html:		    hrc i html page
+	hrcs.html:		    hrc s html page
+
+  	format of entries:
+   	<year>, <month>, <mean>, <std.,<min>, <min location>, <max>, <max location>, <10th brightest>, <location of 10th brightest>
+
+  	Note that acis use 10th brightest as max and hence only dummy entries are listed in <10th brightest> and its location.
+
+data_out_hrc: Contains histrical data for hrc full image
+	hrci_<section>_dff:	     hrc i <section> monthly
+	hrci_<section>_acc:	     hrc i <section> cumulative
+	hrcs_<section>_dff:	     hrc s <section> monthly
+	hrcs_<section>_acc:	     hrc s <section> cumulative
+
+	hrcs_<section>.html:	     hrc s <section> monthly html page
+	hrcs_<section>.html:	     hrc s <section> cumulative html page
+
+  	format of entries:
+   	<year>, <month>, <mean>, <std.,<min>, <min location>, <max>, <max location>, <10th brightest>, <location of 10th brightest>
+
+plot_dir: contains plots of exposure histories
+	i_<ccd>_n_<section>.png:   acis <ccd>, <section>  plot 
+	i_<ccd>_n_<section>.html   acis <ccd>, <section>  html page for the plot
+
+	hrci.png:		   hrc i plot
+	hrcs.png:		   hrc s plot
+	hrci_<section>.png:	   hrc i plot for <section>
+	hrcs_<section>.png:	   hrc s plot for <section>
+	hrci.html:		   hrc i html page for the plot
+	hrcs.html:		   hrc s html page for the plot
+
+img_dir: containing image maps of ACIS and HRC
+	ACIS_<moth>_<year>.png	        	acis image for <moth> <year>
+	ACIS_<moth>_<year>_i2.png        	acis image for <moth> <year> CCD I2
+	ACIS_<moth>_<year>_i3.png        	acis image for <moth> <year> CCD I3
+	ACIS_<moth>_<year>_s2.png        	acis image for <moth> <year> CCD S2
+	ACIS_<moth>_<year>_s3.png        	acis image for <moth> <year> CCD S3
+
+	ACIS_07_1999_<moth>_<year>.png	   	acis cumulative image for <moth> <year>
+	ACIS_07_1999_<moth>_<year>_i2.png	acis cumulative image for <moth> <year> CCD I2
+	ACIS_07_1999_<moth>_<year>_i3.png	acis cumulative image for <moth> <year> CCD I3
+	ACIS_07_1999_<moth>_<year>_s2.png	acis cumulative image for <moth> <year> CCD S2
+	ACIS_07_1999_<moth>_<year>_s3.png	acis cumulative image for <moth> <year> CCD S3
+
+	HRCI_<month>_<year>.png			hrc i image for <month> <year>
+	HRCS_<month>_<year>.png			hrc s image for <month> <year>
+	HRCI_08_1999_<month>_<year>.png		hrc i cumulative image for <month> <year>
+	HRCS_08_1999_<month>_<year>.png		hrc s cumulative image for <month> <year>
+
+	hrc_max_exp.png:			monthly report plot
+
+####################
+Script Descriptions
+####################
+
++++++
+ACIS:
++++++
+Location: /data/mta/Script/Exposure/Scripts/ACIS_Scripts/
+
+acis_dose_wrap_script
+---------------------
+A wrap script to run acis_dose_main_script
+
+acis_dose_main_script
+---------------------
+This script sets the environment, set some parameters, and then run a python control script.
+
+acis_dose_control.py
+--------------------
+This script runs the entire process on the data from the previous month. 
+
+Input: 
+	none
+Output:
+	all ACIS output described above
+
+acis_dose_control_step.py
+--------------------------
+This script asks which month/year data you want to extract and process. It asks which processes
+you want to run so that you can choose which to run.
+
+Input:
+	Year and Month in integer. All other questions are 'y' or 'n'.
+
+Output:
+	Either all or part of the output described above.
+
+
+acis_dose_get_data.py
+----------------------
+This script extracts ACIS evt1 data for a month and create combined image fits file. 
+
+Input: 
+start year, start month, stop year, stop month. All in integer
+
+Output:
+./ACIS_<month>_<year>fits.gz    (saved in the working directory)
+
+acis_create_cumulative.py
+-------------------------
+For a given monthly combined ACIS file (e.g. ACI_07_2012.fits.gz), it will create, sectioned monthly fits
+files and cumulative counter parts.
+
+Input:
+fits file, either fits or fits.gz. (e.g. ACI_07_2012.fits or ACI_07_2012.fits.gz)
+
+Output: 
+In mon_dir:
+	ACIS_<month>_<year>.fits.gz
+	ACIS_<month>_<year>_<section>.fits.gz
+In cum_dir:
+	ACIS_07_1999_<month>_<year>.fits.gz
+	ACIS_07_1999_<month>_<year>_<section>.fits.gz
+
+acis_compute_stat.py
+--------------------
+This script computes statistics of the monthly and cumulative data and append the results to the data files.
+
+Input:
+	Year and month in integer. 
+
+Output:
+in data_out
+	i_<ccd>_n_<section>_dff_out: monthly history for acis
+	i_<ccd>_n_<section>_acc_out: cumulative history for acis
+
+acis_dose_plot_exposure_stat.py
+-------------------------------
+This script reads the ACIS data, and plot exposure history.
+
+Input:
+indir: a directory path to input data  (data_out)
+outdir: a directory path to plot directory (plot_dir)
+
+clean: if it is not "NA", clean the data files (removing duplicate and add missing data) before plotting
+
+Output:
+in plot_dir:
+	i_<ccd>_n_<section>.png:   acis <ccd>, <section>  plot 
+
+acis_dose_create_image.py
+-------------------------
+This script creates image maps for both monthly and cumupative data
+
+Input:
+	year and month.
+
+Output:
+	ACIS_<moth>_<year>.png	        	acis image for <moth> <year>
+	ACIS_<moth>_<year>_i2.png        	acis image for <moth> <year> CCD I2
+	ACIS_<moth>_<year>_i3.png        	acis image for <moth> <year> CCD I3
+	ACIS_<moth>_<year>_s2.png        	acis image for <moth> <year> CCD S2
+	ACIS_<moth>_<year>_s3.png        	acis image for <moth> <year> CCD S3
+
+	ACIS_07_1999_<moth>_<year>.png	   	acis cumulative image for <moth> <year>
+	ACIS_07_1999_<moth>_<year>_i2.png	acis cumulative image for <moth> <year> CCD I2
+	ACIS_07_1999_<moth>_<year>_i3.png	acis cumulative image for <moth> <year> CCD I3
+	ACIS_07_1999_<moth>_<year>_s2.png	acis cumulative image for <moth> <year> CCD S2
+	ACIS_07_1999_<moth>_<year>_s3.png	acis cumulative image for <moth> <year> CCD S3
+
+
+acis_dose_make_data_html.py
+---------------------------
+This script updates html pages for data
+
+Input:
+indir: a directory path to the data location (data_out)
+outdir: a directory path to the location which you want to create html pages (data_out)
+
+Output:
+	i_<ccd>_n_<section>.html:   acis <ccd>, <section> html page
+
+clip_at_nth.py
+--------------
+For a give fits file and cut point, it clips the image at the cut point.
+
+Input:
+fits: fits file (e.g. ACIS_07_2012.fits.gz)
+cut:  cut point. Null is 10th highest data point
+
+Output:
+fits file with the same name as the input, but trimmed at the 10th highest data point
+
+
++++
+HRC
++++
+Location: /data/mta/Script/Exposure/Scripts/HRC_Scripts/
+
+hrc_dose_run.py
+---------------
+This script runs run all required scripts to create HRC data/images for the previous month.
+
+Input: 
+None
+
+Output: 
+All output describied previously in Outputp section.
+
+You can call hrc_dose_run.hrc_dose_run(year, month) to specify year and month, but for this purpose, 
+the following script is better.
+
+hrc_dose_control_step.py
+-------------------------
+This script runs selected HRC processes by asking which one the user want to run
+
+Input:
+year and month plus which script you want to run. The answers should be 'y' or 'n' (case sensitive)
+
+Output:
+All or selected output described in Output section
+
+
+hrc_dose_get_data_full_rage.py
+-----------------------------
+This script extracts HRC evt1 data for a month and creates cumulative data fits file. 
+
+Input: 
+	start year, start month, stop year, stop month
+
+Output:
+hrc_mon_dir: monthly combined data for HRC (center).
+        HRCI_<month>_<year>.fits.gz: HRC I data for <month>/<year>
+        HRCS_<month>_<year>.fits.gz: HRC S data for <month>/<year>
+
+hrc_cum_dir: cumulative data for HRC (center).
+        HRCI_08_1999_<month>_<year>.fits.gz: HRC I data for <month>/<year>
+        HRCS_08_1999_<month>_<year>.fits.gz: HRC S data for <month>/<year>
+
+hrc_mon_dir_full: monthly combined data for HRC (full image).
+        HRCI_<month>_<year>_<section>.fits.gz: HRC I data for <month>/<year>. section: 0 - 8
+        HRCS_<month>_<year_<section>>.fits.gz: HRC S data for <month>/<year>. section: 0 - 9
+
+hrc_cum_dir_full: cumulative data for HRC (full image).
+        HRCI_08_1999_<month>_<year>_<section>.fits.gz: HRC I data for <month>/<year>. section: 0 - 8
+        HRCS_08_1999_<month>_<year>_<section>.fits.gz: HRC S data for <month>/<year>. section: 0 - 9
+
+hrc_dose_extract_stat_data_month.py
+-----------------------------------
+This script computes statistics for the data of given month/year and append to the database.
+
+Input:
+	year and month
+
+Output:
+in data_out:
+	hrci_dff_out:                hrc i monthly history
+	hrci_acc_out:                hrc i cumulative history
+	hrcs_dff_out:                hrc s monthly history
+	hrcs_acc_out:                hrc s cumulative history
+
+in data_out_hrc  
+	hrci_<section>_dff:	     hrc i <section> monthly
+	hrci_<section>_acc:	     hrc i <section> cumulative
+	hrcs_<section>_dff:	     hrc s <section> monthly
+	hrcs_<section>_acc:	     hrc s <section> cumulative
+
+hrc_dose_plot_exposure_stat.py
+------------------------------
+This script reads hrc database, and plot history of exposure.
+
+Input:
+	indir: a directory path to the data directory (data_out)
+	outdir: a direcotry path to the plot despository (plot_dir)
+	indir2: a directory path to full data directory (data_out_hrc)
+	outdir2: a directory path to the plot depository (plot_dir)
+
+Output:
+in plot_dir:
+	hrci.png:		   hrc i plot
+	hrcs.png:		   hrc s plot
+	hrci_<section>.png:	   hrc i plot for <section>
+	hrcs_<section>.png:	   hrc s plot for <section>
+
+hrc_dose_create_image.py
+------------------------
+This script creates image maps for a given month/year.
+
+Input:
+	year and month
+
+Output:
+in img_dir:
+	HRCI_<month>_<year>.png			hrc i image for <month> <year>
+	HRCS_<month>_<year>.png			hrc s image for <month> <year>
+	HRCI_08_1999_<month>_<year>.png		hrc i cumulative image for <month> <year>
+	HRCS_08_1999_<month>_<year>.png		hrc s cumulative image for <month> <year>
+
+hrc_dose_make_data_html.py
+--------------------------
+This script reads hrc database, and create html page.
+
+Input:
+	indir: a directory path to the data directory (data_out)
+	outdir: a direcotry path to the plot despository (plot_dir)
+	indir2: a directory path to full data directory (data_out_hrc)
+	outdir2: a directory path to the plot depository (plot_dir)
+
+Output:
+in data_out:
+	hrci.html:		    hrc i html page
+	hrcs.html:		    hrc s html page
+in data_out_hrc:
+	hrcs_<section>.html:	     hrc s <section> monthly html page
+	hrcs_<section>.html:	     hrc s <section> cumulative html page
+
+hrc_dose_plot_monthly_report.py
+-------------------------------
+This script creates a plot for monthly report.
+
+Input:
+	none, but will read from data_out directory
+
+Output:
+in imag_dir:
+	hrc_max_exp.png
+
+
+++++++++++++++++++++++++++
+Common function depository
+++++++++++++++++++++++++++
+
+exposureFunctions.py
+--------------------
+This script depositry contains several different  subscripts.
+readExpData:	read data from acis/hrc history data files
+clean_data:	clean up and correct ACIS/HRC data. if there is duplicated line, remove it. if there are missing line add on
+combine_image:  combine two fits image files.
+create_image:	create image file according to instruction
+make_month_list:create an appropriate month list for a given conditions
+
+---------------------------------------------------------------------
+The following three are kept in mta_dir (not all functions are used)
+---------------------------------------------------------------------
+
+mta_convert_fits_to_image.py
+----------------------------
+This script creates an iamge map for a given fits file, and save in a given format (e.g.png). 
+
+Input:     
+	infile     # input fits file name
+    	outfile    # output png file name without a suffix
+    	scale      # scale of the output image; log, linear, or power
+    	size       # size of the output image; format: 125x125 --- no contorl of size on ps and jpg file
+    	color      # color of the output image: hear, rainbow1 etc. default is grey
+                 	to see which color is available, type: 'ls /home/ascds/DS.release/data/*.lut'
+    	type       # image type: ps, png, jpg, or png
+
+Output:
+	outfile.<type>
+
+mta_common_funcitons.py
+-----------------------
+chkNumeric:	checkin entry is numeric value
+chkFile:   	check whether a file/directory exits in the directory given, 
+useArcrgl: 	extract data using arg4gl
+useDataSeeker:  extract data using dataseeker 
+
+convertTimeFormat.py
+--------------------
+this file contains functions related time format conversions.
+
+dateFormatCon:		convert various date format into a tuple of (year, month, day, hours, minutes, second, ydate)
+dateFormatConAll: 	equivalent of dateFormatCon, but also add dom and seconds from Jan 1, 1998
+findDOM:		find Chandra Days of Mission (DOM) 
+DOMtoYdate:		change time fromat from DOM to Year and Ydate
+changeMonthFormat:	change month format from digit to letter or letter to digit
+findYearDate:		for a given year, month, and date, return year date
+convertDateToCTime:	for a given time (in various format), return time passed from Jan 1, 1998 
+convertDateToTime2:	for a given year, month, date, hours, minutes, and seconds, return time passed from Jan 1, 1998
+changeYdateToMonDate:	for a given year and year date, return month and month date
+convertCtimeToYdate:	convert time in seconds from Jan 1 1998 to year:ydate:hour:minutes:seconds format
+axTimeMTA:		a simple version of axTime3
+currentTime:		give back the current time in UTC, Local, Display, and sec1998 format
+
+
++++++++++++++++++++
+Directory settings
++++++++++++++++++++
+
+The following two files specify the directory paths in the script. They are kept in
+/data/mta/Script/Exposure/house_keeping2.
+
+acis_dir_list :
+--------------
+/data/mta/Script/Exposure/house_keeping2/'             :hosue_keeping
+/data/mta/Script/Exposure/Scripts/ACIS_Scripts/'       :bin_dir
+/data/mta/Script/Exposure/house_keeping2/Info_dir/'    :bindata_dir
+/data/mta/www/mta_max_exp_py/'                         :web_dir
+/data/mta/www/mta_max_exp_py/Data/'                    :data_out
+/data/mta/www/mta_max_exp_py/Plots/'                   :plot_dir
+/data/mta/www/mta_max_exp_py/Images/'                  :img_dir
+/data/mta/www/mta_max_exp_py/Month/'                   :mon_dir
+/data/mta/www/mta_max_exp_py/Cumulative/'              :cum_dir
+/data/mta/Script/Python_script/'		       :mta_dir
+
+hrc_dir_list 
+------------
+/data/mta/Script/Exposure/house_keeping2/'             :hosue_keeping
+/data/mta/Script/Exposure/Scripts/HRC_Scripts/'        :bin_dir
+/data/mta/Script/Exposure/house_keeping2/Info_dir/'    :bindata_dir
+/data/mta/www/mta_max_exp_py/'                         :web_dir
+/data/mta/www/mta_max_exp_py/Data/'                    :data_out
+/data/mta/www/mta_max_exp_py/HRC/Data/'                :data_out_hrc
+/data/mta/www/mta_max_exp_py/Plots/'                   :plot_dir
+/data/mta/www/mta_max_exp_py/Images/'                  :img_dir
+/data/mta/www/mta_max_exp_py/Month/'                   :mon_dir
+/data/mta/www/mta_max_exp_py/Cumulative/'              :cum_dir
+/data/mta/www/mta_max_exp_py/Month_hrc/'               :mon_dir_hrc
+/data/mta/www/mta_max_exp_py/Cumulative_hrc/'          :cum_dir_hrc
+/data/mta/Script/Exposure/Hrc_py/'                     :hrc_full_data
+/data/mta/Script/Exposure/Hrc_py/Month_hrc/'           :mon_dir_hrc_full
+/data/mta/Script/Exposure/Hrc_py/Cumulative_hrc/'      :cum_dir_hrc_full
+/data/mays/MTA/Exposure/Hrc_py/'                       :mays_dir
+/data/mta/Script/Python_script/'		       :mta_dir
+
+
++++++++++++++++++
+Extra file needed
++++++++++++++++++
+
+The following file is a template for the main html page.
+
+/data/mta/Script/Exposure/house_keeping2/exposure.html
+
+
+

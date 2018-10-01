@@ -1,0 +1,1 @@
+/data/mta4/CVS_test/Weekly_report/weekly_telem.pro

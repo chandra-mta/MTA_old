@@ -1,0 +1,16 @@
+cd /data/mta/Script/Disk_check/Exc
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:"
+
+
+/data/mta/Script/Disk_check/Scripts/disk_space_run_dusk.py
+/data/mta/Script/Disk_check/Scripts/disk_space_read_dusk.py
+
+/data/mta/Script/Disk_check/Scripts/update_html_page.py
+
+rm -rf /data/tma/Script/Disk_check/Scripts/Exc/dusk*
+
+chgrp mtagroup /data/mta_www/mta_disk_space/Figs/*
+chgrp mtagroup  /data/mta/Script/Disk_check/Data/*
+chgrp mtagroup  /data/mta/Script/Disk_check/Exc/*
+

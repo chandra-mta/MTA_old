@@ -1,0 +1,27 @@
+
+##############################
+compare_database_and_update.py
+##############################
+
+This script compares the current mta limit data base to glimmon and update the former
+
+-----
+Data:
+-----
+/data/mta4/MTA/data/op_limits/op_limits.db      --- the current mta limit database
+glimmondb.sqlite3                               --- glimmon sqlite database
+
+Note:
+Currently, we need to download glimmondb.sqlite3 from:
+
+    http://occweb.cfa.harvard.edu/twiki/ChandraCode/G_LIMMONSQLite3Database
+
+If you like to know how to use  glimmon database, please reffer to the above site.
+
+Currently it is saved in: /proj/sot/ska/data/glimmon_archive/glimmondb.sqlite3, but
+only can be seen from GRETA network (email from M. Dahmer 03/01/16)
+
+-------
+Output:
+-------
+op_limits.db    --- updated mta limit database locally saved

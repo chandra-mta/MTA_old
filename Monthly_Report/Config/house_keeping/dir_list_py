@@ -1,0 +1,7 @@
+'/data/mta/Script/Month/Config/Scripts/'        : bin_dir
+'/data/mta/MTA/data/'                           : bin_data
+'/data/mta/Script/Month/Config/Data/'           : data_dir
+'/data/mta/Script/Month/Config/house_keeping/'  : house_keeping
+'/data/mta/Script/Month/Config/Exc/'            : exc_dir
+'/data/mta/Script/Python_script2.7/'            : mta_dir
+'/usr/local/bin/'                               : op_dir

@@ -1,0 +1,12 @@
+source /home/mta/.ascrc
+
+cd /data/mta/Script/Exposure/Exc
+
+rm -rf param
+mkdir param
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:$PYTHONPATH"
+
+/data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_prep_test.py
+/data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_dose_control.py test
+/data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_dose_plot_exposure_stat.py test

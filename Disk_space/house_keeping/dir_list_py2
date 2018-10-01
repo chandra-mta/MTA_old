@@ -1,0 +1,8 @@
+'/data/mta/Script/Disk_check/Temp2/'               :bin_dir
+'/data/mta/Script/Disk_check/house_keeping/'      :house_keeping
+'/data/mta/Script/Python_script/'                 :mta_dir
+'/data/mta/Script/Disk_check/Temp2/Exc/'   	  :run_dir
+'/data/mta/Script/Disk_check/Temp2/Data/'   	  :data_out
+'/data/mta/Script/Disk_check/Temp2/Web_dir/'       :web_dir
+'/data/mta/Script/Disk_check/Temp2/Web_dir/Figs/'  :fig_out
+'/data/fido/censka/bin/'                           :op_dir

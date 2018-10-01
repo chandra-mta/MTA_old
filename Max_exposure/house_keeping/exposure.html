@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+        <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
+        <link rel="stylesheet" type="text/css" href="http://asc.harvard.edu/mta/REPORTS/Template/mta.css" />
+        <style  type='text/css'>
+        table{border-style:solid;border-spacing:8px;border-width:2px;border-collapse:separate;text-align:center}
+        td{text-align:center;padding:8px}
+        a:link {color:#00CCFF;}
+        a:visited {color:yellow;}
+        span.nobr {white-space:nowrap;}
+        </style>
+	<title>Telemetered Photon Dose Trends</title>
+
+<script language="JavaScript">
+    function MyWindowOpener(imgname) {
+        msgWindow=open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=yes,status=no,width=820,height=920,resize=yes");
+        msgWindow.document.close();
+        msgWindow.document.write("<html><head><title>CTI plot:   "+imgname+"</title></head>");
+        msgWindow.document.write("<body bgcolor='white'>");
+        msgWindow.document.write("<img src='./"+imgname+"' border=0 width=800 height=900></body></html>");
+        msgWindow.focus();
+    }
+</script>
+
+
+
+
+
+</head>
+
+
+<body style="color:#FFFFFF;background-color:#000000">
+<h1 style='text-align:center;margin-left:auto;margin-right:auto'>
+Telemetered Photon Dose Trends
+</h1>
+
+<h2>ACIS</h2>
+
+<p>
+To monitor accumulative exposure effects on ACIS, we created
+cumulative exposure map once a month from all observations, including cariblations,
+using evt2 data of that month. This map is added on  all previous exposure
+maps, and then statistics of the total exposure map is computed.
+</p>
+<p>
+Following steps are taken to get the results
+</p>
+<ul>
+<li> Level 1 Event files for a specified month are obtained from archive.</li>
+<li> Image data including I2, I3, S2, S3 CCDs  are  extracted from all event files.</li>
+<li> All the extracted image data were merged to create a month long exposure map for the month.</li>
+<li> If the observation is high data drop rate(see 
+		<a href=http://cxc.harvard.edu/mta_days/mta_max_exp/high_drop_rate_list.html>high drop rate</a>)
+     the dropped part of the exposure was estimated and added back into the observations.</li>
+<li> The exposure map is opened with ds9, and check a distribution of count rates against energy.
+     From this, estimate the upper threshold value. Any events beyond this upper threshold are
+     assumed erroneous events such as bad pixels.</li>
+<li> Using this upper threshold, the data is filtered, and create a cleaned exposure map for the month.</li>
+<li> The exposure map from each month from the Jul 1999 is added up to create  a cumulative exposure
+     map for each month.</li>
+<li> Using fimgstatistic, we compute count rate statistics for each CCDs.</li>
+<li> For observations with high data drop reates (e.g., Crab nebula, Cas A), we corrected the observations
+     by adding events.</li>
+</ul>
+<p>
+Following plots show trend of average, minimum, 10th brightest, and maximum dose for ACIS I and ACIS S.
+The plots on the left are trends of the average, minimun, 10th brightest, and maximum
+counts of an exposure map for each month.
+The plots on rights are trends of  the counts of  cumulative exposure maps from the begining
+of the Chandra observations (each month exposure map is added on to the
+previous all exposure maps).
+</p>
+
+<!--
+<P style='padding-bottom:20px'>
+If you open the "Data" file, you can also view a cumulative exposure map of the month
+by clicking "map". If you need, you can obtain a fits file for the month by clicking
+"fits".
+</P>
+-->
+
+<table border=0 style='border:0px black;'>
+<tr>
+<th width=50%>
+<strong style='text-aligh:left'>I 3</strong>
+<br />
+<a href="javascript:MyWindowOpener('./Images/ACIS_07_1999_#MON#_#YEAR#_i3.png')">
+<img src='./Images/ACIS_07_1999_#MON#_#YEAR#_i3.png' style='width:80%'>
+</a>
+</th>
+<th>
+<table border=1 style='font-size:110%;'>
+<tr>
+<th colspan=4>Plots</th>
+</tr><tr>
+<th>ACIS I2</th>
+<th>ACIS I3</th>
+<th>ACIS S2</th>
+<th>ACIS S3</th>
+</tr><tr>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_2_n_0.png')"> Node 0 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_3_n_0.png')"> Node 0 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_2_n_0.png')"> Node 0 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_3_n_0.png')"> Node 0 </a> </td>
+</tr><tr>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_2_n_1.png')"> Node 1 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_3_n_1.png')"> Node 1 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_2_n_1.png')"> Node 1 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_3_n_1.png')"> Node 1 </a> </td>
+</tr><tr>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_2_n_2.png')"> Node 2 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_3_n_2.png')"> Node 2 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_2_n_2.png')"> Node 2 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_3_n_2.png')"> Node 2 </a> </td>
+</tr><tr>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_2_n_3.png')"> Node 3 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/i_3_n_3.png')"> Node 3 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_2_n_3.png')"> Node 3 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/s_3_n_3.png')"> Node 3 </a> </td>
+</tr><tr>
+</table>
+</th>
+</tr>
+</table>
+<div style='padding-bottom:60px;padding-left:60px'>
+</div>
+
+
+<table border=0 style='border:0px black;'>
+<tr>
+<th width=50%>
+<strong style='text-aligh:left'>S 3</strong>
+<br />
+<a href="javascript:MyWindowOpener('./Images/ACIS_07_1999_#MON#_#YEAR#_s3.png')">
+<img src='./Images/ACIS_07_1999_#MON#_#YEAR#_s3.png' style='width:80%'>
+</a>
+</div>
+</th>
+<th>
+<table border=1 style='font-size:110%;'>
+<tr>
+<th colspan=4>Data</th>
+</tr><tr>
+<th>ACIS I2</th>
+<th>ACIS I3</th>
+<th>ACIS S2</th>
+<th>ACIS S3</th>
+</tr><tr>
+<td><a href=./Data/i_2_n_0.html>Node 0</a></td>
+<td><a href=./Data/i_3_n_0.html>Node 0</a></td>
+<td><a href=./Data/s_2_n_0.html>Node 0</a></td>
+<td><a href=./Data/s_3_n_0.html>Node 0</a></td>
+</tr><tr>
+<td><a href=./Data/i_2_n_1.html>Node 1</a></td>
+<td><a href=./Data/i_3_n_1.html>Node 1</a></td>
+<td><a href=./Data/s_2_n_1.html>Node 1</a></td>
+<td><a href=./Data/s_3_n_1.html>Node 1</a></td>
+</tr><tr>
+<td><a href=./Data/i_2_n_2.html>Node 2</a></td>
+<td><a href=./Data/i_3_n_2.html>Node 2</a></td>
+<td><a href=./Data/s_2_n_2.html>Node 2</a></td>
+<td><a href=./Data/s_3_n_2.html>Node 2</a></td>
+</tr><tr>
+<td><a href=./Data/i_2_n_3.html>Node 3</a></td>
+<td><a href=./Data/i_3_n_3.html>Node 3</a></td>
+<td><a href=./Data/s_2_n_3.html>Node 3</a></td>
+<td><a href=./Data/s_3_n_3.html>Node 3</a></td>
+</tr>
+</table>
+</th>
+</tr>
+</table>
+<div style='padding-bottom:60px;padding-left:60px'>
+</div>
+
+<hr />
+
+<h2>HRC</h2>
+<p>
+To monitor accumulative exposure effects on HRC, we created
+cumulative exposure maps of HRC using evt1 data of each month. 
+</p>
+<p>
+Following steps are taken to get the results
+</p>
+<ul>
+<li> Level 1 Event files for a specified month are obtained from archive.</li>
+<li> All the extracted image data were merged to create a month long exposure map for the month.
+     Not like ACIS, we did not screen out any data points.</li>
+</ul>
+<p>
+Following plots show trend of average, maximum, and 10th brightest dose for HRC I and HRC S.
+The plots on the left are  thoese of each month, and the plots on the right are 
+cumulative exposure maps from the begining of the Chandra observations.
+</p>
+
+
+<h3>HRC I</h3>
+<table border=0 style='border:0px black;'>
+<tr>
+<th width=50%>
+<div style='text-align:center'>
+<a href="javascript:MyWindowOpener('./Images/HRCI_08_1999_#MON#_#YEAR#.png')">
+<img src = './Images/HRCI_08_1999_#MON#_#YEAR#.png' style='width:80%;'>
+</a>
+</div>
+</th>
+<th>
+<a href="javascript:MyWindowOpener('./Plots/hrci.png')">
+<img src = './Plots/hrci.png' style='width:95%'>
+</a>
+<p style='text-align:center'>
+<a href='./Data/hrci.html' style='font-size:150%'><strong>HRC I Data</strong></a>
+</p>
+</th>
+</tr>
+</table>
+
+
+<h3>HRC S</h3>
+<table border=0 style='border:0px black;'>
+<tr>
+<th width=50%>
+<div style='text-align:center'>
+</p>
+<a href="javascript:MyWindowOpener('./Images/HRCS_08_1999_#MON#_#YEAR#.png')">
+<img src = './Images/HRCS_08_1999_#MON#_#YEAR#.png' style='width:80%;'>
+</a>
+</div>
+</th>
+<th>
+<a href="javascript:MyWindowOpener('./Plots/hrcs.png')">
+<img src = './Plots/hrcs.png' style='width:95%;'>
+</a>
+<p style='text-align:center'>
+<a href='./Data/hrcs.html' style='font-size:150%'><strong>HRC S Data</strong></a>
+</th>
+</tr>
+</table>
+
+<!--
+<h2> HRC Exposre Maps --- Sectioned Entire HRC --- </h2>
+
+<br /><br />
+<div>
+<h3>HRC I</h3>
+<center>
+<img src="./Plots/Structures/hrci_structure.gif" style='width:30%'>
+</center>
+<h3>HRC S</h3>
+<center>
+<img src="./Plots/Structures/hrcs_structure.gif" style='width:65%'>
+</center>
+</div>
+
+
+
+
+<br><br>
+<h2>HRC I</h2>
+
+<table border=1 cellspacing=5 cellpadding=20>
+<tr>
+<th>Plot</th>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_0.png')"> Section 0 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_1.png')"> Section 1 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_2.png')"> Section 2 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_3.png')"> Section 3 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_4.png')"> Section 4 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_5.png')"> Section 5 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_6.png')"> Section 6 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_7.png')"> Section 7 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_8.png')"> Section 8 </a> </td>
+</tr><tr>
+<th>Data</th>
+<td><a href='./Data_HRC_Full/hrci_0.html'>Section 0</a></td>
+<td><a href='./Data_HRC_Full/hrci_1.html'>Section 1</a></td>
+<td><a href='./Data_HRC_Full/hrci_2.html'>Section 2</a></td>
+<td><a href='./Data_HRC_Full/hrci_3.html'>Section 3</a></td>
+<td><a href='./Data_HRC_Full/hrci_4.html'>Section 4</a></td>
+<td><a href='./Data_HRC_Full/hrci_5.html'>Section 5</a></td>
+<td><a href='./Data_HRC_Full/hrci_6.html'>Section 6</a></td>
+<td><a href='./Data_HRC_Full/hrci_7.html'>Section 7</a></td>
+<td><a href='./Data_HRC_Full/hrci_8.html'>Section 8</a></td>
+</tr>
+</table>
+
+
+<br><br>
+
+<h2>HRC S</h2>
+
+<table border =1 cellspacing=5 cellpadding=20>
+<tr>
+<th>Plot</th>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrci_0.png')"> Section 0 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_1.png')"> Section 1 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_2.png')"> Section 2 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_3.png')"> Section 3 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_4.png')"> Section 4 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_5.png')"> Section 5 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_6.png')"> Section 6 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_7.png')"> Section 7 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_8.png')"> Section 8 </a> </td>
+<td> <a href="javascript:MyWindowOpener('./Plots/hrcs_9.png')"> Section 9 </a> </td>
+</tr><tr>
+<th>Data</th>
+<td><a href='./Data_HRC_Full/hrcs_0.html'>Section 0</a></td>
+<td><a href='./Data_HRC_Full/hrcs_1.html'>Section 1</a></td>
+<td><a href='./Data_HRC_Full/hrcs_2.html'>Section 2</a></td>
+<td><a href='./Data_HRC_Full/hrcs_3.html'>Section 3</a></td>
+<td><a href='./Data_HRC_Full/hrcs_4.html'>Section 4</a></td>
+<td><a href='./Data_HRC_Full/hrcs_5.html'>Section 5</a></td>
+<td><a href='./Data_HRC_Full/hrcs_6.html'>Section 6</a></td>
+<td><a href='./Data_HRC_Full/hrcs_7.html'>Section 7</a></td>
+<td><a href='./Data_HRC_Full/hrcs_8.html'>Section 8</a></td>
+<td><a href='./Data_HRC_Full/hrcs_9.html'>Section 9</a></td>
+</tr>
+</table>
+-->
+
+<hr />
+
+<p>
+Last Update: #DATE#
+</p>
+<p style='padding-bottom:10px;'>
+If you have any questions about this page, please contact <a href='tisobe@cfa.harvard.edu'>tisobe@cfa.harvard.edu</a>.
+
+</body>
+</html>

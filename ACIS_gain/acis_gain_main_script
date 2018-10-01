@@ -1,0 +1,11 @@
+cd /data/mta/Script/ACIS/Gain/Exc/
+
+rm -rf /data/mta/Script/ACIS/Gain/Exc/param
+mkdir  /data/mta/Script/ACIS/Gain/Exc/param
+
+setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:"
+
+/data/mta/Script/ACIS/Gain/Script/acis_gain_extract_data.py    live
+/data/mta/Script/ACIS/Gain/Script/acis_gain_plot_trend.py
+/data/mta/Script/ACIS/Gain/Script/acis_gain_update_html.py
+

@@ -1,0 +1,4 @@
+source /proj/sot/ska/bin/ska_envs.csh
+
+cd /data/mta/Script/Month/
+/data/mta/Script/Month/Scripts/create_monthly.py

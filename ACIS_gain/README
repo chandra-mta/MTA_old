@@ -1,0 +1,71 @@
+++++++++++++++++
+ACIS Gain Trend
+++++++++++++++++
+
+This directory holds scripts to extract and compute acis gain, and plot the trend.
+
+Dir: /data/mta/Script/ACIS/Gain/ 
+See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_acis_gain.html
+
+Directories
++++++++++++++
+"/data/mta/www/mta_acis_gain/"                  : web_dir           --- where the wab pages are kept
+"/data/mta/Script/ACIS/Gain/Data/"              : data_dir          --- where the data are kept
+"/data/mta/Script/ACIS/Gain/Exc/"               : exc_dir           --- where the programs are run
+"/data/mta/Script/ACIS/CTI/Data/Results/"       : cti_dir           --- cti data are kept here
+"/data/mta/Script/ACIS/Gain/house_keeping/"     : house_keeping     --- house hold directory
+"/data/mta/Script/Python_script2.7/"            : mta_dir           --- mta related python script 
+"/data/mta/Script/ACIS/Gain/Script/"            : bin_dir           --- this direcotry
+"/data/mta/MTA/data/"                           : bin_data          --- bin data 
+
+
+Scripts
+++++++++
+
+acis_gain_wrap_script       intial environment setting script
+acis_gain_main_script       tsh script to run all script
+
+acis_gain_wrap_script_test  intial environment setting script for test
+acis_gain_main_script_test  tsh script to run test
+
+acis_gain_extract_data.py
+-------------------------
+extract gain data from acis evt1 files.
+
+input: as an argv, if you give "live",  the data from the last month will be used.
+                   if you give <year> <month>,  the data from the specifict year/month will be used.
+       if you run this script  without argv, a test will be run.
+
+other data needed:
+    /data/mta/Script/ACIS/CTI/Data/Results/ti_ccd<ccd#>     ---- find which one is < -119.7C
+
+    arc4gl --- acis evt1 files 
+
+output:
+    /data/mta_www/mta_acis_gain/Data/ccd<ccd#>_<quad#>
+
+acis_gain_plot_trend.py
+------------------------
+plotting gain and offset trends
+
+input: /data/mta_www/mta_acis_gain/ccd<ccd#>_<quad#>
+
+output: /data/mta_www/mta_acis_gain/Plot/gain_plot_ccd<ccd#>.png
+        /data/mta_www/mta_acis_gain/Plot/offset_plot_ccd<ccd#>.png
+
+
+acis_gain_update_html.py
+------------------------
+update the main html page and data tables  
+
+input: <hosue_keeping>/acis_gain.html
+
+output: <web_dir>/acis_gain.html
+
+
+
+
+
+Cron Job
+0 3 3 * *  cd /data/mta/Script/ACIS/Gain/Exc; /data/mta/Script/ACIS/Gain/Script/acis_gain_wrap_script >> $HOME/Logs/acis_gain.cron
+
