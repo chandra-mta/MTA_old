@@ -1,6 +1,28 @@
+This repository contains the sets of scripts related to Monitoring and Trending Analysis.
 
-This repository contains the sets of scripts related to Monitoring and Trending Analysis. 
+Each set of scripts has a Makefile and before rebuilding the directories, update the following variables (not always contain all or you may find extras) at the first part of Makefile.
 
+    TASK:    task name;  the script will be kept there
+    ROOT:    main script directory
+    WEB:     main web directory
+    WDIR:    the directory where the HTML pages will be kept
+    NHTML:   the HTML address
+    NBIN:    extra scripts are kept here
+    NBDATA:  special shared data are kept here
+    NPYTHON: python path
+
+After updating Makefile, simply run "make" command. It will create directories:
+
+    <ROOT>/<TASK>/Script
+    <ROOT>/<TASK>/Data
+    <ROOT>/<TASK>/Exc       (some may not have this)
+    <WEB>/<TASK>/
+
+The data directory is usually empty, and you may need to copy data from elsewhere if the scripts need past data.
+
+===============
+List of Scripts
+===============
 
 Abs_pointing    --- celestial location monitoring routine
 ACE_GOES_data   --- import ACE and GOES data from NOAA and extracts data
