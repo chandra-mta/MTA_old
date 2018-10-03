@@ -6,7 +6,7 @@
 #                                                                                                           #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
 #                                                                                                           #
-#           Last Update: Jul 27, 2018                                                                       #
+#           Last Update: Oct 03, 2018                                                                       #
 #                                                                                                           #
 #############################################################################################################
 
@@ -1014,6 +1014,18 @@ def set_trend_data_input(tdate):
     hdata = [line.strip() for line in f.readlines()]
     f.close()
 #
+#--- read group display name
+#
+    file = tdir + '/Headers/group_name'
+    f= open(file, 'r')
+    out = [line.strip() for line in f.readlines()]
+    f.close()
+    g_dict = {}
+    for ent in out:
+        atemp = re.split(':', ent)
+        g_dict[atemp[0]] = atemp[1]
+
+#
 #--- create a dictionary which contains table name (e.g.acistemp.html) as key
 #--- and head lines as data
 #
@@ -1038,35 +1050,16 @@ def set_trend_data_input(tdate):
     out = '' 
     for ent in data:
         atemp     = re.split('<>', ent)
+        btemp     = re.split('.html', atemp[0])
+        group     = btemp[0]
         msid_list = re.split(':', atemp[1])
 #
 #--- read the current data from the web page
 #
-        infile    = d_dir + atemp[0]
-        f         = open(infile, 'r')
-        tdata     = [line.strip() for line in f.readlines()]
-        f.close()
-
-        btemp     = re.split('.html', atemp[0])
-#
-#--- extract the data corresponds to the given msid and save it
-#
-        save = hdict[btemp[0]]
-        for msid in msid_list:
-            chk = 0
-            for line in tdata:
-                if chk == 0:
-                    mc  = re.search(msid, line)
-                    if mc is not None:
-                        save = save +  line + '\n'
-                        chk += 1
-                else:
-                    save = save + line + '\n'
-                    chk += 1
-                    if chk >= 7:
-                        break
-        out = out + save
-        out = out + '</table>\n</ul >\n<br />\n\n\n'
+        disp = g_dict[group]
+        save =  create_html_table(group, disp,  msid_list)
+        out  = out + save
+        out  = out + '</table>\n</ul >\n<br />\n\n\n'
 
     return out
 
@@ -1242,6 +1235,94 @@ def find_date_and_year_for_report():
 
     return [date, year]
 
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+
+def create_html_table(group, disp, msid_list):
+    """
+    create table msid entries of the group
+    input:  group       --- group name
+            disp        --- dispaly name
+            msid_list   --- a list of msid in the group
+    output: hline       --- html table elements
+    """
+#
+#--- check whether this is the sun angle group
+#
+    mc     = re.search('att', group)
+    if mc is not None:
+        att = 1
+        group = group.replace('_att', '')
+    else:
+        att = 0
+
+    group  = group.lower()
+    cgroup = group.capitalize()
+#
+#--- set a path and html link to the main page
+#
+    if att == 0:
+        ifile = '/data/mta4/www/MSID_Trends/' + cgroup + '/' + group + '_mid_static_long_main.html'
+        hgrp  = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends/' + cgroup + '/' + group + '_mid_static_long_main.html'
+    else:
+        ifile = '/data/mta4/www/MSID_Trends/' + cgroup + '/' + group + '_mid_long_sun_angle.html'
+        hgrp  = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends/' + cgroup + '/' + group + '_mid_long_sun_angle.html'
+
+    hline = '<ul><li><h3><a href="' + hgrp + '">' + disp + '</a></h3></li></ul>\n'
+    hline = hline + '<table border=1 cellpadding=3 cellspacing=2 style="margin-left:auto;margin-right:auto;text-align:center;">\n'
+    if att == 0:
+        hline = hline + '<th>MSID</th><th>Mean</th><th>RMS</th><th>Delta/Yr</th>'
+        hline = hline + '<th>Delta/Yr/Yr</th><th>Unit</th><th>Description</th>\n'
+    else:
+        hline = hline + '<tr><th colspan=10>Select msid to open the Sun Angle Page</th></tr>\n'
+
+    f     = open(ifile, 'r')
+    data  = [line.strip() for line in f.readlines()]
+    f.close()
+
+    ccnt = 0
+    for msid in msid_list:
+        msid = msid.lower()
+#
+#--- normal msid case
+#
+        if att == 0:
+            for ent in data:
+                mc = re.search(msid, ent)
+                if mc is None:
+                    continue
+    
+                atemp = re.split('</th>', ent)
+                btemp = re.split('"',  atemp[0])
+                html  = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends/' + cgroup + '/' 
+                html  = html + msid.capitalize()  + '/' + msid + '_mid_static_long_plot.html' 
+    
+                hline = hline + '<tr><th><a href="javascript:WindowOpener3(\''+  html + '\')">' + msid + '</th>'
+                btemp = re.split('<th', atemp[1])
+                hline = hline + btemp[0] + '</tr>\n'
+                break 
+#
+#--- sun angle has a special way to display the table
+#
+        else:
+            for ent in data:
+                mc = re.search(msid, ent)
+                if mc is None:
+                    continue
+                html  = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends/' + cgroup + '/' 
+                html  = html + msid.capitalize()  + '/' + msid + '_mid_long_sun_angle.html' 
+
+                hline = hline + '<th><a href="javascript:WindowOpener3(\''+  html + '\')">' + msid + '</th>\n'
+            ccnt += 1
+            if ccnt >= 10:
+                hline = hline + '</tr>\n<tr>\n'
+                ccnt = 0
+    if att == 1:
+        hline = hline + '</tr>\n'
+
+    return hline
+
 
 #------------------------------------------------------------------------------------------
 
@@ -1264,4 +1345,3 @@ if __name__ == "__main__":
         [date, year] = find_date_and_year_for_report()
         print "Weekly Report Date: " + str(year) + ' / ' + str(date)
         create_weekly_report(date, year, debug = debug)
-
