@@ -37,17 +37,6 @@ function WindowOpener1(imgname, plttitle) {
         msgWindow.document.close();
         msgWindow.focus();
 }
-
-function WindowOpener3(imgname) {
-    msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=yes,status=no,,width=1000,height=1500,resize=no");
-    msgWindow.document.clear();
-    msgWindow.document.write("<html><title>Trend plot:   "+imgname+"</TITLE>");
-    msgWindow.document.write("<body bgcolor='black'>");
-    msgWindow.document.write("<iframe src='" +imgname+ "' border =0 width=980 height=1480><p></p></body></html>")
-    msgWindow.document.close();
-    msgWindow.focus();
-}
-
 function ViewPlots1(imgnames, plttitles) {
         pltWindow = open("","mag_i_avgs","scrollbars=yes,menubar=yes,width=680,height=640");
         pltWindow.document.close();
@@ -151,21 +140,19 @@ var load  = window.open("'https://cxc.cfa.harvard.edu/mta/REPORTS/MONTHLY/'+Year
     <li>  <a href="#CTI">CTI </a> </li>
     <li>  <a href="#FPT">Focal Plane Temperature</a> </li>
     <li>  <a href="#bad_pix">Bad Pixels</a> </li>
+    <li>  <a href="#cpix">Corner Pixels</a> </li>      		<!-- JAN/JUL REPORT -->
+    <li>  <a href="#bias">Bias Plots</a> </li>     	        <!-- JAN/JUL REPORT --> 
 </ul>
 
 
 <li> <a href="#HRC">HRC - Dose</a></li>
 
-<li> <a href="#HRMA">HRMA - Focus</a> </li>    			    <!-- FEB/AUG REPORT -->
-
 <li> <a href="#Grat">Gratings - Focus</a> </li>
-
 
 <li>  <a href="#PCAD">PCAD</a> </li>
 <ul class='short'>
     <li><a href="#ACA">ACA Trending</a> </li>
     <li> <a href="#iru">Gyro bias drift</a> </li>
-    <li> <a href="#CLM">Science Instrument Positional Change Monitoring</a> </li>   	<!-- FEB/AUG REPORT -->
 </ul>
 
 
@@ -209,6 +196,26 @@ Configuration/Radiation Overview for #Month# #YEAR#
 
 
 <div  id='main_area'>
+
+<!---
+####################################################
+##### special note for Mar 2015			####
+####################################################
+-->
+<!--
+<h3>Science Run Interruptions</h3>
+<p>
+Observing stopped by ground activation of SCS-107 at 2015:076:04:34 (UTC).
+<a href='https://cxc.cfa.harvard.edu/mta_days/mta_interrupt/time_order.html'>Radiation Count Rate Plots for Periods Which Interrupted Science Runs</a>).
+</p>
+<p style='text-align:center'>
+<img src='20150317.png' width='80%'>
+<br />
+<br />
+</p>
+
+<hr class='long'>
+-->
 
 <!--
 #################################
@@ -560,7 +567,137 @@ to remove the sources.<br />
 ####     ACIS EXTRA    #####
 ############################
 -->
-<!-- No ACIS Extra this month -->
+
+<!--
+####################################################################
+####      ACIS SIB EXTRA: REPORTED ON MAY/NOV MONTHLY REPORT    ####
+####      PUBLISHED ON JUN/DEC				        ####
+####      filase needed:                                        ####
+####            full_plot_ccd3.png                        ####
+####            full_plot_ccd5.png                        ####
+####            full_plot_ccd7.png                        ####
+####        all from /data/mta_www/mta_sib/Plots/Plot_long_term/####
+####################################################################
+-->
+<p>
+The following three plots show trends of SIB from year 2000. CCDs shown here are CCD3, 
+CCD5, and CCD7. Fitted lines are linear fit after eliminating extreme outliers. 
+For >10 keV plots, 2 lines are fit. One is with a 13 keV filter, and another without.
+</p>
+
+<h4>CCD 3</h4>
+<p class='center'>
+<img src="full_plot_ccd3.png" width='90%'  /><br />			    
+</p>
+<h4>CCD 5</h4>
+<p class='center'>
+<img src="full_plot_ccd5.png" width='90%'  /><br />			
+</p>
+<h4>CCD 7</h4>
+<p class='center'>
+<img src="full_plot_ccd7.png" width='90%'  /><br />			
+</p>
+
+<hr class='short'>
+
+<!-- ### ACIS SIB EXTRA END ### -->
+<!--
+##########################################################################
+####    ACIS CORNER PIXEL TREND: REPORTED ON JAN/JUL MONTHLY REPORT   ####
+####    files needed:                                                 ####
+####            I3cp.gif, S3cp.gif                                    ####
+####    from: /data/mta_www/mta_acis_sci_run/Corner_pix/Trend_Plots/  ####
+##########################################################################
+-->
+<a name="cpix">
+<h3>
+<a href= "/mta_days/mta_acis_sci_run/Corner_pix/cpix.html">ACIS Corner Pixels</a>
+</h3>
+
+<p>
+We plot the average corner pixel centroid slope and mean for ACIS observations. Separate 
+plots are shown for FAINT MODE (3X3) and VFAINT MODE (5X5) observations.
+Metric is the centroid of a Gaussian fit to the histogram of corner pixel PHA values 
+of detected events.
+Plus signs are FAINT observations, diamonds are VFAINT observations,
+and boxes are VFAINT observations with centroids computed using
+only the corner pixels of a 3X3 event island (referred to as AFAINT).
+We see a very small upward trend.
+</p>
+
+
+<h4> CCD:  I3  </h4> 
+<p class='center'>
+<img src="I3cp.gif" style='width:80%' />					
+</p>
+<h4> CCD:  S3  </h4> 
+<p class='center'>
+<img src="S3cp.gif" style='width:80%' />					
+</p>
+
+<div style='padding-bottom:30px'>
+</div>
+
+<hr class='short'>
+
+<!-- ### ACIS CORNER PIX TREND END ### -->
+
+<!--
+##############################################################################
+#####     ACIS BIAS TREND: REPORTED ON JAN/JUL MONTHLY REPORT           ######
+#####     files needed:                                                 ######
+#####       ccd2_oc.png                                                 ######  
+#####       from: /data/mta_www/mta_bias_bkg/Plots/Overclock/ccd2.png   ######
+#####       ccd2_sub.png                                                ######  
+#####       from: /data/mta_www/mta_bias_bkg/Plots/Sub/ccd2.png         ######
+##############################################################################
+-->
+<a name="bias"></a>
+<h3>
+<a href= "/mta_days/mta_bias_bkg/bias_home.html">ACIS Bias Trends</a>
+</h3>
+
+<p>
+The bias plus overclock level was calculated as follows:
+
+<ul>
+<li> Get acisf*bias0.fits is obtained from a database or /dsops/ap/sdp/cache/*/acis/</li>
+<li> Data with timed mode exposure is selected.</li>
+<li> Fits files were divided into 4 quads, then an average of bias level for each quad is computed.</li>
+     No corrections for dead spots, columns etc were included.</li>
+</ul>
+
+CCDS 
+<a href="/mta_days/mta_bias_bkg/Plots/Overclock/ccd0.png">0</a>, 
+<a href="/mta_days/mta_bias_bkg/Plots/Overclock/ccd2.png">2</a> and 
+<a href="/mta_days/mta_bias_bkg/Plots/Overclock/ccd8.png">8</a> 
+are the most extreme. 
+</p>
+
+
+<p>
+An example of Overclock values as reported in FITS file header:
+</p>
+
+<p class='center'>
+<img src="ccd2_oc.png" width='100%' height='100%' /> 
+</p>
+
+<p>
+An example of mean bias minus overclock value:
+</p>
+
+<p class='center'>
+<img src="ccd2_sub.png" width='100%' height='100%' />
+</p>
+
+<hr class='short'>
+
+<!-- ### ACIS BIAS TREND END ### -->
+
+<p class='center'>
+<a href="#TOP">TOP</a>
+</p>
 
 <!-- 
 #########################################################
@@ -714,121 +851,6 @@ in the center of the taps due to bad position information.
 <hr class='long'>
 
 <!--
-########################################################
-#####        HRMA:FOCUS ON FEB/AUG REPORTS       #######
-#####   files needed:                            #######
-#####    tot_all_xy.gif                          #######
-#####    ACIS-I_d_tyear10_psf.gif                #######
-#####    tot_all_d_rnd.gif                       #######
-####     tot_all_t_rnd.gif                       #######
-#####    tot_all_d_ravg.gif                      #######
-#####    tot_all_t_ravg.gif                      #######
-#####    tot_all_d_snr.gif                       #######
-#####    tot_all_t_snr.gif                       #######
-#####    tot_all_rot.gif                         #######
-#####    tot_all_t_rot.gif                       #######
-#####   from:/data/mta4/www/DAILY/mta_src/       #######
-#
-# cp /data/mta4/www/DAILY/mta_src/ACIS-I_d_tyear10_psf.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_xy.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_d_rnd.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_t_rnd.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_d_ravg.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_t_ravg.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_d_snr.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_t_snr.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_rot.gif .
-# cp /data/mta4/www/DAILY/mta_src/tot_all_t_rot.gif .
-# 
-########################################################
--->
-
-<a name="HRMA"></a>
-<h3>
-<a href='https://cxc.cfa.harvard.edu/mta_days/mta_src/'>HRMA Focus</a>
-</h3>
-
-<p>
-Plots below show various characteristics of detected imaging sources. Standard level 2 data products 
-(*src2.fits) are used. Only observations with focus (sim_x) within 0.01 mm of nominal value for given 
-SI configuration are used. Sources are also filtered for strength (SNR > 15).
-</p>
-
-<table>
-<tr>
-    <th>&#160;</th><th width=13%>XY</th><th width=13%>PSF</th><th width=13%>Roundness</th><th width=13%>EE Radius</th><th width=13%>SNR</th><th width=13%>Rotation</th><th width=13%>Rotation2</th>
-</tr>
-<tr>
-<th>ACIS I</th>
-    <td><img src='./HRMA_Plots/Positions/Acis_i/acis_i_sky_position.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Psf/Acis_i/acis_i_dist_psf.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Roundness/Acis_i/acis_i_dist_roundness.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Radius/Acis_i/acis_i_dist_radius.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Snr/Acis_i/acis_i_dist_snr.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Acis_i/acis_i_angd_rotang.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Acis_i/acis_i_dist_rotation.png' style='width:95%;'></td>
-    <tr>
-<th>ACIS S</th>
-    <td><img src='./HRMA_Plots/Positions/Acis_s/acis_s_sky_position.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Psf/Acis_s/acis_s_dist_psf.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Roundness/Acis_s/acis_s_dist_roundness.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Radius/Acis_s/acis_s_dist_radius.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Snr/Acis_s/acis_s_dist_snr.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Acis_s/acis_s_angd_rotang.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Acis_s/acis_s_dist_rotation.png' style='width:95%;'></td>
-</tr>
-<tr>
-<th>HRC I</th>
-    <td><img src='./HRMA_Plots/Positions/Hrc_i/hrc_i_sky_position.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Psf/Hrc_i/hrc_i_dist_psf.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Roundness/Hrc_i/hrc_i_dist_roundness.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Radius/Hrc_i/hrc_i_dist_radius.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Snr/Hrc_i/hrc_i_dist_snr.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Hrc_i/hrc_i_angd_rotang.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Hrc_i/hrc_i_dist_rotation.png' style='width:95%;'></td>
-</tr>
-<tr>
-<th>HRC S</th>
-    <td><img src='./HRMA_Plots/Positions/Hrc_s/hrc_s_sky_position.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Psf/Hrc_s/hrc_s_dist_psf.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Roundness/Hrc_s/hrc_s_dist_roundness.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Radius/Hrc_s/hrc_s_dist_radius.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Snr/Hrc_s/hrc_s_dist_snr.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Hrc_s/hrc_s_angd_rotang.png' style='width:95%;'></td>
-    <td><img src='./HRMA_Plots/Rotation/Hrc_s/hrc_s_dist_rotation.png' style='width:95%;'></td>
-</tr>
-</table>
-
-
-
-
-
-
-
-</ul>
-
-<hr class='short'>
-<p class='center'>
-<a href="#TOP">TOP</a>
-</p>
-<hr class='long'>
-
-<!-- ### HRMA FOCUS END ### -->
-
-<!-- ### SPECIAL HRMA FOCUS CASE. IF THE ABOVE IS AVAILABLE DON'T USE THE FOLLOWING ### -->
-<!-- 
-<h3><a href='/mta_days/mta_grat/Focus'>HRMA Focus</a></h3>
-
-<h3>ACIS HETG</h3>
-<img src='./foc_acis_hetg_streak.gif'>
-<br />
-<h3>ACIS LETG</h3>
-<img src='./foc_acis_letg.gif'>
-<br />
--->
-<!-- END OF SPECIAL HRMA FOCUS CASE -->
-
-<!--
 ###############################
 #####      GRATING      #######
 ###############################
@@ -866,8 +888,6 @@ pages.
 
 </p>
 
-<!--<hr class='short'>-->
-
 <p class='center'>
 <a href="#TOP">TOP</a>
 </p>
@@ -897,6 +917,50 @@ pages.
 
 
 <!--
+##############################################################
+####    ACA TREND: REPORTED ON JAN/JUL MONTHLY REPORT    #####
+####    files needed:                                    #####
+####        MAG_I_AVG_2.png                              #####
+####        MAG_I_AVG_6.png                              #####
+####        MAG_I_AVG_7.png                              #####
+####        MAG_I_AVG_11.png                             #####
+####     from: /data/mta4/www/DAILY/mta_pcad/ACA/TOTAL/Report#
+##############################################################
+-->
+
+<h4>ACIS-1</h4>
+
+<p class='center'>
+<img src="MAG_I_AVG_2.png" /><br />					
+</p>
+
+<h4>ACIS-6</h4>
+
+<p class='center'>
+<img src="MAG_I_AVG_6.png" /><br />					
+</p>
+
+<h4>HRC-I-1</h4>
+
+<p class='center'>
+<img src="MAG_I_AVG_7.png" /><br />					
+</p>
+
+<h4>HRC-S-1</h4>
+
+<p class='center'>
+<img src="MAG_I_AVG_11.png" /><br />				
+</p>
+
+<div style='padding-bottom:20px'>
+</div>
+
+
+<hr class='short'>
+
+<!-- ### ACA TRENDING END ### -->
+
+<!--
 ##################################################
 #####           IRU GYRO BIAS DRIFT          #####
 ##### /data/mta4/www/DAILY/mta_pcad/IRU/Plots ####
@@ -911,68 +975,6 @@ pages.
 <p class='center'>
 <img src="#SMONYR#_bias.png" style='width:70%;text-align:center;' />
 <p>
-
-<hr class='short'>
-
-<!--
-##########################################################################################
-#####     SCIENCE INSTRUMENT POSITIONAL CHANGE: REPORTED ON FEB/AUG MONTHLY REPORT    ####
-#####     PUBLISHED ON MAR/SEP                   				      ####
-#####       files needed:                                                             ####
-#####        acis_point_err.gif, hrc_i_point_err.gif, hrc_s_point_err.gif             ####
-#####       from: /data/mta_www/mta_aiming/Fig_save                                   ####
-##########################################################################################
-
-<!--
-<a name="CLM"></a>
-<h3 style='padding-top:20px'>
-<a href='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/aiming_page.html'>ACIS-S and HRC Celestial Location Monitoring</a>
-</h3>
-<h3> Science Instrument Positional Change Monitoring </h3>
-
-<p>
-The following plots are the difference between coordinates obtained from Chandra observations and those
- obtained from existing catalogs vs time in day of mission.
-
-<p>
-The following steps are taken to generate these plots.
-</p>
-
-<ul class='medium'>
-<li> all observations with grating are selected</li>
-<li> even if the observation is not grating one, if it is a known point source, it is added to the list.</li>
-<li> observed ra, jan, target ra, jan, nominal ra, jan and a ratio of a target elliptical to psf 
-    (psfratio are extracted from src fits files.</li>
-<li> the observations with psfratio smaller than 4 are selected</li>
-<li> the differences between observed coordinates and targeted coordinates (if not available nominal coordinates) are computed</li>
-<li> if the differences are larger than 6 arcsec, the points are dropped</li>
-</ul>
-
-<p class='center'>
-<img src="acis_point_err.gif" width = '600' height='600' />			
-</p>
-
-<p>
-The large dispersion around DOM ~ 2400 (Jan 2005) are all due to  none grating Capella observations.
-Many observations are off-axis observations (e.g., 
-<a href='https://cxc.cfa.harvard.edu/mta_days/mp_reports/events/hrc/6558/hrci_L1_sky_evtmap.png' target='blank'>obsid 6558</a>).
-</p>
-
-<p class='center'>
-<img src="hrc_i_point_err.gif"  width = '600' height='600' /> 			
-</p>
-<p class='center'>
-<img src="hrc_s_point_err.gif"  width = '600' height='600' />			
-<p>
-
-<hr class='short'>
-
-<!-- ### SCIENCE INST POSITIONAL CAHANGE END ### -->
-
-
-<p class='center'>
-<a href="#TOP">TOP</a>
-</p>
 <hr class='long'>
 
 <!--
@@ -984,12 +986,9 @@ Many observations are off-axis observations (e.g.,
 
 <a name="RADT"></a>
 <h3>
-<!--<a href='/mta/DAILY/mta_rad/rad_time.html'>Radiation History</a>-->
-<a href='https://cxc.cfa.harvard.edu/mta/RADIATION_new/ACIS_Rad/index.html'>Radiation History</a>
-
+<a href='/mta/DAILY/mta_rad/rad_time.html'>Radiation History</a>
 </h3>
 
-<!--
 <h4>Radiation Zone Timing</h4>
 <p>
 Plotted below are radiation zone timing plots based on the following definitions of radiation zone:
@@ -1009,12 +1008,12 @@ Plotted below are radiation zone timing plots based on the following definitions
 <li><a href="/mta/DAILY/mta_rad/rad_time_#SMONYR#.html">#SMON# #YEAR# Timing Plots</a></li>
 <li><a href="/mta/DAILY/mta_rad/rad_time.html">Entire Mission Timing Plots</a></li>
 </ul>
--->
+
 
 <h4>Radiation Count Rates of #SMON# #YEAR#</h4>
 
 <p class='center'>
-<img src="rad_cnts_#SMONYR#.png" />
+<img src="rad_cnts_#SMONYR#.gif" />
 </p>
 
 <hr class='short'>
@@ -1033,6 +1032,7 @@ Plotted below are radiation zone timing plots based on the following definitions
 </p>
 <hr class='long'>
 
+
 <!--
 ############################
 #####     TRENDING     ####
@@ -1050,37 +1050,56 @@ Plotted below are radiation zone timing plots based on the following definitions
 
 <a name="QTR"></a>
 <h3>
-<a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.html">Quarterly Trends</a>
+<a href="/mta/DAILY/mta_deriv">Quarterly Trends</a>
 </h3>
 <ul>
 <table border=1 cellpadding=3>
-<font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Hrctemp/hrctemp_mid_static_short_main.html">HRC Temperature</a></li></font>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv//acistemp_qtr.html">ACIS Temperature</a></li></font>
 <tr align=center><td colspan=7> Previous Quarter</tr>
 <tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
-#TREND_HRCTEMP#
+#TREND_ACISTEMP#
 </table>
 </ul>
 <br />
 
 <ul>
 <table border=1 cellpadding=3>
-<font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Hrchk/hrchk_mid_static_short_main.html">HRC HK</a></li></font>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/aciselecb_qtr.html">ACIS Electronics Side B</a></li></font>
 <tr align=center><td colspan=7> Previous Quarter</tr>
 <tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
-#TREND_HRCHK#
+#TREND_ACISELEC#
 </table>
 </ul>
 <br />
 
 <ul>
 <table border=1 cellpadding=3>
-<font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Pcadtemp/pcadtemp_mid_static_short_main.html">PCAD Temperature</a></li></font>
-<tr align=center><td colspan=7> Previous Quarter</tr>
+<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/ephtv_qtr.html">EPHIN Temperature and Voltage</a></li></font><tr align=center><td colspan=7> Previous Quarter</tr>
 <tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
-#TREND_PCADTEMP#
+#TREND_EPHTV#
 </table>
 </ul>
 <br />
+
+<!--
+##############################
+###    ENVELOPE  TREND    ####
+##############################
+-->
+<hr />
+
+<a name="ENV"></a>
+<h3>
+<a href='https://cxc.cfa.harvard.edu/mta_days/mta_envelope_trending/envelope_main.html'>Envelope Trending</a>
+</h3>
+<ul>
+#ENVTREND#
+</ul>
+<p class='center'>
+<a href="#TOP">TOP</a>
+</p>
+<hr class='long'>
+
 
 
 <!--

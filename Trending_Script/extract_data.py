@@ -6,7 +6,7 @@
 #                                                                                                       #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                                               #
 #                                                                                                       #
-#               last update: Jun 13, 2016                                                               #
+#               last update: Oct 10, 2018                                                               #
 #                                                                                                       #
 #########################################################################################################
 
@@ -58,8 +58,9 @@ rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- the name of data set that we want to extract
+#--- (compephinkey removed Oct 9, 2018)
 #
-name_list = ['compaciscent', 'compacispwr', 'compephinkeyrates', 'compgradkodak', \
+name_list = ['compaciscent', 'compacispwr', 'compgradkodak', \
              'compsimoffset', 'gradablk', 'gradahet', 'gradaincyl', 'gradcap',    \
              'gradfap', 'gradfblk', 'gradhcone', 'gradhhflex', 'gradhpflex',      \
              'gradhstrut', 'gradocyl', 'gradpcolb', 'gradperi', 'gradsstrut',     \

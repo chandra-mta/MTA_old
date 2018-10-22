@@ -6,7 +6,7 @@
 #                                                                                       #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
 #                                                                                       #
-#           last update: Oct 17, 2018                                                   #
+#           last update: Oct 09, 2018                                                   #
 #                                                                                       #
 #########################################################################################
 
@@ -162,7 +162,7 @@ def create_monthly(year='', mon=''):
     os.system(cmd)
     cmd = "cp /data/mta4/www/DAILY/mta_rad/mon_per_diff_last_one_year.gif " + odir 
     os.system(cmd)
-    cmd = "cp /data/mta4/www/RADIATION_new/ACIS_Rad/Plots/rad_cnts_" + lmonyr + ".png "    + odir 
+    cmd = "cp /data/mta4/www/DAILY/mta_rad/rad_cnts_" + lmonyr + ".gif "    + odir 
     os.system(cmd)
     cmd = "cp /data/mta4/www/DAILY/mta_pcad/IRU/Plots_new/" + lyear + '/' +  lmonyr + "_bias.png " + odir 
     os.system(cmd)

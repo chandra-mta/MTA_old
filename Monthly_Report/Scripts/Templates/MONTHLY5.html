@@ -37,6 +37,17 @@ function WindowOpener1(imgname, plttitle) {
         msgWindow.document.close();
         msgWindow.focus();
 }
+
+function WindowOpener3(imgname) {
+    msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=yes,status=no,,width=1000,height=1500,resize=no");
+    msgWindow.document.clear();
+    msgWindow.document.write("<html><title>Trend plot:   "+imgname+"</TITLE>");
+    msgWindow.document.write("<body bgcolor='black'>");
+    msgWindow.document.write("<iframe src='" +imgname+ "' border =0 width=980 height=1480><p></p></body></html>")
+    msgWindow.document.close();
+    msgWindow.focus();
+}
+
 function ViewPlots1(imgnames, plttitles) {
         pltWindow = open("","mag_i_avgs","scrollbars=yes,menubar=yes,width=680,height=640");
         pltWindow.document.close();
@@ -481,7 +492,7 @@ Note, the gaps in the width plot are due to missing/corrupted data.
 
 
 <p class='center'>
-<img src="./#ERAND#" style='width:90%' />
+<img src="./acis_focal_temp.png" style='width:90%' />
 </p>
 
 <hr class='short'>
@@ -820,20 +831,21 @@ in the center of the taps due to bad position information.
 
 
 <a name="foc"></a>
-<h3><a href='/mta_days/mta_grat/Focus'>Focus</a></h3>
+<h3><a href='https://cxc.cfa.harvard.edu/mta_days/mta_grat/grating_main.html'>Grating Trends/Focus</a></h3>
 </a>
 
 <p>
 We plot the width of the zero order streak of ACIS/HETG observations and 
 the width of the zero order image for HRC/LETG observations of point sources.
 No significant defocusing trend is seen at this time.  See 
-<a href="/mta_days/mta_grat/Focus">Gratings Focus</a>
+<a href="https://cxc.cfa.harvard.edu/mta_days/mta_grat/grating_main.html">Gratings Trends</a>
 pages. 
 </p>
 
 <p class='center'>
 
-<img src="./foc_acis_hetg.gif" />	
+<img src="./acis_hetg_streak_lrf_focus.png" style="width:45%;">
+<img src="./acis_hetg_ax_lrf_focus.png"style="width:45%;" >
 <br />
 
 </p>
@@ -876,7 +888,7 @@ pages.
 </h3>
 
 <p class='center'>
-<img src="#SMONYR#_1h_bias.gif" />
+<img src="#SMONYR#_bias.png" style='width:70%;text-align:center;' />
 <p>
 
 <hr class='short'>
@@ -891,9 +903,11 @@ pages.
 
 <a name="RADT"></a>
 <h3>
-<a href='/mta/DAILY/mta_rad/rad_time.html'>Radiation History</a>
-</h3>
+<!--<a href='/mta/DAILY/mta_rad/rad_time.html'>Radiation History</a>-->
+<a href='https://cxc.cfa.harvard.edu/mta/RADIATION_new/ACIS_Rad/index.html'>Radiation History</a>
 
+</h3>
+<!--
 <h4>Radiation Zone Timing</h4>
 <p>
 Plotted below are radiation zone timing plots based on the following definitions of radiation zone:
@@ -913,12 +927,12 @@ Plotted below are radiation zone timing plots based on the following definitions
 <li><a href="/mta/DAILY/mta_rad/rad_time_#SMONYR#.html">#SMON# #YEAR# Timing Plots</a></li>
 <li><a href="/mta/DAILY/mta_rad/rad_time.html">Entire Mission Timing Plots</a></li>
 </ul>
-
+-->
 
 <h4>Radiation Count Rates of #SMON# #YEAR#</h4>
 
 <p class='center'>
-<img src="rad_cnts_#SMONYR#.gif" />
+<img src="rad_cnts_#SMONYR#.png" />
 </p>
 
 <hr class='short'>
@@ -959,7 +973,7 @@ Plotted below are radiation zone timing plots based on the following definitions
 </h3>
 <ul>
 <table border=1 cellpadding=3>
-<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/hrmaheaters_qtr.html">HRMA Heater</a></li></font>
+<font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Hrmaheaters/hrmaheaters_mid_static_week_main.html">HRMA Heater</a></li></font>
 <tr align=center><td colspan=7> Previous Quarter</tr>
 <tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
 #TREND_HRMAHEAT#
@@ -969,7 +983,7 @@ Plotted below are radiation zone timing plots based on the following definitions
 
 <ul>
 <table border=1 cellpadding=3>
-<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/hrmatherm_qtr.html">HRMA Thermal</a></li></font>
+<font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Hrmatherm/hrmatherm_mid_static_short_main.html">HRMA Thermal</a></li></font>
 <tr align=center><td colspan=7> Previous Quarter</tr>
 <tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
 #TREND_HRMATHERM#
@@ -979,34 +993,13 @@ Plotted below are radiation zone timing plots based on the following definitions
 
 <ul>
 <table border=1 cellpadding=3>
-<font color="#FFFFFF"><li type=disk><a href="/mta/DAILY/mta_deriv/mups_qtr.html">MUPS</a></li></font>
+<font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Mups/mups_mid_static_short_main.html">MUPS</a></li></font>
 <tr align=center><td colspan=7> Previous Quarter</tr>
 <tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
 #TREND_MUPS#    
 </table>
 </ul>
 <br />
-
-<!--
-##############################
-###    ENVELOPE  TREND    ####
-##############################
--->
-
-<a name="ENV"></a>
-<h3>
-<a href='https://cxc.cfa.harvard.edu/mta_days/mta_envelope_trending/envelope_main.html'>Envelope Trending</a>
-</h3>
-
-<ul>
-#ENVTREND#
-</ul>
-<p class='center'>
-<a href="#TOP">TOP</a>
-</p>
-<hr class='long'>
-
-
 
 <!--
 ####################################################

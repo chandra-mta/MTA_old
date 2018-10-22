@@ -7,7 +7,7 @@
 #                                                                                       #
 #       author: t. isobe (tisobe@cfa.harvard.edu)                                       #
 #                                                                                       #
-#       last updated: Jul 05, 2016                                                      #
+#       last updated: Oct 03, 2018                                                      #
 #                                                                                       #
 #       commented out full image part   Jan 04, 2016                                    #
 #                                                                                       #
@@ -210,10 +210,12 @@ def hrc_dose_get_data(startYear = 'NA', startMonth = 'NA', stopYear = 'NA', stop
             hrciCnt_c = 0
             hrcsCnt_c = 0
 
+            chk = 0
             for line in fitsList:
                 m = re.search('fits', line)
                 if m is None:
                     continue
+                chk = 1
 
                 try:
 #                    [fitsName] = mtac.useArc4gl('retrieve','flight', 'hrc', 1, 'evt1', filename=file)
@@ -299,20 +301,21 @@ def hrc_dose_get_data(startYear = 'NA', startMonth = 'NA', stopYear = 'NA', stop
             else:
                 dp_web_dir = web_dir
 
-            if hrcsCnt_c > 0:
-                cmd = 'mv total_s.fits ' + dp_web_dir + 'Month_hrc/' +  outfile_s_c
-                os.system(cmd)
-                cmd = 'gzip ' + dp_web_dir + '/Month_hrc/*.fits'
-                os.system(cmd)
-
-            createCumulative(year, month, 'HRC-S', 'center', dp_web_dir, i=0)
-
-            if hrciCnt_c > 0:
-                cmd = 'mv total_i.fits ' + dp_web_dir + 'Month_hrc/' +  outfile_i_c
-                os.system(cmd)
-                cmd = 'gzip ' + dp_web_dir + '/Month_hrc/*.fits'
-                os.system(cmd)
+            if chk > 0:
+                if hrcsCnt_c > 0:
+                    cmd = 'mv total_s.fits ' + dp_web_dir + 'Month_hrc/' +  outfile_s_c
+                    os.system(cmd)
+                    cmd = 'gzip ' + dp_web_dir + '/Month_hrc/*.fits'
+                    os.system(cmd)
+    
+    
+                if hrciCnt_c > 0:
+                    cmd = 'mv total_i.fits ' + dp_web_dir + 'Month_hrc/' +  outfile_i_c
+                    os.system(cmd)
+                    cmd = 'gzip ' + dp_web_dir + '/Month_hrc/*.fits'
+                    os.system(cmd)
             
+            createCumulative(year, month, 'HRC-S', 'center', dp_web_dir, i=0)
             createCumulative(year, month, 'HRC-I', 'center', dp_web_dir, i=0)
 
 #
