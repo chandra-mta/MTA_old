@@ -6,7 +6,7 @@
 #                                                                                       #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
 #                                                                                       #
-#           last update: Oct 17, 2018                                                   #
+#           last update: Oct 25, 2018                                                   #
 #                                                                                       #
 #########################################################################################
 
@@ -239,13 +239,13 @@ def create_monthly(year='', mon=''):
         file = '/data/mta/Script/Month/Scripts/Templates/MONTHLY2.html'
 
     elif mon == 3 or mon == 9:
-        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/CCD3_rej_cti.gif " + odir
+        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/Plots/ccd3_cti.png " + odir
         os.system(cmd)
-        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/CCD3_rej_obs.gif " + odir
+        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/Plots/ccd3_sci.png " + odir
         os.system(cmd)
-        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/CCD7_rej_cti.gif " + odir
+        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/Plots/ccd7_cti.png " + odir
         os.system(cmd)
-        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/CCD7_rej_obs.gif " + odir
+        cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/Plots/ccd7_sci.png " + odir
         os.system(cmd)
 
         cmd = "cp /data/mta/www/mta_acis_gain/Plots/gain_plot_ccd3.png   " + odir
