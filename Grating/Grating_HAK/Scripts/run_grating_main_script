@@ -18,7 +18,7 @@ cd /data/mta/Script/Grating/Zero/Exc
 
 cd /data/mta/Script/Grating/Grating_EdE/Exc
 /data/mta/Script/Grating/Grating_EdE/Scripts/extract_grating_ede.py
-/data/mta/Script/Grating/Grating_EdEScripts//create_ede_plots.py
+/data/mta/Script/Grating/Grating_EdE/Scripts/create_ede_plots.py
 
 cd /data/mta/Script/Grating/Focus/Exc
 /data/mta/Script/Grating/Focus/Scripts/update_grating_focus_data_lists.py

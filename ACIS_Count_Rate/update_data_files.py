@@ -6,11 +6,12 @@
 #                                                                                                       #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                                   #
 #                                                                                                       #
-#           Last Update: Ict 02, 2014                                                                   #
+#           Last Update: Nov 05, 2018                                                                   #
 #                                                                                                       #
 #########################################################################################################
 
 import os
+import os.path
 import sys
 import re
 import string
@@ -103,29 +104,29 @@ def update_data_files():
 #        except:
 #            pass
 #
-#--- EPHIN count rate data
+#--- EPHIN count rate data  (ephin data reading is removed Nov 06, 2018)
 #
-    data_list = get_ephin_list()
-
-    for file in data_list:
-#        try:
-        (tyear, tmonth, tdate) = find_date_obs(file)
-        if tyear == 1900:
-            continue
-
-        cmonth    = tcnv.changeMonthFormat(tmonth) 
-        ucmon     = cmonth.upper()
-        tmon_name = web_dir + '/' + ucmon + str(tyear)
-
-        chk = 0
-        for test in dir_save:
-            if tmon_name == test:
-                chk = 1
-                break
-        if chk == 0:
-            dir_save.append(tmon_name)
-
-        extract_ephin_data(file, tmon_name)
+##    data_list = get_ephin_list()
+##
+##    for file in data_list:
+###        try:
+##        (tyear, tmonth, tdate) = find_date_obs(file)
+##        if tyear == 1900:
+##            continue
+##
+##        cmonth    = tcnv.changeMonthFormat(tmonth) 
+##        ucmon     = cmonth.upper()
+##        tmon_name = web_dir + '/' + ucmon + str(tyear)
+##
+##        chk = 0
+##        for test in dir_save:
+##            if tmon_name == test:
+##                chk = 1
+##                break
+##        if chk == 0:
+##            dir_save.append(tmon_name)
+##
+##        extract_ephin_data(file, tmon_name)
 #        except:
 #            pass
 
@@ -322,8 +323,12 @@ def get_data_list(comp_test=''):
     for ent in data:
         atemp = re.split('acisf', ent)
         btemp = re.split('_', atemp[1])
-        ctemp = re.split('N', btemp[1])
-        mark  = int(ctemp[0])
+        try:
+            val = float(btemp[0])                   #---- for the new format :  acisf16218_000N001_evt1.fits
+            mark= int(val)
+        except:
+            ctemp = re.split('N', btemp[1])         #---- for the older format :  acisf16218N001_evt1.fits
+            mark  = int(ctemp[0])
 
         if mark < 50000:
             file_list.append(ent)
@@ -493,7 +498,7 @@ def extract_data(file, out_dir, comp_test =''):
             f    = open(file, 'a')
 
             for ent in ccd_h[i]:
-                f.write(line)
+                f.write(ent)
             f.close()
 
 #---------------------------------------------------------------------------------------------------
@@ -550,8 +555,10 @@ def get_ephin_list(comp_test=''):
 #
 #--- replace the old list with the new one
 #
-    cmd = 'mv ' + house_keeping + '/ephin_dir_list ' + house_keeping + '/ephin_old_dir_list'
-    os.system(cmd)
+    file = house_keeping + '/ephin_dir_list'
+    if os.path.isfile(file):
+        cmd = 'mv ' + house_keeping + '/ephin_dir_list ' + house_keeping + '/ephin_old_dir_list'
+        os.system(cmd)
 
     return input_data_list
 
@@ -700,9 +707,12 @@ def cleanUp(cdir):
 #
 #--- avoid html and png files
 #
-            m = re.search('\.', file)
-            if m is None:
-                mcf.removeDuplicate(file, chk = 1, dosort=1)
+            try:
+                m = re.search('\.', file)
+                if m is None:
+                    mcf.removeDuplicate(file, chk = 1, dosort=1)
+            except:
+                pass
 
 #-----------------------------------------------------------------------------------------
 #-- TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST    ---

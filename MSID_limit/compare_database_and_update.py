@@ -7,7 +7,7 @@
 #                                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
 #                                                                                                   #
-#           last update: Feb 15, 2018                                                               #
+#           last update: Nov 01, 2018                                                               #
 #                                                                                                   #
 #####################################################################################################
 
@@ -102,18 +102,22 @@ def compare_database_and_update():
 #--- compare two database and save only updated data line
 #
             [gy_min, gy_max, gr_min, gr_max] = out
+            fy_min = float(gy_min)
+            fy_max = float(gy_max)
+            fr_min = float(gr_min)
+            fr_max = float(gr_max)
 
             try:
                 chk = 0
-                ty_min = y_min[msid]
-                ty_max = y_max[msid]
-                tr_min = r_min[msid]
-                tr_max = r_max[msid]
+                ty_min = float(y_min[msid])
+                ty_max = float(y_max[msid])
+                tr_min = float(r_min[msid])
+                tr_max = float(r_max[msid])
             except:
                 chk = 1
 
-            if (chk == 0) and ((ty_min == gy_min) and (ty_max == gy_max)  \
-                and (tr_min == gr_min) and (tr_max == gr_max)):
+            if (chk == 0) and ((ty_min == fy_min) and (ty_max == fy_max)  \
+                and (tr_min == fr_min) and (tr_max == fr_max)):
                 continue
             else:
 
@@ -153,7 +157,6 @@ def compare_database_and_update():
 #
 #--- now update the original data. append the updated line to the end of each msid entry
 #
-    exit(1)
     fo = open('./op_limits.db', 'w')
 
     prev = ''
@@ -178,7 +181,7 @@ def compare_database_and_update():
 #--- if so, add the line before printing the current line
 #
                 try:
-                    if not (prev in special_msid_list):
+                    if not (prev.lower() in special_msid_list):
                         line = updates[prev] 
                         line = line + ent
                 except:

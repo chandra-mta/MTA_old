@@ -6,7 +6,7 @@
 #                                                                                               #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                                       #
 #                                                                                               #
-#               last update: Jul 02, 2018                                                       #
+#               last update: Nov 02, 2018                                                       #
 #                                                                                               #
 #################################################################################################
 
@@ -91,9 +91,15 @@ def plot_aiming_trend_data():
     for inst in ('acis_i', 'acis_s', 'hrc_i', 'hrc_s'):
         ifile = data_dir + inst + '_data'
         data  = read_data_file(ifile, '\t+')
+        if len(data) == 0:
+            continue
 
         atime = data[0][:2]                     #---- skip the header part
-        atime = convert_time_to_year(atime)
+        try:
+            atime = convert_time_to_year(atime)
+        except:
+            continue
+
         dy    = data[7][:2]
         dz    = data[8][:2]
 

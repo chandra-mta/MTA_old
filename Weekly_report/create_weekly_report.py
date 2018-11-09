@@ -6,7 +6,7 @@
 #                                                                                                           #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
 #                                                                                                           #
-#           Last Update: Oct 03, 2018                                                                       #
+#           Last Update: Nov 09, 2018                                                                       #
 #                                                                                                           #
 #############################################################################################################
 
@@ -27,9 +27,11 @@ import random
 from Ska.Shell import getenv, bash
 
 ascdsenv = getenv('source /home/ascds/.ascrc -r release;  source /home/mta/bin/reset_param ', shell='tcsh')
-ascdsenv['IDL_PATH'] = '+/usr/local/rsi/user_contrib/astron_Oct09/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+#ascdsenv['IDL_PATH'] = '+/usr/local/rsi/user_contrib/astron_Oct17/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+ascdsenv['IDL_PATH'] = '+/data/mta/Script/Weekly/IDL_lib/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
 ascdsenv2 = getenv('source /proj/sot/ska/bin/ska_envs.csh', shell='tcsh')
-ascdsenv2['IDL_PATH'] = '+/usr/local/rsi/user_contrib/astron_Oct09/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+#ascdsenv2['IDL_PATH'] = '+/usr/local/rsi/user_contrib/astron_Oct17/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+ascdsenv2['IDL_PATH'] = '+/data/mta/Script/Weekly/IDL_lib/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
  
 #
 #--- reading directory list
@@ -1250,7 +1252,7 @@ def create_html_table(group, disp, msid_list):
 #
 #--- check whether this is the sun angle group
 #
-    mc     = re.search('att', group)
+    mc     = re.search('_att', group)
     if mc is not None:
         att = 1
         group = group.replace('_att', '')

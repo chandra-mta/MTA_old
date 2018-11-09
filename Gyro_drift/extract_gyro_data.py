@@ -6,7 +6,7 @@
 #                                                                                               #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                                       #
 #                                                                                               #
-#               last update: Jul 19, 2018                                                       #
+#               last update: Nov 07, 2018                                                       #
 #                                                                                               #
 #################################################################################################
 
@@ -45,7 +45,7 @@ import matplotlib.lines        as lines
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/Grating/Scripts/house_keeping/dir_list'
+path = '/data/mta/Script/Gyro/Scripts/house_keeping/dir_list'
 
 f= open(path, 'r')
 data = [line.strip() for line in f.readlines()]
