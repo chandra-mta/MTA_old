@@ -58,7 +58,11 @@ Monthly_Report  --- creates a monthly report
 MSID_limit      --- updates op_limits.db
 MTA_limit_trends    --- extract msid data and plot their trend
 Orbital         --- extract orbital element related data from archived data and create rdb files
+<<<<<<< HEAD
 Rejected_events --- Create plots of stat1 quantities, showing on-board rejected events
+=======
+Rejcted_events  --- Create plots of stat1 quantities, showing on-board rejected events
+>>>>>>> 459be73058fbb3ff40a42c89e8e0fdf3f494c52e
 Python_scripts  --- python functions used by other python scripts
 Sci_run_interrupt   --- generate plots of ACE, Ephin, and GOES radiation plots around science run interruptions
 Script_descriptions --- create html pages showing the descriptions of MTA tasks
