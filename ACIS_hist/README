@@ -6,8 +6,6 @@
 This directory contains a set of phthon scripts which extract acis histram mode
 information and plots the trends. 
 
-Dir:  /data/mta/Script/ACIS/Acis_hist/Scripts/ 
-See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_acis_hist.html
 
 --------------------------
 Entivonmental Requirements
@@ -28,7 +26,7 @@ Directories
 '/data/mta_www/mta_temp/mta_states/MJ/'            :mj_dir          --- where state information is kept
 '/usr/bin/'                                        :op_dir          --- system directory
 '/data/mta/Script/ACIS/Acis_hist/Exc/'             :exc_dir         --- execution directory
-'/data/mta/Script/Python_script2.7/'               :mta_dir         --- mta related python function depository
+'/data/mta/Script/Python3.6/MTA/'                  :mta_dir         --- mta related python function depository
 
 -------
 Scripts
@@ -64,8 +62,15 @@ acis_hist_plot_trend_interactive.py
     Output:  /data/mta/www/mta_acis_hist/Html_pages/acis_hist_ccd<ccd#>_<loc>_<type>.html
              /data/mta/www/mta_acis_hist/Fittings/ccd<ccd#>_<type>_<loc>_fitting_results
 
+Web Address
+------------
+https://cxc.cfa.harvard.edu/mta_days/mta_acis_hist/acis_hist_main.html
+
+
 --------
 Cron Job
 --------
+on luke-v as mta:
+
 0 2 3  * *  cd /data/mta/Script/ACIS/Acis_hist/Exc; /data/mta/Script/ACIS/Acis_hist/Scripts/acis_hist_wrap_script >> $HOME/Logs/acis_hist.cron 2>&1
 

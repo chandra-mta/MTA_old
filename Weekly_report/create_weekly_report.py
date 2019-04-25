@@ -1,14 +1,14 @@
 #!/usr/bin/env /proj/sot/ska/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#           create_weekly_report.py: create weekly report                                                   #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           Last Update: Nov 09, 2018                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#############################################################################
+#                                                                           #
+#           create_weekly_report.py: create weekly report                   #
+#                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
+#                                                                           #
+#           Last Update: Apr 25, 2019                                       #
+#                                                                           #
+#############################################################################
 
 import sys
 import os
@@ -27,11 +27,10 @@ import random
 from Ska.Shell import getenv, bash
 
 ascdsenv = getenv('source /home/ascds/.ascrc -r release;  source /home/mta/bin/reset_param ', shell='tcsh')
-#ascdsenv['IDL_PATH'] = '+/usr/local/rsi/user_contrib/astron_Oct17/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
-ascdsenv['IDL_PATH'] = '+/data/mta/Script/Weekly/IDL_lib/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+ascdsenv['IDL_PATH'] = '+/usr/local/exelis/user_contrib/astron_Oct17/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+
 ascdsenv2 = getenv('source /proj/sot/ska/bin/ska_envs.csh', shell='tcsh')
-#ascdsenv2['IDL_PATH'] = '+/usr/local/rsi/user_contrib/astron_Oct17/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
-ascdsenv2['IDL_PATH'] = '+/data/mta/Script/Weekly/IDL_lib/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+ascdsenv2['IDL_PATH'] = '+/usr/local/exelis/user_contrib/astron_Oct17/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
  
 #
 #--- reading directory list
@@ -55,13 +54,11 @@ sys.path.append(mta_dir)
 
 import mta_common_functions as mcf
 import convertTimeFormat    as tcnv
-
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
-
 #
 #--- set directory paths
 #
@@ -73,7 +70,11 @@ odir   = '/data/mta4/www/REPORTS/'
 #--- admin email address
 #
 admin  = 'tisobe@cfa.harvard.edu,msobolewska@cfa.harvard.edu'
-ephtv_list = ['5EIOT', '5EPHINT', 'HKEBOXTEMP', 'HKGHV', 'HKN6I', 'HKN6V', 'HKP27I', 'HKP27V', 'HKP5I', 'HKP5V', 'HKP6I', 'HKP6V', 'TEIO', 'TEPHIN']
+#
+#--- ephin linst
+#
+ephtv_list = ['5EIOT', '5EPHINT', 'HKEBOXTEMP', 'HKGHV', 'HKN6I', 'HKN6V', 'HKP27I',\
+              'HKP27V', 'HKP5I', 'HKP5V', 'HKP6I', 'HKP6V', 'TEIO', 'TEPHIN']
 
 #------------------------------------------------------------------------------------------
 #-- create_weekly_report: main script to create the weekly report for the week          ---
@@ -382,11 +383,11 @@ def create_weekly_report(date, year, debug = 0):
     #fs.close()
     #input = input.replace("#TREND#", trend)
 
-    [temp1, temp2, temp3, temp4] = read_cti_values()
-    input = input.replace('#ATEMP#',  temp1)
-    input = input.replace('#ATEMP2#', temp2)
-    input = input.replace('#DTEMP#',  temp3)
-    input = input.replace('#DTEMP2#', temp4)
+    [temp1, temp2, temp3, temp4, ftemp5, ftemp6, ftemp7, ftemp8] = read_cti_values()
+    input = input.replace('#ATEMP#',  temp3)
+    input = input.replace('#ATEMP2#', temp4)
+    input = input.replace('#DTEMP#',  temp7)
+    input = input.replace('#DTEMP2#', temp8)
 
     [val, step] = read_sim()
     input = input.replace('#WMOVE#', val)
@@ -568,30 +569,32 @@ def read_cti_values():
             ftemp4  --- Detrended cti in CTI/day
     """
 
-    file = '/data/mta_www/mta_cti/Plot_adjust/fitting_result'
+    ifile = '/data/mta_www/mta_cti/Plot_adjust/fitting_result'
 
-    [ftemp1, ftemp2] = read_cti(file)
+    [ftemp1, ftemp2, ftemp3, ftemp4] = read_cti(ifile)
 
-    file = '/data/mta_www/mta_cti/Det_Plot_adjust/fitting_result'
+    ifile = '/data/mta_www/mta_cti/Det_Plot_adjust/fitting_result'
 
-    [ftemp3, ftemp4] = read_cti(file)
+    [ftemp5, ftemp6, ftemp7, ftemp8] = read_cti(ifile)
 
-    return [ftemp1, ftemp2, ftemp3, ftemp4]
+    return [ftemp1, ftemp2, ftemp3, ftemp4, ftemp5, ftemp6, ftemp7, ftemp8]
 
 
 #----------------------------------------------------------------------------------
 #-- read_cti:  find a cti value from the file                                    --
 #----------------------------------------------------------------------------------
 
-def read_cti(file):
+def read_cti(ifile):
     """
     find a cti value from the file
     input:  file    ---- the file name
     output: ftemp1  ---- cti in CTI/year
             ftemp2  ---- cti in CTI/day
+            ftemp3  ---- cti in CTI/year
+            ftemp4  ---- cti in CTI/day
     """
 
-    f    = open(file, 'r')
+    f    = open(ifile, 'r')
     data = [line.strip() for line in f.readlines()]
     f.close()
 
@@ -602,19 +605,49 @@ def read_cti(file):
             if mc is not None:
                 chk = 1
                 continue
-        else:
+            else:
+                continue
+
+        elif chk == 1:
             mc = re.search('ACIS-I Average:', ent)
             if mc is not None:
-                atemp = re.split('\s+', ent)
-                val   = float(atemp[2])
-                yval  = val / 365.0
-                ftemp1 = '%2.3e' % val
-                ftemp2 = '%2.3e' % yval
-                break
+                chk = 2
+                continue
+            else:
+                continue
 
+        elif chk == 2:
+            ent = ent.strip()
+            atemp = re.split('\s+', ent)
+            try:
+                val   = float(atemp[0])
+            except:
+                continue 
 
-    return [ftemp1, ftemp2]
+            yval  = val / 365.0
+            ftemp1 = '%2.3e' % val
+            ftemp2 = '%2.3e' % yval
+            chk = 3
+            continue
 
+        elif chk == 3:
+            ent = ent.strip()
+            atemp = re.split('\s+', ent)
+            try:
+                val   = float(atemp[0])
+            except:
+                continue
+
+            yval  = val / 365.0
+            ftemp3 = '%2.3e' % val
+            ftemp4 = '%2.3e' % yval
+            chk = 4
+            continue
+
+        elif chk == 4:
+            break
+                
+    return [ftemp1, ftemp2, ftemp3, ftemp4]
 
 #----------------------------------------------------------------------------------
 #-- read_sim: read sim movement values from weekly averaged page                 --

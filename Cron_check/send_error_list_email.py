@@ -6,7 +6,7 @@
 #                                                                                                           #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
 #                                                                                                           #
-#           Last Update: Nov 17, 2016                                                                       #
+#           Last Update: Mar 06, 2019                                                                       #
 #                                                                                                           #
 #############################################################################################################
 
@@ -60,16 +60,16 @@ machine = machine.strip()
 #
 #--- possible machine names and user name lists
 #
-cpu_list     = ['colossus', 'colossus-v', 'rhodes', 'c3po-v', 'r2d2-v']
+cpu_list     = ['colossus-v', 'c3po-v', 'r2d2-v', 'han-v', 'luke-v']
 usr_list     = ['mta', 'cus']
-cpu_usr_list = ['colossus_mta', 'rhodes', 'colossus-v_mta', 'r2d2-v_mta', 'r2d2-v_cus', 'c3po-v_mta', 'c3po-v_cus']
+cpu_usr_list = ['colossus-v_mta', 'r2d2-v_mta', 'r2d2-v_cus', 'c3po-v_mta', 'c3po-v_cus', 'han-v_mta', 'luke-v_mta', 'luke-v_cus']
 #
 #--- temp writing file name
 #
 rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
 zspace = '/tmp/zspace' + str(rtail)
 
-email_list = ['tisobe@cfa.harvard.edu','swolk@head.cfa.harvard.edu','msobolewska@cfa.harvard.edu']
+email_list = ['tisobe@cfa.harvard.edu','swolk@head.cfa.harvard.edu','msobolewska@cfa.harvard.edu','lina.pulgarin-duque@cfa.harvard.edu']
 #email_list = ['tisobe@cfa.harvard.edu','swolk@head.cfa.harvard.edu','brad@head.cfa.harvard.edu']
 #email_list = ['tisobe@cfa.harvard.edu']
 
@@ -163,10 +163,11 @@ def report_error():
 #
 #--- move the error list to Past_errors directory
 #
-            cmd = 'mv ' + efile + ' ' + pfile
-            os.system(cmd)
-#            cmd = 'chmod 755 ' + pfile
-#            os.system(cmd)
+            if os.path.isfile(efile):                   #--- 03/06/19
+                cmd = 'mv ' + efile + ' ' + pfile
+                os.system(cmd)
+#                cmd = 'chmod 755 ' + pfile
+#                os.system(cmd)
 
 
 #--------------------------------------------------------------------------------------------------------------------------

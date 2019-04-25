@@ -3,10 +3,7 @@
 <html> 
 <head> 
 	   <meta http-equiv='Content-Type' content='text/html; charset=utf-8' /> 
-        <link rel="stylesheet" type="text/css" href="https://cxc.cfa.harvard.edu/mta/REPORTS/Template/mta.css" /> 
         <style  type='text/css'>
-        table{text-align:center;margin-left:auto;margin-right:auto;border-style:solid;border-spacing:8px;border-width:2px;border-collapse:separate}
-        td{text-align:center;padding:8px}
         </style>
         <title> ACIS Science Run</title> 
  
@@ -23,76 +20,108 @@
         </script> 
  
 </head> 
-<body  style='background-image:url("https://cxc.cfa.harvard.edu/mta_days/mta_aiming/stars.jpg")'> 
-<h2 style="text-align:center">ACIS Science Run</h2>
-<h2 style="text-align:center">Updated: #UPDATE#  (DOY: #DOY# / DOM: #DOM#)
- </h2>
+
+<body  style='background-color:#FFEBCD'>
+<div style='float:right;'>
+    <a href=https://cxc.cfa.harvard.edu/mta/sot.html>SOT page</a></th> 
+</div>
+
+<h2 style="text-align:center">
+ACIS Science Run</h2>
+</h2>
+
 <hr />
+
 <p>
+<b>
 Data plotted here are taken from psi processing log 
-(<a href='http://acis.mit.edu/acs'>http://acis.mit.edu/acs</a>). There are three plots in 
-each FEP mode:
-</p><table style='border-width:0px;padding-left:60px'> 
-<tr><td>Top:</td><td style="text-align:left"> evnets per second for each science run</td></tr>
-<tr><td>Middle:</td><td style="text-align:left"> numbers of errors reported by psi per ksec for each science run</td></tr>
-<tr><td>Bottom:</td><td style="text-align:left"> Percentage of exposures dropped for each science run</td></tr>
-</table>
-<p>For more  details, plese go to <a href='http://acis.mit.edu/acs'>mit web site</a>. 
-</p><table style='border-width:0px'> 
-<tr><td> 
-<h2> Plots by FEP Mode </h2>
-</td><td> 
-<h2>Data</h2> 
-</td></tr> 
-<tr><td> 
-<table style='border-width:0px'>
+(<a href='http://acis.mit.edu/acs'>http://acis.mit.edu/acs</a>). 
+</b>
+</p>
+
+<p>
+There are three plots in each FEP mode:
+</p>
+<table style='border-width:0px;padding-left:10px'> 
 <tr>
-<th>This Year</th>
-<td><a href="javascript:WindowOpener('Year#YEAR#/te3_3_out.png')"> TE 3X3 </a></td> 
-<td><a href="javascript:WindowOpener('Year#YEAR#/te5_5_out.png')"> TE 5X5 </a></td> 
-<td>  --- </td> 
-<td><a href="javascript:WindowOpener('Year#YEAR#/cc3_3_out.png')"> CC 3X3 </a></td> 
+    <td>Top:</td>
+    <td style="text-align:left"> evnets per second for each science run</td>
 </tr>
-<tr><th>Entire Period</th>
-<td><a href="javascript:WindowOpener('Long_term/te3_3_out.png')"> TE 3X3 </a></td> 
-<td><a href="javascript:WindowOpener('Long_term/te5_5_out.png')"> TE 5X5 </a></td> 
-<td><a href="javascript:WindowOpener('Long_term/te_raw_out.png')"> TE Raw </a></td> 
-<td><a href="javascript:WindowOpener('Long_term/cc3_3_out.png')"> CC 3X3 </a></td> 
-</tr></table>
-</td><td>
-<table style='border-width:0px'>
-<tr><td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Year#YEAR#/data#YEAR# target="_blank">DATA Plotted (ASCII format)</a></td></tr>
-<tr><td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Year#YEAR#/drop_#YEAR# target="_blank">Te3x3 DATA with Dropped Rate &gt; 3 %</a></td></tr>
-<tr><td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Year#YEAR#/drop_5x5_#YEAR# target="_blank">Te5x5 DATA with Dropped Rate &gt; 3 %</a></td></tr>
-<tr><td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Year#YEAR#/high_event_#YEAR# target="_blank">Te3x3 DATA with Event Rate &gt; 180 cnt/sec</a></td></tr>
-<tr><td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Year#YEAR#/high_event5x5_#YEAR# target="_blank">Te5x5 DATA with Event Rate &gt; 56 cnt/sec</a></td></tr>
-<tr><td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Year#YEAR#/high_error_#YEAR# target="_blank">Te3x3 DATA with Error # &gt; 1 cnt/ksec</a></td></tr>
-<tr><td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Year#YEAR#/high_error5x5_#YEAR# target="_blank">Te5x5 DATA with Error # > &gt; cnt/ksec</a></td></tr>
+<tr>
+    <td>Middle:</td>
+    <td style="text-align:left"> numbers of errors reported by psi per ksec for each science run</td>
+</tr>
+<tr>
+    <td>Bottom:</td>
+    <td style="text-align:left"> Percentage of exposures dropped for each science run</td>
+</tr>
 </table>
-</td></tr> 
+
+<p>
+For more  details, plese go to <a href='http://acis.mit.edu/acs'>mit web site</a>. 
+</p>
+
+<h3 style='padding-top:20px;'>Trend Plots for the Entire Period (Click to Enlarge)</h3>
+
+<table border=0 cellspacing=5>
+<tr>
+<th style='width:20%;'>TE 3x3</th>
+<th style='width:20%;'>TE 5x5</th>
+<th style='width:20%;'>TE Raw</th>
+<th style='width:20%;'>CC 3x3</th>
+</tr>
+<td><a href="javascript:WindowOpener('Long_term/te3_3_out.png')"><img src="./Long_term/te3_3_out.png" style='width:95%;'></a></td>
+<td><a href="javascript:WindowOpener('Long_term/te5_5_out.png')"><img src="./Long_term/te5_5_out.png" style='width:95%;'></a></td>
+<td><a href="javascript:WindowOpener('Long_term/te_raw_out.png')"><img src="./Long_term/te_raw_out.png" style='width:95%;'></a></td>
+<td><a href="javascript:WindowOpener('Long_term/cc3_3_out.png')"><img src="./Long_term/cc3_3_out.png" style='width:95%;'></a></td>
+</tr>
+</table>
+
+<div style='padding-bottom:30px;'>
+</div>
+
+<h3>Data</h3>
+
+<table border=1 cellpadding=3>
+<tr>
+<td colspan=3 style='text-align:center;'>
+<a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run/all_data target="_blank">DATA Plotted (ASCII format)</a>
+</td>
+</tr>
+<tr>
+<td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Long_term/drop target="_blank">Te3x3 DATA with Dropped Rate > 3 %</a></td>
+<td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Long_term/high_event target="_blank">Te3x3 DATA with Event Rate > 180 cnt/sec</a></td>
+<td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Long_term/high_error target="_blank">Te3x3 DATA with Error # > 1 cnt/ksec</a></td>
+</tr>
+<tr>
+<td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Long_term/drop_5x5 target="_blank">Te5x5 DATA with Dropped Rate > 3 %</a></td>
+<td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Long_term/high_event5x5 target="_blank">Te5x5 DATA with Event Rate > 56 cnt/sec</a></td>
+<td><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run//Long_term/high_error5x5 target="_blank">Te5x5 DATA with Error # > 1 cnt/ksec</a></td>
+</tr>
 </table> 
+
 <br>
 <hr />
-<h2>Plots/Data for Each Year </h2>
-<table style='border-width:0px'> 
+<h3>Plots/Data for Each Year </h3>
+<table border=0 cellpadding=5 cellspacing=3>
 <tr> 
 #YLIST#
-</tr></table> 
-<p> 
-<strong><a href=https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run/Long_term/science_long_term.html>Entire Period</a></strong>
-</p> 
+</tr>
+</table> 
+
+<div style='padding-bottom:20px;'>
+</div>
 <hr />
 <p>
-  <em><strong>
-If you have any questions about this page, please contact <a href='mailto:swolk@head.cfa.harvard.edu'>swolk@head.cfa.harvard.edu</a>
-</strong></em>
- </p>
-<table style='border-width:0px'> 
-<tr> 
-<th style='width:10%;text-align:center'>Go to: </th> 
-<th style='width:30%;text-align:center'> 
-<a href=http://acis.mit.edu/asc>Acis Science Run, MIT site</a>
-</th> 
-<th style='width:30%;text-aling:center'> 
-<a href=https://cxc.cfa.harvard.edu/mta/sot.html>SOT page</a></th> 
-</table> 
+If you have any questions about this page, please contact <a href='mailto:tisobe@cfa.harvard.edu'>tisobe@cfa.harvard.edu</a>
+<br />
+<br />
+<em>
+Last Data Update: #UPDATE# 
+</em>
+</p>
+<div style='padding-bottom:20px;'>
+</div>
+
+</body>
+</html>

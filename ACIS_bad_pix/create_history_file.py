@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################################
-#                                                                                                                       #
-#           create_history_file.py: create count history file and the information file                                  #
-#                                                                                                                       #
-#                   author: t. isobe (tisobe@cfa.harvard.edu)                                                           #
-#                                                                                                                       #
-#                   last update: May 13, 2014                                                                           #
-#                                                                                                                       #
-#########################################################################################################################
+#####################################################################################################
+#                                                                                                   #
+#           create_history_file.py: create count history file and the information file              #
+#                                                                                                   #
+#                   author: t. isobe (tisobe@cfa.harvard.edu)                                       #
+#                                                                                                   #
+#                   last update: Apr 02, 2019                                                       #
+#                                                                                                   #
+#####################################################################################################
 
 import os
 import sys
@@ -17,19 +17,17 @@ import string
 import random
 import operator
 import math
+#import time
 
 path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    var   = atemp[1].strip()
+    line  = atemp[0].strip()
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -38,41 +36,40 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat      as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions   as mcf        #---- contains other functions commonly used in MTA scripts
-
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
-zspace = '/tmp/zspace' + str(rtail)
+#rtail  = int(time.time() * random.random())
+#zspace = '/tmp/zspace' + str(rtail)
 
-#----------------------------------------------------------------------------------------------------------------
-#--- create_history_file: create count history file and the information file                                  ---
-#----------------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------------
+#--- create_history_file: create count history file and the information file                  ---
+#------------------------------------------------------------------------------------------------
 
 def create_history_file(head):
 
     """
     create count history file and the information file containing current bad entry information
-    Input:  head                --- ccd, hccd, or col to indicate which data to handle
-    Output: <head>_ccd<ccd>_cnt --- count history data:<dom><><year:ydate><><cumlative cnt><><cnt for the day>
-            <head>_ccd<ccd>_information --- current information of the bad entries. For example,  list warm pixels, 
-                                            flickering pixels, totally new pixels, and all past and current warm pixels.
-
+    input:  head                --- ccd, hccd, or col to indicate which data to handle
+    output: <head>_ccd<ccd>_cnt --- count history data:
+                                    <stime><><year:ydate><><cumlative cnt><><cnt for the day>
+            <head>_ccd<ccd>_information --- current information of the bad entries. 
+                                            Example, list of warm pixels, flickering pixels, 
+                                                      totally new pixels, 
+                                                      and all past and current warm pixels.
     """
-
     for ccd in range(0, 10):
 #
 #--- read data file head is either ccd, hccd, or col
 #
-        file = data_dir + 'Disp_dir/hist_' + head + str(ccd)
-        data = mcf.readFile(file)
+        ifile = data_dir + 'hist_' + head + str(ccd)
+        data = mcf.read_data_file(ifile)
 
         bad_dat_list = []                       #--- save all bad data as elements
         bad_dat_save = []                       #--- save all bad data as a list for each day
 
-        dom   = []
+        stime = []
         ydate = []
         dcnt  = []                              #--- keep discreate count history
         ccnt  = []                              #--- keep cumulative count history
@@ -83,15 +80,15 @@ def create_history_file(head):
 
         for ent in data:
 #
-#--- read only data entries written in a correct format: <dom><><year>:<ydate><>:<bad_data>...
+#--- read only data entries written in a correct format: <stime><><year>:<ydate><>:<bad_data>...
 #
             atemp = re.split('<>', ent)
-            chk1  = mcf.chkNumeric(atemp[0])
+            chk1  = mcf.is_neumeric(atemp[0])
             btemp = re.split(':', atemp[1])
-            chk2  = mcf.chkNumeric(btemp[1])
+            chk2  = mcf.is_neumeric(btemp[1])
 
             if (chk1 == True) and (int(atemp[0]) > 0)  and (chk2 == True) and (int(btemp[1]) > 0):
-                dom.append(atemp[0])
+                stime.append(atemp[0])
                 ydate.append(atemp[1])
 #
 #--- check the bad data is recorded for the given day
@@ -100,7 +97,7 @@ def create_history_file(head):
                     m1 = re.search('\(', atemp[2])
                 else:
                     btemp = re.split(':', atemp[2])                 #--- case for warm columns
-                    if mcf.chkNumeric(btemp[len(btemp) -1]):
+                    if mcf.is_neumeric(btemp[len(btemp) -1]):
                         m1 = 'OK'
                     else:
                         m1 = None
@@ -133,7 +130,7 @@ def create_history_file(head):
                     bad_dat_save.append([])
                     ccnt.append(pcnt)
 
-            k += 1                                                  #--- k is inlimented to check the last 5 days
+            k += 1                                  #--- k is incremented to check the last 5 days
 #
 #--- find out which entries are warm/hot and flickering
 #
@@ -141,40 +138,37 @@ def create_history_file(head):
 #
 #--- open output file to print current information
 #
-        line = data_dir + '/Disp_dir/'+ head + str(ccd) + '_information'
-        fo   = open(line, 'w')
-
-        fo.write("warm:\t")
-        print_data(fo, warm)
-
-        fo.write('flick:\t')
-        print_data(fo, flick)
-
-        fo.write('new:\t')
-        out = list(set(new))
-        print_data(fo, out)
-
-        fo.write('past:\t')
-        out = list(set(bad_dat_list))
-        print_data(fo, out)
-
-        fo.close()
-
+        ofile = data_dir + '/'+ head + str(ccd) + '_information'
+        with open(ofile, 'w') as fo:
+            fo.write("warm:\t")
+            print_data(fo, warm)
+    
+            fo.write('flick:\t')
+            print_data(fo, flick)
+    
+            fo.write('new:\t')
+            out = list(set(new))
+            print_data(fo, out)
+    
+            fo.write('past:\t')
+            out = list(set(bad_dat_list))
+            print_data(fo, out)
+    
 #
 #--- open output file to print out count history
 #
-        ofile = data_dir + 'Disp_dir/' + head + str(ccd) + '_cnt'
-        fo    = open(ofile, 'w')
-
-        for i in range(0, len(dom)):
+        line = ''
+        for i in range(0, len(stime)):
             if i < 13:
-                line = dom[i] + '<>' + ydate[i] + '<>' + str(ccnt[i]) + '<>'  + str(dcnt[i]) + '<>0<>0\n'
+                line = line + stime[i] + '<>' + ydate[i] + '<>' + str(ccnt[i]) + '<>'  
+                line = line + str(dcnt[i]) + '<>0<>0\n'
             else:
-                line = dom[i] + '<>' + ydate[i] + '<>' + str(ccnt[i]) + '<>'  + str(dcnt[i]) + '<>'+ str(b_list[i-13]) + '<>' + str(p_list[i-13]) + '\n'
+                line = line + stime[i] + '<>' + ydate[i] + '<>' + str(ccnt[i]) + '<>'  
+                line = line + str(dcnt[i]) + '<>'+ str(b_list[i-13]) + '<>' + str(p_list[i-13]) + '\n'
 
+        ofile = data_dir + '' + head + str(ccd) + '_cnt'
+        with  open(ofile, 'w') as fo:
             fo.write(line)
-
-        fo.close()
 
 #-------------------------------------------------------------------------------------------------
 #---  print_data: print out data                                                               ---
@@ -184,11 +178,10 @@ def print_data(fo, data):
 
     """
     print out data
-    Input:  fo      --- file hander
+    input:  fo      --- file hander
             data    --- data
-    Output: data writting in the given format in the output file
+    output: data writting in the given format in the output file
     """
-
     tlen  = len(data)
     tlen1 = len(data) -1
     for i in range(tlen):
@@ -197,8 +190,6 @@ def print_data(fo, data):
             if i < tlen1:
                 fo.write(' : ')
     fo.write('\n')
-
-
 
 #-------------------------------------------------------------------------------------------------
 #--- find_warm_and_flickering: determine which entries are bad or flickering                  ----
@@ -211,8 +202,8 @@ def find_warm_and_flickering(rlist):
     if the data exit more than 70% of thetime, it is "warm" and if it exists more than 30% but less 
     than 70% of the time, it is flickering
 
-    Input:      rlist   --- a list of list of bad entries separated by each dom
-    Output:     warm    --- a list of warm entries
+    input:      rlist   --- a list of list of bad entries separated by each dom
+    output:     warm    --- a list of warm entries
                 flick   --- a list of flickering entries
     """
     tlen  = len(rlist)
@@ -220,6 +211,8 @@ def find_warm_and_flickering(rlist):
 
     bad_cnt_hist           = []
     potential_bad_cnt_hist = []
+    warm                   = []
+    flick                  = []
     for j in range(13, tlen1):
         start = j - 13
         stop  = j + 1
@@ -256,6 +249,7 @@ def find_warm_and_flickering(rlist):
     
                 if rate > 0.7:
                     warm.append(oset[i])
+
                 elif rate > 0.3:
                     flick.append(oset[i])
 #
@@ -270,15 +264,21 @@ def find_warm_and_flickering(rlist):
 
 
 #-------------------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------------------
+#-- combine_front_sides: combining  front side ccd information                                   -
 #-------------------------------------------------------------------------------------------------
 
-def combing_front_sides(head):
+def combine_front_sides(head):
+    """
+    THIS IS OVERSEADED BY: create_fornt_history_files.py
 
+    combining  front side ccd information
+    input:  head    --- head part: ccd/hccd/col
+    output: <data_dir>/front_side_<head>_cnt
+    """
     for ccd in (0, 1, 2, 3, 4, 6, 8, 9):
-        file = data_dir + '/Disp_dir/' + head + str(ccd) + '_cnt'
-        f    = open(file, 'r')
-        data = [line.strip() for line in f.readlines()]
+        ifile = data_dir +  head + str(ccd) + '_cnt'
+        f     = open(ifile, 'r')
+        data  = [line.strip() for line in f.readlines()]
         f.close()
         if ccd == 0:
             tlen  = len(data) 
@@ -316,10 +316,8 @@ def combing_front_sides(head):
                 bdat[dom] += int(atemp[4])
                 pdat[dom] += int(atemp[5])
 
-    line = data_dir + './Disp_dir/fornt_side_' + head + '_cnt'
-    fo   = open(line, 'w')
-
     prev = cdat[0]
+    line = ''
     for i in range(0, tmax):
         if time[i] != 0:
             if cdat[i] > prev:
@@ -327,12 +325,12 @@ def combing_front_sides(head):
                 prev = cdat[i]
             else:
                 cval = str(prev)
-            line = str(time[i]) + '<>' + cval + '<>' + str(ddat[i]) + '<>' + str(bdat[i]) + '<>' + str(pdat[i]) + '\n'
+            line = line + str(time[i]) + '<>' + cval + '<>' + str(ddat[i]) + '<>' 
+            line = line + str(bdat[i]) + '<>' + str(pdat[i]) + '\n'
+
+    out = data_dir + './front_side_' + head + '_cnt'
+    with open(out, 'w') as fo:
             fo.write(line)
-
-    fo.close()
-
-
 
 #-------------------------------------------------------------
 
@@ -343,17 +341,17 @@ if __name__ == "__main__":
 #
     head = 'ccd'
     create_history_file(head)
-    combing_front_sides(head)
+    #combine_front_sides(head)
 #
 #--- hot pixel case
 #
     head = 'hccd'
     create_history_file(head)
-    combing_front_sides(head)
+    #combine_front_sides(head)
 #
 #--- warm column case
 #
     head = 'col'
     create_history_file(head)
-    combing_front_sides(head)
+    #combine_front_sides(head)
 

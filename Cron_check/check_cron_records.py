@@ -7,7 +7,7 @@
 #                                                                                                           #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
 #                                                                                                           #
-#           Last Update: Mar 11, 2014                                                                       #
+#           Last Update: Nov 08, 2018                                                                       #
 #                                                                                                           #
 #############################################################################################################
 
@@ -58,12 +58,14 @@ user = user.strip()
 #
 machine = socket.gethostname()
 machine = machine.strip()
+atemp   = re.split('\.', machine)
+machine = atemp[0]
 #
 #--- possible machine names and user name lists
 #
-cpu_list     = ['colossus-v', 'c3po-v', 'r2d2-v']
+cpu_list     = ['colossus-v', 'c3po-v', 'r2d2-v', 'han-v', 'luke-v']
 usr_list     = ['mta', 'cus']
-cpu_usr_list = ['colossus-v_mta', 'r2d2-v_mta', 'r2d2-v_cus', 'c3po-v_mta', 'c3po-v_cus']
+cpu_usr_list = ['colossus-v_mta', 'r2d2-v_mta', 'r2d2-v_cus', 'c3po-v_mta', 'c3po-v_cus', 'han-v_mta', 'hav-v_cus', 'luke-v_mta', 'luke-v_cus']
 
 #
 #--- temp writing file name
@@ -285,7 +287,6 @@ def file_length(filename):
     Input:  filename    --- inputfile name
     Output: length      --- the file length in line number
     """
-
     f    = open(filename, 'r')
     data = [line.strip() for line in f.readlines()]
     f.close()

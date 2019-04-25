@@ -4,7 +4,7 @@
 # 	Make file for ACIS Count Rate Trends                   			#
 # 																	#
 # 		author: t isobe (tisobe@cfa.harvard.edu)					#
-# 		last update: Jun 18, 2018									#
+# 		last update: apr 25, 2019									#
 # 																	#
 #####################################################################
 
@@ -24,8 +24,8 @@ WEB     = /home/isobe/www
 NSITE   = $(WEB)/$(TASK)
 NBIN    = $(ROOT)/bin
 NBDATA  = $(ROOT)/bdata
-NPYTHON = python
-NPPKG   = /usr/bin/python2.7/site-packages
+NPYTHON = /data/mta/Script/Python3.6/envs/ska3/bin/python
+NPPKG   = /data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages
 NWADRS  = cxc.cfa.harvard.edu/mta
 #
 #--- Define generic installation paths
@@ -56,8 +56,8 @@ OWEB    = /data/mta/www
 OWEB2   = /data/mta_www
 OSITE   = $(OWEB)/mta_dose_count
 OHPATH  = $(OMAIN)/house_keeping
-OPYTHON = /proj/sot/ska/bin/python
-OPPKG   = /proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages
+OPYTHON = /data/mta/Script/Python3.6/envs/ska3/bin/python
+OPPKG   = /data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages
 OBIN    = /data/mta/MTA/bin
 OBDATA  = /data/mta/MTA/data
 OWADRS  = cxc.cfa.harvard.edu/mta_days

@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #################################################################################################
 #                                                                                               #
@@ -6,7 +6,7 @@
 #                                                                                               #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                                       #
 #                                                                                               #
-#               Last update: May 23, 2014                                                       #
+#               Last update: Apr 25, 2019                                                       #
 #                                                                                               #
 #################################################################################################
 
@@ -18,7 +18,9 @@ import random
 import operator
 import math
 import numpy
-import pyfits
+import astropy.io.fits as pyfits
+import time
+import Chandra.Time
 import unittest
 #
 #--- from ska
@@ -26,21 +28,19 @@ import unittest
 from Ska.Shell import getenv, bash
 ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param', shell='tcsh')
 ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/CTI/Exc/Temp_comp_area/'
-
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/ACIS/CTI/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -49,13 +49,11 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-
+import mta_common_functions as mcf        #---- contains other functions commonly used in MTA scripts
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random()) 
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- define a few directories we need to run flt_run_pipe
@@ -69,7 +67,6 @@ temp_comp_area = exc_dir + '/Temp_comp_area/'
 #---------------------------------------------------------------------------------------------------
 
 def create_cti_table():
-
     """
     run flt_run_pipe on the fits data and extract al/mn/ti cti
     Input: none:
@@ -86,17 +83,17 @@ def create_cti_table():
     if os.listdir(working_dir):
         cmd = 'ls ' +  working_dir + '* > ' + zspace
         os.system(cmd)
-        test = open(zspace, 'r').read()
-        mcf.rm_file(zspace)
+
+        with open(zspace, 'r') as f:
+            test = f.read()
+        mcf.rm_files(zspace)
+
         m1   = re.search('fits', test)
 
         if m1 is not None:
-            cmd = 'ls ' +  working_dir + '*.fits > ' + zspace
+            cmd = 'ls ' +  working_dir + '*.fits* > ' + zspace
             os.system(cmd)
-            f    = open(zspace, 'r')
-            fits_list = [line.strip() for line in f.readlines()]
-            f.close()
-            mcf.rm_file(zspace)
+            fits_list = mcf.read_data_file(zspace, remove=1)
         else:
             fits_list = []
     
@@ -139,21 +136,22 @@ def create_cti_table():
             try:
                 cmd = 'rm -rf ' + temp_comp_area
                 os.system(cmd)
-                cmd = 'mkdir ' + temp_comp_area
+                cmd = 'mkdir -p ' + temp_comp_area
                 os.system(cmd)
             except:
-                cmd = 'mkdir ' + temp_comp_area
+                cmd = 'mkdir -p ' + temp_comp_area
                 os.system(cmd)
-
 #
 #--- run mta flt pipe: results will be in <temp_comp_area>/photons/....
 #
             ftemp = re.split('\/', fits)
 
-            file = temp_comp_area + ftemp[len(ftemp) -1]
-            cmd  = 'cp ' + fits  + ' ' + file
+            ifile = temp_comp_area + ftemp[-1]
+            cmd  = 'cp ' + fits  + ' ' + ifile
             os.system(cmd)
-            chk = run_flt_pipe(file)
+
+            chk = run_flt_pipe(ifile)
+
             if chk == 0:
 #
 #--- extract cti values
@@ -165,31 +163,28 @@ def create_cti_table():
 #
 #--- print the results
 #
-                        print_cti_result(ccdno, obsid, obsnum, date_obs, date_end, al_cti, mn_cti, ti_cti, avg_temp, sig, tmin, tmax, stime, stime2)
+                        print_cti_result(ccdno, obsid, obsnum, date_obs, date_end, al_cti,\
+                                         mn_cti, ti_cti, avg_temp, sig, tmin, tmax, stime, stime2)
                     else:
                         pass
-
             else:
-                print fits
+                print(str(fits))
         except:
-            print "Something wrong about: " + str(fits)
+            print("Something wrong about: " + str(fits))
 #
 #--- keep the record of "bad" obsid
 #
             atemp = re.split('acisf', fits)
             btemp = re.split('_', atemp[1])
             ofile = house_keeping + 'exclude_obsid_list'
-            fo    = open(ofile, 'a')
-            fo.write(btemp[0])
-            fo.write('/n')
-            fo.close()
+            with open(ofile, 'a') as fo:
+                fo.write(btemp[0] + '\n')
 
 #---------------------------------------------------------------------------------------------------
 #-- create_fp_list: create a focal plane temperature fle list                                    ---
 #---------------------------------------------------------------------------------------------------
 
 def create_fp_list():
-
     """
     create a focal plane temperature file list
     Input:      none, but read from /data/mta/Script/ACIS/Focal/Short_term/
@@ -197,14 +192,9 @@ def create_fp_list():
                 fstop   --- a list of stop time of the files
                 f_list  --- a list of file names
     """
-
-#    temperature_file_list = mcf.create_list_from_dir('/data/mta/Script/ACIS/Focal/Short_term/*')
     cmd = 'ls /data/mta/Script/ACIS/Focal/Short_term/data_* > '+  zspace
     os.system(cmd)
-    f     = open(zspace, 'r')
-    temperature_file_list = [line.strip() for line in f.readlines()]
-    f.close()
-    mcf.rm_file(zspace)
+    temperature_file_list = mcf.read_data_file(zspace, remove=1)
 
     fstart = []
     fstop  = []
@@ -232,15 +222,17 @@ def create_fp_list():
                 if len(ttemp) == 4:
                     hour    = ttemp[0] + ttemp[1]
                     minutes = ttemp[2] + ttemp[3]
-                    line    = btemp[0] + ':' + btemp[1] + ':' + hour + ':' + minutes + ':00'
-                    begin   = tcnv.axTimeMTA(line)
+                    dpart   = add_leading_zeros(btemp[1])
+                    line    = btemp[0] + ':' + dpart + ':' + hour + ':' + minutes + ':00'
+                    begin   = Chandra.Time.DateTime(line).secs
      
                     ttemp   = btemp[4]
                     ttemp   = list(ttemp)
                     hour    = ttemp[0] + ttemp[1]
                     minutes = ttemp[2] + ttemp[3]
-                    line    = str(year2) + ':' + btemp[3] + ':' + hour + ':' + minutes + ':00'
-                    end     = tcnv.axTimeMTA(line)
+                    dpart   = add_leading_zeros(btemp[3])
+                    line    = str(year2) + ':' + dpart + ':' + hour + ':' + minutes + ':00'
+                    end     = Chandra.Time.DateTime(line).secs
 
                     fstart.append(begin)
                     fstop.append(end)
@@ -249,11 +241,24 @@ def create_fp_list():
     return(fstart, fstop, f_list)
 
 #---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
+
+def add_leading_zeros(ent, dlen=3):
+
+    ent  = str(ent)
+    elen = len(ent)
+    if elen < dlen:
+        for k in range(elen, dlen):
+            ent = '0' + ent
+
+    return ent
+
+#---------------------------------------------------------------------------------------------------
 #-- choose_fpt_files: choose focal plane temperature files which cover the given time span       ---
 #---------------------------------------------------------------------------------------------------
 
 def choose_fpt_files(date1, date2, fstart, fstop, file_list):
-
     """
     choose focal plane temperature files which cover the given time span
     Input:  date1       --- starting time (in sec from 1998.1.1)
@@ -263,7 +268,6 @@ def choose_fpt_files(date1, date2, fstart, fstop, file_list):
             file_list   --- a list of focal plane temperature files
     Output: selected_file --- a list of focal plane temperature file which covers the time span
     """
-
     selected_file = []
     for i in range(0, len(fstart)):
         if   (date1 >= fstart[i]) and (date1 <  fstop[i]):
@@ -280,13 +284,11 @@ def choose_fpt_files(date1, date2, fstart, fstop, file_list):
 
     return selected_file
 
-
 #---------------------------------------------------------------------------------------------------
 #-- create_fp_temp_list: create a list of date and a list of focal temperature                   ---
 #---------------------------------------------------------------------------------------------------
 
 def create_fp_temp_list(date1, date2, fp_file_list):
-
     """
     create a list of date and a list of focal temperature
     Input:      date1   --- starting time
@@ -295,27 +297,25 @@ def create_fp_temp_list(date1, date2, fp_file_list):
     Output:     date    --- a list of time
                 focal   --- a list of focal temperature
     """
-
     sum1  = 0.0
     sum2  = 0.0
     tot   = 0.0
-    tmin  = 99999.0
+    tmin  =  99999.0
     tmax  = -99999.0
 
     chk   = 0
     fp_file_list.sort()
-    for file in fp_file_list:
+    for ifile in fp_file_list:
 #
 #--- find the year the file created
 #
-        atemp = re.split('data_', file)
+        atemp = re.split('data_', ifile)
         btemp = re.split('_', atemp[1])
         year  = int(btemp[0])
 
-        f    = open(file, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
-        prev = -1
+        data  = mcf.read_data_file(ifile)
+
+        prev  = -1
         for ent in data:
             try:
                 atemp = re.split('\s+|\t+', ent)
@@ -334,8 +334,12 @@ def create_fp_temp_list(date1, date2, fp_file_list):
                 rest2  = (rest1 - float(hour)) * 60.0
                 minute = int(rest2)
     
-                line   = str(year) + ':' + str(ydate) + ':' + str(hour) + ':' + str(minute) + ':00'
-                stime  = tcnv.axTimeMTA(line)
+                dpart  = add_leading_zeros(ydate)
+                hpart  = add_leading_zeros(hour, dlen=2)
+                mpart  = add_leading_zeros(minute, dlen=2)
+
+                line   = str(year) + ':' + dpart + ':' + hpart + ':' + mpart + ':00'
+                stime  = Chandra.Time.DateTime(line).secs
     
                 if stime > date2:
                     break
@@ -356,13 +360,11 @@ def create_fp_temp_list(date1, date2, fp_file_list):
     sig = math.sqrt(sum2 / float(tot) - avg * avg)
     return (avg, sig, tmin, tmax)
 
-
 #---------------------------------------------------------------------------------------------------
 #-- run_flt_pipe: run mta flt_run_pipe to extract cti data                                       ---
 #---------------------------------------------------------------------------------------------------
 
 def run_flt_pipe(part_fits):
-
     """
     run mta flt_run_pipe to extract cti data
     Input:  part_fits --- fits file name
@@ -380,13 +382,18 @@ def run_flt_pipe(part_fits):
 #--- run the pipe
 #
         pipe_cmd1 = '/usr/bin/env PERL5LIB='
-        pipe_cmd2 = " flt_run_pipe  -r zcomp -i" + temp_comp_area +" -o" + temp_comp_area + " -t mta_monitor_cti.ped -a \"genrpt=yes\" "
+        pipe_cmd2 = " flt_run_pipe  -r zcomp -i" + temp_comp_area +" -o" 
+        pipe_cmd2 = pipe_cmd2 + temp_comp_area + " -t mta_monitor_cti.ped -a \"genrpt=yes\" "
         pipe_cmd  = pipe_cmd1 + pipe_cmd2
     
         bash(pipe_cmd, env=ascdsenv, logfile=open('log.txt', 'w'))
 #
-#--- check wether the computation actually worked. we assume that if "photons" directory crated, it did.
+#--- check wether the computation actually worked. we assume that if "photons" 
+#--- directory crated, it did.
 #
+        cmd = 'mv    /data/mta/Script/ACIS/CTI/Exc/Temp_comp_area/photons '
+        cmd = cmd + '/data/mta/Script/ACIS/CTI/Exc/Temp_comp_area/.'
+        os.system(cmd)
         return test_photon_dir()
 
     except:
@@ -404,30 +411,27 @@ def test_photon_dir():
     Outpu: 0     if it is OK
            1     if there is a problem
     """
-
     try:
         cmd = 'ls ' + temp_comp_area + 'photons/acis/cti/*/ccd*/ccd*html > ' + zspace
         os.system(cmd)
-    
-        result_list = mcf.get_val(zspace)
-        mcf.rm_file(zspace)
-        if len(result_list) > 0:
+
+        test = mcf.read_data_file(zspace, remove=1)
+
+        if len(test) > 0:
             return 0
         else:
             return 1
     except:
         return 1
 
-
 #---------------------------------------------------------------------------------------------------
 #-- find_cti_values_from_file: extract cti information from flt_run_pipe output                  ---
 #---------------------------------------------------------------------------------------------------
 
 def find_cti_values_from_file():
-
     """
     extract cti information from flt_run_pipe output
-    Input:  none, but read from <temp_comp_area>/photons/acis/cit/*/ccd*/ccd*html
+    Input:  none, but read from <temp_comp_area>/photons/acis/cti/*/ccd*/ccd*html
     Output: full_list --- a list of lists which contains:
             ccdno   --- ccd #
             obsid   --- obsid
@@ -438,26 +442,21 @@ def find_cti_values_from_file():
             ti_cti  --- a list of ti cti
             mn_cti  --- a list of mn cti
     """
-
     cmd = 'ls ' + temp_comp_area + 'photons/acis/cti/*/ccd*/ccd*html > ' + zspace
     os.system(cmd)
 
-    f  = open(zspace, 'r')
-    result_list = [line.strip() for line in f.readlines()]
-    f.close()
-    mcf.rm_file(zspace)
+    result_list = mcf.read_data_file(zspace, remove=1)
+
     full_list= []
 #
 #--- "file" is .../ccd<ccd#>.html
 #--- and "data" is the content of the ccd<ccd#>.html
 #
+    for ifile in result_list:
 
-    for file in result_list:
-
-        data     = mcf.get_val(file)
-
+        data     = mcf.read_data_file(ifile)
         ccdno    = -9999
-        obsid    = 9999
+        obsid    =  9999
         obsnum   = 0
         date_obs = ''
         date_end = ''
@@ -521,7 +520,6 @@ def find_cti_values_from_file():
 #
 #--- read cti values (reading order must be al, mn, then ti)
 #
-
                 if (si_read == 1) and (al_node < 4):
                     out = find_cti_from_line(ent)
                     if out != '':
@@ -560,7 +558,6 @@ def find_cti_values_from_file():
 #---------------------------------------------------------------------------------------------------
 
 def find_value_from_line(ent, div_string):
-
     """
     find value for "div_string". this works with only a specifict input file from flt_run_pipe
     Input:  ent         --- input line
@@ -584,13 +581,11 @@ def find_value_from_line(ent, div_string):
 #---------------------------------------------------------------------------------------------------
 
 def find_cti_from_line(ent):
-
     """
     find cti values from data line. this works only a specific input file from flt_run_pipe
     Input:  ent --- line of data
     Output: line --- cti value +- error. if the line does not contain cti, it return ""
     """
-
     m1 = re.search('<FONT SIZE=-1.7 ALIGN=RIGHT WIDTH=125>', ent)
     if m1 is not None:
         try:
@@ -613,11 +608,10 @@ def find_cti_from_line(ent):
 #-- print_cti_result: print out data                                                              --
 #---------------------------------------------------------------------------------------------------
 
-def print_cti_result(ccdno, obsid, obsnum, date_obs, date_end, al_cti, mn_cti, ti_cti, temperature, sig, tmin, tmax, stime, stime2):
-
+def print_cti_result(ccdno, obsid, obsnum, date_obs, date_end, al_cti, mn_cti, ti_cti,\
+                     temperature, sig, tmin, tmax, stime, stime2):
     """
     print out data
-
     Input:  ccdno   --- ccd #
             obsid   --- obsid
             obsnum  --- version #
@@ -634,7 +628,7 @@ def print_cti_result(ccdno, obsid, obsnum, date_obs, date_end, al_cti, mn_cti, t
 #--- print out data
 #
     for elm in('al', 'ti', 'mn'):
-        exec "cti_data = %s_cti" % (elm)
+        cti_data = eval("%s_cti" % (elm))
         line = date_obs + '\t' 
         for i in range(0, 4):
             try:
@@ -648,14 +642,14 @@ def print_cti_result(ccdno, obsid, obsnum, date_obs, date_end, al_cti, mn_cti, t
                 line = line + '-99999+-00000' + '\t'
     
         line = line + str(obsid) + '\t' + date_end + '\t'  
-        line = line + str(round(temperature,2)) + '\t\t' + str(round(sig,2)) + '\t' + str(round(tmin,2)) + '\t\t' +  str(round(tmax,2)) + '\t'
+        line = line + str(round(temperature,2)) + '\t\t' + str(round(sig,2))   + '\t' 
+        line = line + str(round(tmin,2))        + '\t\t' +  str(round(tmax,2)) + '\t'
         line = line + str(int(stime)) + '\t' + str(int(stime2)) + '\n'
 
         if (int(ccdno) >= 0) and (int(ccdno) <= 9):
             out_dir = data_dir + '/Results/' + elm + '_ccd' + str(ccdno)
-            f       = open(out_dir, 'a')
-            f.write(line)
-            f.close()
+            with  open(out_dir, 'a') as fo:
+                fo.write(line)
         
 #-----------------------------------------------------------------------------------------
 #-- TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST    ---
@@ -668,58 +662,48 @@ class TestFunctions(unittest.TestCase):
 
 #------------------------------------------------------------
 
-    def test_choose_fpt_files(self):
-
-        test_out = ['/data/mta/Script/ACIS/Focal/Short_term/data_2014_178_0351_178_1306']
-
-        fits      = './acisf52675_000N001_evt1.fits.gz'
-        dout      = pyfits.getdata(fits, 1)
-        time_list = dout.field('TIME')
-        date1     = min(time_list)
-        date2     = max(time_list)
-        
-        [fstart, fstop, file_list] = create_fp_list()
-        selected_fp_files = choose_fpt_files(date1, date2, fstart, fstop, file_list)
-
-        self.assertEquals(selected_fp_files, test_out)
-
-#------------------------------------------------------------
-
-    def test_run_flt_pipe(self):
-
-        mcf.mk_empty_dir(temp_comp_area)
-        cmd = 'cp ./acisf52675_000N001_evt1.fits.gz ' + temp_comp_area
-        os.system(cmd)
-        cmd = 'gzip -d ' + temp_comp_area + '/*.gz'
-        os.system(cmd)
-        file = temp_comp_area + '/acisf52675_000N001_evt1.fits'
-        chk = run_flt_pipe(file)
-
-        self.assertEquals(chk, 0)
+#    def test_choose_fpt_files(self):
+#
+#        test_out = ['/data/mta/Script/ACIS/Focal/Short_term/data_2014_178_0351_178_1306']
+#
+#        fits      = './acisf52675_000N001_evt1.fits.gz'
+#        dout      = pyfits.getdata(fits, 1)
+#        time_list = dout.field('TIME')
+#        date1     = min(time_list)
+#        date2     = max(time_list)
+#        
+#        [fstart, fstop, file_list] = create_fp_list()
+#        selected_fp_files = choose_fpt_files(date1, date2, fstart, fstop, file_list)
+#
+#        self.assertEquals(selected_fp_files, test_out)
 
 #------------------------------------------------------------
 
-        test_list = ['0', '52675', '0', '2014-06-27T04:21:09', '2014-06-27T08:31:19', ['5.390+-0.449', '6.721+-0.277', '-99999+-00000', '0.533+-0.229'], ['2.695+-0.036', '1.303+-0.033', '1.371+-0.028', '1.191+-0.023'], ['1.303+-0.050', '2.531+-0.024', '1.352+-0.033', '1.372+-0.036']]
+#    def test_run_flt_pipe(self):
+#
+#        mcf.mk_empty_dir(temp_comp_area)
+#        cmd = 'cp ./acisf52675_000N001_evt1.fits.gz ' + temp_comp_area
+#        os.system(cmd)
+#        cmd = 'gzip -d ' + temp_comp_area + '/*.gz'
+#        os.system(cmd)
+#        ifile = temp_comp_area + '/acisf52675_000N001_evt1.fits'
+#        chk = run_flt_pipe(ifile)
+#
+#        self.assertEquals(chk, 0)
 
-        full_list = find_cti_values_from_file()
+#------------------------------------------------------------
 
-
-        self.assertEquals(full_list[0], test_list)
+#        test_list = ['0', '52675', '0', '2014-06-27T04:21:09', '2014-06-27T08:31:19', ['5.390+-0.449', '6.721+-0.277', '-99999+-00000', '0.533+-0.229'], ['2.695+-0.036', '1.303+-0.033', '1.371+-0.028', '1.191+-0.023'], ['1.303+-0.050', '2.531+-0.024', '1.352+-0.033', '1.372+-0.036']]
+#
+#        full_list = find_cti_values_from_file()
+#
+#
+#        self.assertEquals(full_list[0], test_list)
 
 
 #--------------------------------------------------------------------
 
-#
-#--- if there is any aurgument, it will run normal mode
-#
-chk =   0
-if len(sys.argv) >= 2:
-    chk  = 1
-
 if __name__ == '__main__':
 
-    if chk == 0:
-        unittest.main()
-    else:    
-        create_cti_table()
+    create_cti_table()
 

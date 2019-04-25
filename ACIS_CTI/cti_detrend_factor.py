@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#       cti_detrend_factor.py: create detrended cti tables                                          #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Sep 16, 2014                                                               #
-#                                                                                                   #
-#####################################################################################################
+#################################################################################
+#                                                                               #
+#       cti_detrend_factor.py: create detrended cti tables                      #
+#                                                                               #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                           #
+#                                                                               #
+#           last update: Apr 25, 2019                                           #
+#                                                                               #
+#################################################################################
 
 import os
 import sys
@@ -18,7 +18,8 @@ import random
 import operator
 import math
 import numpy
-import pyfits
+import astropy.io.fits as pyfits
+import time
 import unittest
 #
 #--- from ska
@@ -31,15 +32,14 @@ ascdsenv = getenv('source /home/ascds/.ascrc -r release', shell='tcsh')
 #
 path = '/data/mta/Script/ACIS/CTI/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -48,20 +48,15 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-
+import mta_common_functions as mcf  #---- contains other functions commonly used in MTA scripts
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random()) 
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- a couple of things needed
 #
-dare   = mcf.get_val('.dare',   dir = bin_data, lst=1)
-hakama = mcf.get_val('.hakama', dir = bin_data, lst=1)
-
 working_dir = exc_dir + '/Working_dir/'
 temp_dir    = exc_dir + '/Temp_dir/'
 
@@ -70,14 +65,12 @@ temp_dir    = exc_dir + '/Temp_dir/'
 #---------------------------------------------------------------------------------------------------
 
 def cti_detrend_factor():
-
     """
     update detrend factor table, then update detrend data table
     Input:  none
     Output: amp_avg_list    --- detrend factor table kept in <house_keeping>
             detrended data table, e.g. Det_Results/<elm>_ccd<ccd#>
     """
-
 #
 #--- update detrend factor table (amp_avg_list)
 #
@@ -87,13 +80,11 @@ def cti_detrend_factor():
 #
     make_detrended_data_table()
 
-
-#---------------------------------------------------------------------------------------------------
-#-- cti_detrend_factor: extract information about amp_avg values and update amp_avg_list         ---
-#---------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------
+#-- cti_detrend_factor: extract information about amp_avg values and update amp_avg_list
+#--------------------------------------------------------------------------------------
 
 def update_detrend_factor_table():
-
     """
     extract information about amp_avg values and update <house_keeping>/amp_avg_list
     Input:  none
@@ -118,13 +109,11 @@ def update_detrend_factor_table():
         update_holding_list(new_entry, processed_list)
         cleanup_amp_list()
 
-
-#---------------------------------------------------------------------------------------------------
-#-- update_amp_avg_list: extract amp_avg information from a fits file for a given obsid           --
-#---------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- update_amp_avg_list: extract amp_avg information from a fits file for a given obsid
+#-----------------------------------------------------------------------------------
 
 def update_amp_avg_list(new_entry):
-
     """
     extract update amp_avg_list information 
     Input:  new_entry    --- a list of obsids
@@ -132,24 +121,20 @@ def update_amp_avg_list(new_entry):
                              (format: 2013-10-27T06:11:52 0.218615253807107   53275)
             processed_list - a list of obsid which actually used to generate avg_amp
     """
-
     [processed_list, amp_data_list] = get_amp_avg_data(new_entry)
 
-    file = house_keeping + '/amp_avg_list'
-    f = open(file, 'a')
-    for line in amp_data_list:
-        f.write(line)
-    f.close()
+    ofile = house_keeping + '/amp_avg_list'
+    with open(ofile, 'a') as fo:
+        for line in amp_data_list:
+            fo.write(line)
 
     return processed_list
 
-
-#---------------------------------------------------------------------------------------------------
-#-- update_amp_avg_list: extract amp_avg information from a fits file for a given obsid           --
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- update_amp_avg_list: extract amp_avg information from a fits file for a given obsid 
+#-----------------------------------------------------------------------------------
 
 def get_amp_avg_data(new_entry):
-
     """
     extract amp_avg information from a fits file for a given obsid
     Input:  new_entry    --- a list of obsids
@@ -160,9 +145,9 @@ def get_amp_avg_data(new_entry):
 #
 #--- remove dupilcated entries of obsid
 #
-    new_entry = mcf.removeDuplicate(new_entry, chk=0)
+    new_entry      = sorted(list(set(new_entry)))
     processed_list = []
-    amp_data_list = []
+    amp_data_list  = []
 
     for obsid in new_entry:
 #
@@ -184,7 +169,7 @@ def get_amp_avg_data(new_entry):
             drop_amp = data.field('drop_amp')
 
             amp_data = []
-            sum      = 0
+            isum     = 0
             for i in range(0, len(ccdid)):
 #
 #--- amp data is computed from when ccd 7 drop_amp
@@ -192,10 +177,13 @@ def get_amp_avg_data(new_entry):
                 if int(ccdid[i]) == 7:
                     val = float(drop_amp[i])
                     amp_data.append(val)
-                    sum += val
+                    isum += val
 
             if len(amp_data) > 0:
-                norm_avg = 0.00323 * sum / float(len(amp_data))     #--- 0.00323 is given by cgrant (03/07/05)
+#
+#--- 0.00323 is given by cgrant (03/07/05)
+#
+                norm_avg = 0.00323 * isum / float(len(amp_data))
 
                 line = date + '\t' + str(norm_avg) + '\t' + str(obsid) + '\n'
             else:
@@ -211,7 +199,6 @@ def get_amp_avg_data(new_entry):
 #---------------------------------------------------------------------------------------------------
 
 def get_new_entry():
-
     """
     create a list of obsids which need to be proccessed
     Input: amp_avg_list --- a list kept in <house_keeping> directory
@@ -226,43 +213,41 @@ def get_new_entry():
 #
 #--- create a list of obsids which are already proccessed before
 #
-    file = house_keeping + '/amp_avg_list'
-    amp  = mcf.get_val(file, lst=0)
-    camp = []
+    ifile = house_keeping + '/amp_avg_list'
+    amp   = mcf.read_data_file(ifile)
+    comp  = []
     for ent in amp:
         atemp = re.split('\s+|\t+', ent)
-        camp.append(atemp[2])
+        comp.append(atemp[2])
 #
 #--- read a new obsid list
 #
-    file =  working_dir + '/new_entry'
-    test = mcf.get_val(file, lst=0)
-
+    ifile =  working_dir + '/new_entry'
+    test = mcf.read_data_file(ifile)
 #
 #--- add a list of old obsids which have not been proccessed.
 #
-    file  = house_keeping + '/keep_entry'
-    test2 = mcf.get_val(file, lst=0)
+    ifile = house_keeping + '/keep_entry'
+    test2 = mcf.read_data_file(ifile)
     test  = test + test2
 #
 #--- find which obsids are new ones
 #
-    return mcf.find_missing_elem(test, camp)
+    out = list(numpy.setdiff1d(test, comp))
+    return  out
 
 #---------------------------------------------------------------------------------------------------
-#-- extract_stat_fits_file: extract acis stat fits files using arc4gl                            ---
+#-- extract_stat_fits_file: extract acis stat fits files using arc5gl                            ---
 #---------------------------------------------------------------------------------------------------
 
 def extract_stat_fits_file(obsid, out_dir='./'):
-
     """
-    extract acis stat fits files using arc4gl
+    extract acis stat fits files using arc5gl
     Input:  obsid   --- obsid
             out_dir --- a directory in which the fits file is deposited. default is "./"
     Output: acis stat fits file (decompressed) in out_dir
             data    --- a list of fits files extracted
     """
-
     line = 'operation=retrieve\n'
     line = line + 'dataset=flight\n'
     line = line + 'detector=acis\n'
@@ -271,36 +256,41 @@ def extract_stat_fits_file(obsid, out_dir='./'):
     line = line + 'obsid=' + str(obsid) + '\n'
     line = line + 'go\n'
 
-    f    = open(zspace, 'w')
-    f.write(line)
-    f.close()
-
+    with open(zspace, 'w') as fo:
+        fo.write(line)
     try:
-        cmd1 = '/usr/bin/env PERL5LIB=""'
-        cmd2 = ' echo ' + hakama + '|arc4gl -U' + dare + ' -Sarcocc -i' + zspace 
-        cmd  = cmd1 + cmd2
-        bash(cmd, env=ascdsenv)
-        mcf.rm_file(zspace)
+        try:
+            cmd = ' /proj/sot/ska/bin/arc5gl -user isobe -script ' + zspace
+            os.system(cmd)
+        except:
+            try:
+                cmd  = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace
+                os.system(cmd)
+            except:
+                cmd1 = "/usr/bin/env PERL5LIB= "
+                cmd2 = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace
+                cmd  = cmd1 + cmd2
+                bash(cmd,  env=ascdsenv)
     
         cmd  = 'ls ' + exc_dir + '> ' + zspace
         os.system(cmd)
-        test = open(zspace).read()
-        mcf.rm_file(zspace)
+        with open(zspace, 'r') as f:
+            test = f.read()
+
+        mcf.rm_files(zspace)
     
         m1   = re.search('stat1.fits.gz', test)
         if m1 is not None:
             cmd  = 'mv ' + exc_dir +'/*stat1.fits.gz ' + out_dir + '/.'
             os.system(cmd)
+
             cmd  = 'gzip -d ' + out_dir + '/*stat1.fits.gz'
             os.system(cmd)
      
             cmd  = 'ls ' + out_dir + '/*' + str(obsid) + '*stat1.fits > ' + zspace
             os.system(cmd)
      
-            f    = open(zspace, 'r')
-            data = [line.strip() for line in f.readlines()]
-            f.close()
-            mcf.rm_file(zspace)
+            data = mcf.read_data_file(zspace, remove=1)
     
             return data
         else:
@@ -314,7 +304,6 @@ def extract_stat_fits_file(obsid, out_dir='./'):
 #---------------------------------------------------------------------------------------------------
 
 def update_holding_list(new_entry, processed_list):
-
     """
     update <hosue_keeping>/keep_entry list
     Input:  new_entry      --- a list of obsids used
@@ -324,39 +313,32 @@ def update_holding_list(new_entry, processed_list):
 #
 #-- find whether any of obsids were not proccessed
 #
-    missing = mcf.find_missing_elem(new_entry, processed_list)
-    file    = house_keeping + 'keep_entry'
-
-    f    = open(file, 'w')
+    missing = list(numpy.setdiff1d(new_entry, processed_list))
 
     if len(missing) > 0:
 #
 #--- if so, print them out
 #
-        missing = mcf.removeDuplicate(missing, chk=0)
-
+        sline = ''
         for ent in missing:
-            f.write(ent)
-            f.write('\n')
+            sline = sline + ent + '\n'
 
-    f.close()
+        ofile  = house_keeping + 'keep_entry'
+        with open(ofile, 'w') as fo:
+            fo.write(line)
 
 #---------------------------------------------------------------------------------------------------
 #-- cleanup_amp_list: remove duplicated obsid entries: keep the newest entry only                ---
 #---------------------------------------------------------------------------------------------------
 
 def cleanup_amp_list():
-
     """
     remove duplicated obsid entries: keep the newest entry only
     Input:  read from: <hosue_keeping>/amp_avg_lst
     Output: updated <hosue_keeping>/amp_avg_lst
     """
-
-    file = house_keeping + 'amp_avg_list'
-    f    = open(file, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    ifile = house_keeping + 'amp_avg_list'
+    data  = mcf.read_data_file(ifile)
 #
 #--- reverse the list so that we can check from the newest entry
 #
@@ -367,7 +349,7 @@ def cleanup_amp_list():
     obsidlist = []
     for ent in data:
         atemp = re.split('\s+|\t+', ent)
-        obsid = int(atemp[2])
+        obsid = int(float(atemp[2]))
         obsidlist.append(obsid)
 
     obsidlist.sort()
@@ -384,7 +366,7 @@ def cleanup_amp_list():
 #
     cleaned   = []
     if len(obsidmulti) > 0:
-        obsidmulti = mcf.removeDuplicate(obsidmulti)
+        obsidmulti = list(set(obsidmulti))
 #
 #--- "marked" is a marker which indicates whether a specific obsid is already listed
 #
@@ -414,25 +396,20 @@ def cleanup_amp_list():
 #
 #--- print out the cleaned list
 #
-    f = open(file, 'w')
-    for ent in cleaned:
-        f.write(ent)
-        f.write('\n')
-    f.close()
-
+    with open(ifile, 'w') as fo:
+        for ent in cleaned:
+            fo.write(ent + '\n')
 
 #---------------------------------------------------------------------------------------------------
 #-- make_detrended_data_table: update detrended cti tables                                       ---
 #---------------------------------------------------------------------------------------------------
 
 def make_detrended_data_table():
-
     """
     update detrended cti tables
     Input:  none, but read from data_dir/Results/<elm>_ccd<ccd#> and <house_keeping>/amp_avg_list
     Output: <data_dir>/Det_Results/<elm>_ccd<ccd#>
     """
-
 #
 #--- read detrending factor table
 #
@@ -440,30 +417,24 @@ def make_detrended_data_table():
 #
 #--- go through all imaging ccds for each element
 #
-    for elm in ('al', 'mn', 'ti'):
+    for elm in ['al', 'mn', 'ti']:
 
-        for ccd in (0, 1, 2, 3, 4, 6, 8, 9):
+        for ccd in [0, 1, 2, 3, 4, 6, 8, 9]:
 #
 #--- read original data table
 #
             infile  = data_dir + '/Results/'     + elm + '_ccd' + str(ccd)
+            data    = mcf.read_data_file(infile)
 
-            f       = open(infile, 'r')
-            data    = [line.strip() for line in f.readlines()]
-            f.close()
-#
-#--- open output detrended table
-#
-            outfile = data_dir + '/Det_Results/' + elm + '_ccd' + str(ccd)
-            fo      = open(outfile, 'w')
-
+            sline = ''
             for ent in data:
                 atemp = re.split('\s+|\t+', ent)
 #
 #--- find a corresponding correction foactor
 #
+                obsid = int(float(atemp[5]))
                 try:
-                    det_val = detrend_factors[atemp[5]]
+                    det_val = detrend_factors[obsid]
                 except:
                     det_val = 999
 #
@@ -471,39 +442,32 @@ def make_detrended_data_table():
 #
                 if det_val < 999:
 
-                    fo.write(atemp[0])                   #---- starting date
-                    fo.write('\t')
+                    sline = sline + atemp[0] + '\t'       #---- starting date
 
                     for i in range(1, 5):
                         corrected = correct_det(atemp[i], det_val)
-                        fo.write(corrected)
-                        fo.write('\t')
+                        sline     = sline + corrected + '\t'
 
-                    fo.write(atemp[5])              #--- obsid
-                    fo.write('\t')
-                    fo.write(atemp[6])              #--- ending date
-                    fo.write('\t')
-                    fo.write(atemp[7])              #--- avg focal temperature
-                    fo.write('\t')
-                    fo.write(atemp[8])              #--- sigma for the focal temperature
-                    fo.write('\t')
-                    fo.write(atemp[9])              #---  min focal temperature
-                    fo.write('\t')
-                    fo.write(atemp[10])              #--- max focal temperature
-                    fo.write('\t')
-                    fo.write(atemp[11])              #--- starting time in sec
-                    fo.write('\t')
-                    fo.write(atemp[12])              #--- ending time in sec
-                    fo.write('\n')
-
-            fo.close()
+                    sline = sline + atemp[5]  + '\t'      #--- obsid
+                    sline = sline + atemp[6]  + '\t'      #--- ending date
+                    sline = sline + atemp[7]  + '\t'      #--- avg focal temperature
+                    sline = sline + atemp[8]  + '\t'      #--- sigma for the focal temperature
+                    sline = sline + atemp[9]  + '\t'      #---  min focal temperature
+                    sline = sline + atemp[10] + '\t'      #--- max focal temperature
+                    sline = sline + atemp[11] + '\t'      #--- starting time in sec
+                    sline = sline + atemp[12] + '\n'      #--- ending time in sec
+#
+#--- open output detrended table
+#
+            outfile = data_dir + '/Det_Results/' + elm + '_ccd' + str(ccd)
+            with  open(outfile, 'w') as fo:
+                fo.write(sline)
 
 #---------------------------------------------------------------------------------------------------
 #-- read_correction_factor: read a detrend correction factor table and create a dictionary       ---
 #---------------------------------------------------------------------------------------------------
 
 def read_correction_factor():
-
     """
     read a detrend correction factor table and create a dictionary with obsid <---> factor
     Input:  none, but read from <hosue_keeping>/amp_avg_list
@@ -512,35 +476,34 @@ def read_correction_factor():
 #
 #--- read correction factor table
 #
-    line = house_keeping + '/amp_avg_list'
-    f    = open(line, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    ifile = house_keeping + '/amp_avg_list'
+    data  = mcf.read_data_file(ifile)
 #
 #--- create a dictionary
 #
     detrend_factors = {}
     for ent in data:
-        atemp = re.split('\s+|\t+', ent)
+        try:
+            atemp = re.split('\s+', ent)
+        except:
+            continue
 
-        detrend_factors[atemp[2]] = float(atemp[1])
+        obsid = int(float(atemp[2].strip()))
+        detrend_factors[obsid] = float(atemp[1].strip())
 
     return detrend_factors
-
 
 #---------------------------------------------------------------------------------------------------
 #--  correct_det: correct cti with a given detrending factor                                     ---
 #---------------------------------------------------------------------------------------------------
 
 def correct_det(quad, det_val):
-
     """
     correct cti with a given detrending factor
     Input:  quad    --- cti value +/- error
             det_val --- detrending factor
     Output: cti     --- corrected cti +/- error
     """
-    
     m = re.search('99999', quad)
     if m is not None:
         return quad
@@ -550,6 +513,7 @@ def correct_det(quad, det_val):
         val   = round(val, 3)
         val   = str(val)
         vcnt  = len(val)
+    
         if vcnt < 5:
             for i in range(vcnt, 5):
                 val = val + '0'
@@ -579,20 +543,8 @@ class TestFunctions(unittest.TestCase):
         self.assertEquals(processed_list, processed_list_test)
         self.assertEquals(amp_data_list,  amp_data_test)
 
-
 #--------------------------------------------------------------------
-
-#
-#--- if there is any aurgument, it will run normal mode
-#
-chk =   0
-if len(sys.argv) >= 2:
-    chk  = 1
-
 
 if __name__ == '__main__':
 
-    if chk == 0:
-        unittest.main()
-    else:
-        cti_detrend_factor()
+    cti_detrend_factor()

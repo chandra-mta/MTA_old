@@ -8,16 +8,9 @@ This set of scripts find bad pixels and bad columns on ACIS CCDs and creates a r
 At the same time, using the same dataset, it also computes ACIS CCD bisa values and compare it with
 overclock values of the CCDs.
 
-Dir: /data/mta/Script/ACIS/Bad_pixels/Script/ 
-See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_bad_pixel.html
-
 Environmental Setting
 -----------------------
-This set requires ascds environment. It is run by /proj/sot/ska/bin/python (python2.7 as of Jul 5, 2013)
-
-Before running, it also requires the following setting:
-setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:$PYTHONPATH"
-
+This set requires ascds environment. It is run by /data/mta/Script/Python3.6/envs/ska3/bin/python (python3.6).
 
 Data Required
 --------------
@@ -60,11 +53,11 @@ create_data_table.py
 
 bias computation operation
 --------------------------
-compute_bias_data.py        
+run_compute_bias_data.py        
         extract bias related data
 
 plot_bias.py                
-        create  various history plots of bias related data
+        create various history plots of bias related data
 
 plot_bias_trend.py          
          plotting bias - overclock trend
@@ -108,9 +101,6 @@ a list of directories related to bias computations are kept in <house_keeping>/b
 '/data/mta/Script/ACIS/Bad_pixels/house_keeping/' :house_keeping ---- house keeping directory
 '/data/mta/Script/Python_script2.7/'              :mta_dir       ---- mta related python scripts are kept here
 '/usr/local/bin/'                                 :op_dir        ---- the location where system functions are kept
-
-
-Note: for the case it is a test, dir_list_py_test and bias_dir_list_test_py are read.
 
 Output
 ------
@@ -188,11 +178,12 @@ How to Run
 ----------
 
 /data/mta/Script/ACIS/Bad_pixels/Script/acis_bad_pixel_wrap_script        --- to run the daily update
-/data/mta/Script/ACIS/Bad_pixels/Script/acis_bad_pixel_wrap_script_test   --- to run the test data
 
 
 Cron job
 --------
+on r2d2-v as mta
+
 15 3  * * *  cd /data/mta/Script/ACIS/Bad_pixels/Exc; /data/mta/Script/ACIS/Bad_pixels/Script/acis_bad_pixel_wrap_script  >>$HOME/Logs/acis_bad_pix.cron  2>&1
 30 3 * * 7  cd /data/mta/Script/ACIS/Bad_pixels/Exc; /data/mta/Script/ACIS/Bad_pixels/Script/acis_bias_plot_wrap_script  >> $HOME/Logs/acis_bad_pix.cron  2>&1
 

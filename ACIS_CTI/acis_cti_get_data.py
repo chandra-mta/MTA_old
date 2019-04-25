@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################################
 #                                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                                   #
 #           author: t. isobe(tisobe@cfa.harvard.edu)                                                #
 #                                                                                                   #
-#           Last Update:    Sep 10, 2014                                                            #
+#           Last Update:    Apr 25, 2019                                                            #
 #                                                                                                   #
 #####################################################################################################
 
@@ -18,6 +18,7 @@ import random
 import operator
 import math
 import numpy
+import time
 import unittest
 #
 #--- from ska
@@ -30,15 +31,14 @@ ascdsenv = getenv('source /home/ascds/.ascrc -r release', shell='tcsh')
 #
 path = '/data/mta/Script/ACIS/CTI/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -47,19 +47,12 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-
+import mta_common_functions as mcf    #---- contains other functions commonly used in MTA scripts
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
-#
-#--- a couple of things needed
-#
-dare   = mcf.get_val('.dare',   dir = bin_data, lst=1)
-hakama = mcf.get_val('.hakama', dir = bin_data, lst=1)
 
 working_dir = exc_dir + '/Working_dir/'
 
@@ -68,7 +61,6 @@ working_dir = exc_dir + '/Working_dir/'
 #---------------------------------------------------------------------------------------------------
 
 def acis_cti_get_data():
-
     """
     extract acis evt1 files which are not processed for CTI observations
     Input:  none, but read from directory: /data/mta/www/mp_reports/photons/acis/cti/*
@@ -85,24 +77,27 @@ def acis_cti_get_data():
 #
 #--- create a temporary saving directory 
 #
-        mcf.mk_empty_dir(working_dir)
+        cmd = 'rm -rf '   + working_dir
+        os.system(cmd)
+        cmd = 'mkdir -p ' + working_dir
+        os.system(cmd)
 #    
-#--- extract acis event1 file
+#--- extract acis evt1 file
 #
-        outdir = working_dir + '/new_entry'     #---- new_entry list will be used later
-        f      = open(outdir, 'w')
+        line = ''
         for obsid in obsid_list:
-            f.write(obsid)
-            f.write('\n')
-            cnt = 0
-            chk = extract_acis_evt1(obsid)
+            line = line + obsid + '\n'
+            cnt  = 0
+            chk  = extract_acis_evt1(obsid)
             if chk != 'na':
                 cnt += 1
                 cmd = 'mv *'+ str(obsid) + '*.fits.gz ' + working_dir
                 os.system(cmd)
     
-        f.close()
-    
+        outdir = working_dir + '/new_entry'     #---- new_entry list will be used later
+        with open(outdir, 'w') as fo:
+            fo.write(line)
+
         if cnt > 0:
             cmd = 'gzip -d ' + working_dir + '*.gz'
             os.system(cmd)
@@ -114,7 +109,6 @@ def acis_cti_get_data():
 #---------------------------------------------------------------------------------------------------
 
 def extract_acis_evt1(obsid):
-
     """
     extract acis evt1 file 
     Input: obsid    --- obsid of the data
@@ -122,7 +116,7 @@ def extract_acis_evt1(obsid):
             file name if the data is extracted. if not ''
     """
 #
-#--- write  required arc4gl command
+#--- write  required arc5gl command
 #
     line = 'operation=retrieve\n'
     line = line + 'dataset=flight\n'
@@ -132,55 +126,55 @@ def extract_acis_evt1(obsid):
     line = line + 'filetype=evt1\n'
     line = line + 'obsid=' + str(obsid) + '\n'
     line = line + 'go\n'
-    f    = open(zspace, 'w')
-    f.write(line)
-    f.close()
-
-
-    cmd1 = "/usr/bin/env PERL5LIB="
-    cmd2 =  ' echo ' +  hakama + ' |arc4gl -U' + dare + ' -Sarcocc -i' + zspace
-    cmd  = cmd1 + cmd2
-
+    with open(zspace, 'w') as f:
+        f.write(line)
 #
-#--- run arc4gl
+#--- run arc5gl
 #
-    bash(cmd,  env=ascdsenv)
-    mcf.rm_file(zspace)
+    try:
+        cmd = ' /proj/sot/ska/bin/arc5gl -user isobe -script ' + zspace
+        os.system(cmd)
+    except:
+        try:
+            cmd  = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace
+            os.system(cmd)
+        except:
+            cmd1 = "/usr/bin/env PERL5LIB= "
+            cmd2 = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace
+            cmd  = cmd1 + cmd2
+            bash(cmd,  env=ascdsenv)
+
+    mcf.rm_files(zspace)
 #
 #--- check the data is actually extracted
 #
     cmd  = 'ls * > ' + zspace
     os.system(cmd)
-    f    = open(zspace, 'r')
-    data = [line.strip() for line in f.readlines()]
-    mcf.rm_file(zspace)
-    f.close()
+    data = mcf.read_data_file(zspace, remove=1)
+
     data_out = []
     for ent in data:
         m = re.search(str(obsid), ent)
         if m is not None:
             data_out.append(ent)
-
 #
 #--- if multiple evt1 files are extracted, don't use it, but keep the record of them 
 #
     if len(data_out) > 1:
-        cmd  = 'rm *'+ str(obsid) + '*evt1.fits.gz '
+        cmd  = 'rm -f *'+ str(obsid) + '*evt1.fits.gz '
         os.system(cmd)
 
-        file = house_keeping + '/keep_entry'
-        f    = open(file, 'a')
-        f.write(obsid)
-        f.write('\n')
-        f.close()
-        mcf.rm_file(zspace)
+        ifile = house_keeping + '/keep_entry'
+        with open(ifile, 'a') as f:
+            f.write(obsid)
+            f.write('\n')
      
         return 'na'
     elif len(data_out) == 1:
 #
 #--- normal case, only one file extracted
 #
-        mcf.rm_file(zspace)
+        mcf.rm_files(zspace)
         line = data_out[0]
         return line
     else:
@@ -194,7 +188,6 @@ def extract_acis_evt1(obsid):
 #---------------------------------------------------------------------------------------------------
 
 def find_new_entry():
-
     """
     create a list of obsids which have not processed yet
     Input: none, but read from /data/mta/www/mp_reports/photons/acis/cti/*
@@ -203,146 +196,52 @@ def find_new_entry():
 #
 #--- find currently available data
 #
-    file = '/data/mta/www/mp_reports/photons/acis/cti/*_*'
-
-    cmd  = "ls -td " + file +  "> " + zspace
+    cmd  = "ls -td /data/mta/www/mp_reports/photons/acis/cti/*_* > " + zspace
     os.system(cmd)
-    f    = open(zspace, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-    mcf.rm_file(zspace)
+    data = mcf.read_data_file(zspace, remove=1)
 
-    current_list = []
+    current_obsids = []
     for ent in data:
         m = re.search("\d\d\d\d\d_\d", ent)
         if m is not None:
-            current_list.append(ent)
-    current_list = current_list[0:5]
-
-    current_obsids = []
-    for ent in current_list:
-        atemp = re.split('\/', ent)
-        btemp = re.split('_', atemp[len(atemp) -1])
-        current_obsids.append(btemp[0])
+            atemp = re.split('\/', ent)
+            btemp = re.split('_', atemp[-1])
+            current_obsids.append(btemp[0])
+#
+#--- probably we need only the most recent 20 of them
+#
+            current_obsids = current_obsids[0:20]
 #
 #--- read the past entry list
 #
     pobsid_list = []
     for ccd in range(0, 10):
         cfile = data_dir + 'Results/ti_ccd' + str(ccd)
-        fin   = open(cfile, 'r')
-        data  = [line.strip() for line in fin.readlines()]
-        fin.close()
+        data  = mcf.read_data_file(cfile)
+
         for ent in data:
             atemp = re.split('\s+', ent)
             pobsid_list.append(int(atemp[5]))
-    old_list = list(set(pobsid_list))
-    old_list = sorted(old_list)
 
+    old_list = list(set(pobsid_list))
 #
 #--- create a list of data which have not been processed
 #
-    new_list   = compare_and_find_new_entry(current_obsids, old_list)
+    new_list   =  list(numpy.setdiff1d(current_obsids, old_list))
 
     if len(new_list) > 0:
 #
-#--- read past excluded obsids
+#--- excluded obsids in an exclude list
 #
-        ifile = house_keeping + 'exclude_obsid_list'
-        f     = open(ifile, 'r')
-        exfile = [line.strip() for line in f.readlines()]
-        f.close()
-#
-#--- extract obsids from the new_list
-#
-        obsid_list = []
-        for ent in new_list:
-            test = str(ent)
-            chk = 0
-            for comp in exfile:
-                if test == comp:
-                    chk = 1
-                    break
-            if chk == 1:
-                continue
-            else:
-                obsid_list.append(ent)
+        ifile  = house_keeping + 'exclude_obsid_list'
+        exfile = mcf.read_data_file(ifile)
+        
+        obsid_list = list(numpy.setdiff1d(new_list, exfile))
     else:
         obsid_list = []
 
     return obsid_list
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-
-def create_list(pass_list):
-
-    try:
-        cmd = 'ls  -td ' + pass_list  + '> ' + zspace
-        os.system(cmd)
-        f   = open(zspace, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
-        mcf.rm_file(zspace)
-        data = data[0:5]
-    except:
-        data = []
-
-    return data
-
-#---------------------------------------------------------------------------------------------------
-#-- compare_and_find_new_entry: extract the data which are not checked before                    ---
-#---------------------------------------------------------------------------------------------------
-
-def compare_and_find_new_entry(current_list, old_list):
-
-    """
-    extract the data which are not checked before
-    Input:  current_list    --- a current input list
-            old_list        --- a past input list
-    Output: new_list        --- a list of new input list
-    """
-    new_list = []
-    for ent in current_list:
-        test = int(ent)
-        chk = 0
-        for comp in old_list:
-            if test == comp:
-                chk = 1
-                break
-
-        if chk == 1:
-            continue
-        else:
-            new_list.append(ent)
-
-    return new_list
-
-#---------------------------------------------------------------------------------------------------
-#-- obsid_from_mp_report: extract obsid from a given path to the data                             --
-#---------------------------------------------------------------------------------------------------
-
-def obsid_from_mp_report(nlist):
-
-    """
-    extract obsid from a given path to the data
-             entry line looks line: "/data/mta/www/mp_reports/photons/acis/cti/62311_0"
-    Input:  nlist      --- a list of data pathes to the data
-    Ouput:  obsid_list --- a list of obsids
-    """
-
-    obsid_list = []
-    for ent in nlist:
-        atemp = re.split('/', ent)
-        btemp = re.split('_', atemp[len(atemp)-1])
-#
-#--- check whether the obsid is really number
-#
-        if mcf.chkNumeric(btemp[0]):
-            obsid_list.append(btemp[0])
-
-    return obsid_list
 #-----------------------------------------------------------------------------------------
 #-- TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST    ---
 #-----------------------------------------------------------------------------------------
@@ -359,10 +258,7 @@ class TestFunctions(unittest.TestCase):
         extract_acis_evt1(obsid)
         cmd = 'ls *fits.gz > ' + zspace
         os.system(cmd)
-        f   = open(zspace, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
-        mcf.rm_file(zspace)
+        data = mcf.read_data_file(zspace, remove=1)
 
         chk = 0
         for ent in data:
@@ -386,20 +282,9 @@ class TestFunctions(unittest.TestCase):
 
         self.assertEquals(chk, 1)
 
-
 #--------------------------------------------------------------------
-
-#
-#--- if there is any aurgument, it will run normal mode
-#
-chk =   0
-if len(sys.argv) >= 2:
-    chk  = 1
 
 if __name__ == '__main__':
 
-    if chk == 0:
-        unittest.main()
-    else:    
-        acis_cti_get_data()
+    acis_cti_get_data()
 

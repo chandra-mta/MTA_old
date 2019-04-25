@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################################
-#                                                                                                                       #
-#       run_extract_bad_pix.py: running extract_bad_pix.py script to extrat bad pixel data                              #
-#                                                                                                                       #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                                   #
-#                                                                                                                       #
-#           last update Sep 15, 2014                                                                                    #
-#                                                                                                                       #
-#########################################################################################################################
+#####################################################################################################
+#                                                                                                   #
+#       run_extract_bad_pix.py: running extract_bad_pix.py script to extrat bad pixel data          #
+#                                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
+#                                                                                                   #
+#           last update Mar 25, 2019                                                                #
+#                                                                                                   #
+#####################################################################################################
 
 import os
 import sys
@@ -16,22 +16,12 @@ import re
 import string
 import random
 import operator
-import math
-import numpy
-import astropy.io.fits as pyfits
-import unittest
-
-#
-#--- from ska
-#
-from Ska.Shell import getenv, bash
-ascdsenv = getenv('source /home/ascds/.ascrc -r release', shell='tcsh')
-
+import time
+import Chandra.Time
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py'
-
 f    = open(path, 'r')
 data = [line.strip() for line in f.readlines()]
 f.close()
@@ -40,7 +30,7 @@ for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -49,80 +39,76 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat       as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions    as mcf        #---- contains other functions commonly used in MTA scripts
-import bad_pix_common_function as bcf
 import extract_bad_pix         as ebp
-
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random()) 
 zspace = '/tmp/zspace' + str(rtail)
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- find_data_collection_interval: find data collection period in dom                ---
+#---------------------------------------------------------------------------------------
 
 def find_data_collection_interval():
+    """
+    find data collection period in dom
+    input:  none but read from <data_dir>/Dis_dir/hist_ccd3
+    output: ldom    --- starting dom
+            tdom    --- stopping dom (today)
+    """
+#
+#--- find today's  date
+#
+    tout  = time.strftime('%Y:%j:%H:%M:%S', time.gmtime())
+    tdate = int(mcf.convert_date_format(tout, ofmt='chandra'))
+#
+#--- find the date of the last entry
+#
+    ifile = data_dir + 'hist_ccd3'
+    data  = mcf.read_data_file(ifile)
+    data.reverse()
 
-    tlist = tcnv.currentTime(format='UTC')
-    tyear = tlist[0]
-    tyday = tlist[7]
-    tdom  = tcnv.YdateToDOM(tyear, tyday)
-
-    file  = data_dir + 'Disp_dir/hist_ccd3'
-    f     = open(file, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
-
-    chk   = 0
-    k     = 1
-    while(chk == 0):
-        atemp = re.split('<>', data[len(data)-k])
-        ldom  = atemp[0]
-        if mcf.chkNumeric(ldom) == True:
-            ldom = int(ldom)
-            chk = 1
+    for ent in data:
+        atemp = re.split('<>', ent)
+        try:
+            ldate = int(float(atemp[0]))
             break
-        else:
-            k += 1
+        except:
+            continue
+#
+#--- the data colleciton starts from the next day of the last entry date
+#
+    ldate += 86400
 
-    ldom += 1
-    return(ldom, tdom)
+    return [tdate, ldate]
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- mv_old_file: move supplemental data file older than 30 day to a reserve           --
+#---------------------------------------------------------------------------------------
 
-def mv_old_file(dom):
+def mv_old_file(tdate):
+    """
+    move supplemental data file older than 30 day to a reserve
+    input:  tdate   --- the current time in seconds from 1998.1.1
+    output: none but older files are moved
+    """
+    tdate -= 30 * 86400
 
-    dom -= 30
-    if dom > 0:
-        [year, ydate] = tcnv.DOMtoYdate(dom)
-        sydate = str(ydate)
-        if ydate < 10:
-            sydate = '00' + sydate
-        elif ydate < 100:
-            sydate = '0' + sydate
+    cmd = 'ls ' + house_keeping + '/Defect/CCD*/* > ' + zspace
+    os.system(cmd)
+    ldata = mcf.read_data_file(zspace, remove=1)
 
-        atime = str(year) + ':' + sydate + ':00:00:00'
-        stime = tcnv.axTimeMTA(atime)
+    for ent in ldata:
+        atemp = re.split('\/acis', ent)
+        btemp = re.split('_', atemp[1])
 
-        cmd = 'ls ' + house_keeping + '/Defect/CCD*/* > ' + zspace
-        os.system(cmd)
-        fs = open(zspace, 'r')
-        ldata = [line.strip() for line in fs.readlines()]
-        fs.close()
-        mcf.rm_file(zspace)
-        for ent in ldata:
-            atemp = re.split('\/acis', ent)
-            btemp = re.split('_', atemp[1])
-            if int(btemp[0]) < stime:
-                out = ent
-                out = out.replace('Defect', 'Defect/Save')
-                cmd = 'mv ' + ent + ' ' + out 
-                os.system(cmd)
+        if int(btemp[0]) < tdate:
+            out = ent
+            out = out.replace('Defect', 'Defect/Save')
+            cmd = 'mv ' + ent + ' ' + out 
+            os.system(cmd)
 
 #--------------------------------------------------------------------
 
@@ -140,10 +126,8 @@ if __name__ == '__main__':
     else:
         (start, stop) = find_data_collection_interval()
 
-    for dom in range(start, stop):
-
-        ebp.find_bad_pix_main(dom)
-        mv_old_file(dom)
+        ebp.find_bad_pix_main(start, stop)
+        mv_old_file(start)
 
 
 

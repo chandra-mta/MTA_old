@@ -12,9 +12,13 @@ This script must be run on a specific machine with a specific user. Currently fo
 
 	mta on c3po-v
 	mta on r2d2-v
+    mta on coloss-v
+    mta on han-v
+    mta on luke-v
 	cus on c3po-v
 	cus on r2e2-v
-    mta on rhodes
+    cus on han-v
+    cus on luke-v
 
 Input:
 -----
@@ -60,8 +64,6 @@ cus on c3po-v
 0,30 * * * * /data/mta/Script/Cron_check/Scripts/check_cron_records.py >> $HOME/Logs/new_cron_check_c3po_v_cus  2>&1
 cus on r2d2-v
 0,30 * * * * /data/mta/Script/Cron_check/Scripts/check_cron_records.py >> $HOME/Logs/new_cron_check_r2r2_v_cus  2>&1
-mta on rhodes
-0,30 * * * * /data/mta/Script/Cron_check/Scripts/check_cron_records.py >> $HOME/Logs/new_cron_check_rohodes_mta 2>&1
 
 
 

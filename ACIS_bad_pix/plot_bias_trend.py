@@ -1,20 +1,21 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#       plot_bias_trend.py: plotting bias - overclock trend                                                 #
-#                                                                                                           #
-#                   author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                           #
-#                   Last update: May 13, 2014                                                               #
-#                                                                                                           #
-#############################################################################################################
+#########################################################################################
+#                                                                                       #
+#       plot_bias_trend.py: plotting bias - overclock trend                             #
+#                                                                                       #
+#                   author: t. isobe (tisobe@cfa.harvard.edu)                           #
+#                                                                                       #
+#                   Last update: Apr 02, 2019                                           #
+#                                                                                       #
+#########################################################################################
 
 import os
 import sys
 import re
 import string
 import random
+import time
 import operator
 #
 #--- pylab plotting routine related modules
@@ -24,38 +25,19 @@ import matplotlib as mpl
 if __name__ == '__main__':
 
     mpl.use('Agg')
-
-#
-#--- check whether this is a test case
-#
-comp_test = 'live'
-if len(sys.argv) == 2:
-    if sys.argv[1] == 'test':                   #---- test case
-        comp_test = 'test'
-    elif sys.argv[1] == 'live':                 #---- automated read in
-        comp_test = 'live'
-    else:
-        comp_test = sys.argv[1].strip()         #---- input data name
-else:
-    comp_test = ''
 #
 #--- reading directory list
 #
-if comp_test == 'test' or comp_test == 'test2':
-    path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/bias_dir_list_test_py'
-else:
-    path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/bias_dir_list_py'
+path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/bias_dir_list_py'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
 #--- append a path to a private folder to python directory
 #
@@ -64,50 +46,47 @@ sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat    as tcnv
 import mta_common_functions as mcf
 import find_moving_average  as fmv
 #
 #--- temp writing file name
 #
-
-rtail  = int(10000 * random.random())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
-#---------------------------------------------------------------------------------------------------
-#-- generate_all_plot: a control function to create bias - overclock plots                      ----
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- generate_all_plot: a control function to create bias - overclock plots           ---
+#---------------------------------------------------------------------------------------
 
 def generate_all_plot():
-
     """
     a control function to create bias - overclock plots
-    Input:  None but read from:
+    input:  None but read from:
             <data_dir>/Bias_save/CCD<ccd>/quad<quad>
 
-    Output: <web_dir>/Plots/Sub2/bias_plot_ccd<ccd>_quad<quad>.png
+    output: <web_dir>/Plots/Sub2/bias_plot_ccd<ccd>_quad<quad>.png
     """
-
     for ccd in range(0, 10):
         for quad in range(0, 4):
 #
 #--- set input and output file names
 #
-            file     = data_dir + 'Bias_save/CCD'      + str(ccd) + '/quad' + str(quad)
-            outname  = web_dir  + 'Plots/Sub2/bias_plot_ccd' + str(ccd) + '_quad' + str(quad) + '.png'
+            ifile = data_dir + 'Bias_save/CCD'      + str(ccd) + '/quad' + str(quad)
+            oname = web_dir  + 'Plots/Sub2/bias_plot_ccd' + str(ccd) 
+            oname = oname    + '_quad' + str(quad) + '.png'
 #
 #--- read data
 #
-            data = mcf.readFile(file)
-
-            x     = []          #---- original x
-            y     = []          #---- original y
+            data = mcf.read_data_file(ifile)
+            x    = []          #---- original x
+            y    = []          #---- original y
 
             for ent in data:
-                atemp = re.split('\s+|\t+', ent)
+                atemp = re.split('\s+', ent)
                 try:
-                    valx = (float(atemp[0]) - 48902399.0)/86400.0
-                    valy = float(atemp[1]) - float(atemp[3])
+                    stime = float(atemp[0])
+                    valx  = mcf.chandratime_to_fraq_year(stime)
+                    valy  = float(atemp[1]) - float(atemp[3])
 #
 #--- if the difference si too large, drop it
 #
@@ -119,30 +98,30 @@ def generate_all_plot():
                     pass
 #
 #--- compute moving average and upper and lower envelopes
-#--- here, we set moving interval to 50 days and asked 5th degree polynomial fit for smoothing
+#--- here, we set moving interval to 0.08 year (about 30 days) and asked 5th degree 
+#--- polynomial fit for smoothing
 #
-            moving_avg = fmv.find_moving_average(x, y, 50.0, 5)
+            moving_avg = fmv.find_moving_average(x, y, 0.08, 5)
 #
 #--- plot the data and fittings
 #
-            plot_bias_trend(x, y, moving_avg, outname, ccd, quad)
+            plot_bias_trend(x, y, moving_avg, oname, ccd, quad)
 
-#---------------------------------------------------------------------------------------------------
-#-- plot_bias_trend: plotting bias data, moving average, top and bottom envelops to the data      --
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- plot_bias_trend: plotting bias data, moving average, top and bottom envelops to the data
+#---------------------------------------------------------------------------------------
 
 def plot_bias_trend(x, y, moving_avg, outname, ccd, quad):
-
     """
      plotting bias data, moving average, top and bottom envelops to the data
-     Input:     x          --- independent variable
+     input:     x          --- independent variable
                 y          --- dependent varialbes
                 moving_avg --- a list of list containing:
                     [xcent, movavg, sigma, min_sv, max_sv, y_avg, y_min, y_max, y_sig]
                 outname    --- output name
                 ccd        --- ccd #
                 quad       --- quad #
-    Output:     png plots named: outname
+    output:     png plots named: outname
     """
 #
 #--- extract moving average etc data from list
@@ -189,8 +168,8 @@ def plot_bias_trend(x, y, moving_avg, outname, ccd, quad):
     ax.set_autoscale_on(False)      #---- these three may not be needed for the new pylab, but 
     ax.set_xbound(xmin,xmax)        #---- they are necessary for the older version to set
 
-    ax.set_xlim(xmin=xmin, xmax=xmax, auto=False)
-    ax.set_ylim(ymin=ymin, ymax=ymax, auto=False)
+    ax.set_xlim(left=xmin,   right=xmax, auto=False)
+    ax.set_ylim(bottom=ymin, top=ymax,   auto=False)
 #
 #--- original data
 #
@@ -219,7 +198,7 @@ def plot_bias_trend(x, y, moving_avg, outname, ccd, quad):
     leg = legend([p],  [title], prop=props, loc=2)
     leg.get_frame().set_alpha(0.5)
 
-    ax.set_xlabel("Time (DOM)", size=8)
+    ax.set_xlabel("Time (Year)", size=8)
     ax.set_ylabel("Bias - Overclock", size=8)
 #
 #--- set the size of the plotting area in inch (width: 10.0in, height 5.0in)
@@ -229,7 +208,7 @@ def plot_bias_trend(x, y, moving_avg, outname, ccd, quad):
 #
 #--- save the plot in png format
 #
-    plt.savefig(outname, format='png', dpi=100)
+    plt.savefig(outname, format='png', dpi=200)
 #
 #--- clean up all plotting param
 #

@@ -1,14 +1,16 @@
 #!/usr/bin/env /proj/sot/ska/bin/python
 
-#########################################################################################################################
-#                                                                                                                       #
-#   acis_hist_plot_trend_interactive.py: plot acis histgram peak, width, and count rate trends (interactive version)    #
-#                                                                                                                       #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                                   #
-#                                                                                                                       #
-#           last update: May 10, 2016                                                                                   #
-#                                                                                                                       #
-#########################################################################################################################
+#####################################################################################################
+#                                                                                                   #
+#   acis_hist_plot_trend_interactive.py: plot acis histgram peak, width, and count rate trends      #
+#                                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
+#                                                                                                   #
+#           last update: Mar 26, 2019                                                               #
+#                                                                                                   #
+#           note: mpld3 does not work python3.6; this version is run with python2.7                 #
+#                                                                                                   #
+#####################################################################################################
 
 import sys
 import os
@@ -20,75 +22,48 @@ import numpy
 import getopt
 import os.path
 import time
-
-import mpld3
-from mpld3 import plugins, utils
-
 #
 #--- pylab plotting routine related modules
 #
 import matplotlib as mpl
-
 if __name__ == '__main__':
-
     mpl.use('Agg')
-
 #
 #--- read argv
 #
 try:
     option, remainder = getopt.getopt(sys.argv[1:],'t',['test'])
 except getopt.GetoptError as err:
-     print str(err)
+     print(str(err))
      sys.exit(2)
 
-
-pass_test = ''
-for opt, arg in option:
-    if opt in ('-t', '--test'):
-        pass_test = 'test'
-
-#
-#--- reading directory list
-#
-
-if pass_test == 'test':
-    path = '/data/mta/Script/ACIS/Acis_hist2/house_keeping/dir_list_test'
-else:
-    path = '/data/mta/Script/ACIS/Acis_hist/house_keeping/dir_list_py'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/ACIS/Acis_hist/house_keeping/dir_list_py'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
-#--- append path to a private folder
-#
-
-mta_dir = '/data/mta/Script/Python_script2.7'               #---- temporary until everything is moved to 2.7
-
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
-
-
-#
-#--- converTimeFormat contains MTA time conversion routines
-#
-import convertTimeFormat as tcnv
 #
 #--- mta common functions
 #
-import mta_common_functions as mtac
+import mta_common_functions as mcf
 #
 #--- least sq fitting routine (see http://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html)
 #
+sp_dir = '/data/mta/Script/Python_script2.7/'
+sys.path.append(sp_dir)
 from kapteyn import kmpfit
+#
+#--- interactive html page
+#
+import mpld3
+from mpld3 import plugins, utils
 #
 #--  peak position y direction plotting range (x2 of pdelta)
 #
@@ -107,17 +82,16 @@ count_ymax = 0.07
 #
 sec_per_frame = 3.2412
 
-#--------------------------------------------------------------------------------------------------------
-#-- acis_hist_plot_trend: main function to plot trend of acis histgram data and create interactive html page
-#--------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+#-- acis_hist_plot_trend: main function to plot trend of acis histgram data and create a html page
+#----------------------------------------------------------------------------------------
 
 def acis_hist_plot_trend():
-
-    '''
+    """
     main function to plot trend of acis histgram data and create interactive html page
     input: none, this will read data from data_dir
     output: interactive web pages in <web_dir>/Html_pages/
-    '''
+    """
 #
 #--- go through given ccds, nodes, and data collection regions
 #
@@ -128,33 +102,44 @@ def acis_hist_plot_trend():
 #--- read data
 #
                 node0_data = readdata(ccd, 0, loc)
+                if node0_data == False:
+                    continue
+
                 node1_data = readdata(ccd, 1, loc)
+                if node1_data == False:
+                    continue
+
                 node2_data = readdata(ccd, 2, loc)
+                if node2_data == False:
+                    continue
+
                 node3_data = readdata(ccd, 3, loc)
+                if node3_data == False:
+                    continue
 #
 #--- create the interactive web pages
 #
                 plot_interactive_trend(node0_data, node1_data, node2_data, node3_data, ccd, loc, dtype)
-
 #
 #--- udate the main web page
 #
     update_web_page()
 
-#--------------------------------------------------------------------------------------------------------
-#--- readdata: read trend data from database                                                          ---
-#--------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+#--- readdata: read trend data from database                                          ---
+#----------------------------------------------------------------------------------------
 
 def readdata(ccd, node, loc):
-
-    '''
+    """
     read trend data from database
-    input: ccd, node, and loc (low or high)
+    input:  ccd     --- ccd #
+            node    --- node #
+            loc     --- low or high
     output: a list of lists: [time, pos1, cnt1, width1, pos2, cnt2, width2, pos3, cnt3, width3]
-    '''
-
-    file = data_dir + 'ccd' + str(ccd) + '_node' + str(node) + '_' + loc
-
+    """
+#
+#--- initialize lists
+#
     time   = []
     pos1   = []
     cnt1   = []
@@ -177,48 +162,37 @@ def readdata(ccd, node, loc):
     interv = []
     y_list = []
     m_list = []
-    
 #
 #-- check whether the data file exists... not all CCDs have the histgram data
 #
-    f    = open(file, 'r')
-    data = [line.strip() for line in f.readlines()]
+    ifile = data_dir + 'ccd' + str(ccd) + '_node' + str(node) + '_' + loc
+
+    if not os.path.isfile(ifile):
+        return False
+
+    data  = mcf.read_data_file(ifile)
 
     for ent in data:
-        atemp = re.split('\s+|t+', ent)
-        btemp = re.split(':', atemp[0])
-        ytime = float(btemp[0]) + (float(btemp[1])+0.5) / 12.0    #--- adding 15 day to set position at mid month
-        duration = float(atemp[20])
+        atemp     = re.split('\s+|t+', ent)
+        btemp     = re.split(':', atemp[0])
+#
+#--- adding 15 day to set position at mid month
+#
+        ytime     = float(btemp[0]) + (float(btemp[1])+0.5) / 12.0    
+        duration  = float(atemp[20])
 
         interv.append(duration)
-
-        atemp[2]  = float(atemp[2])
-        atemp[3]  = float(atemp[3])
-        atemp[4]  = float(atemp[4])
-        atemp[5]  = float(atemp[5])
-        atemp[6]  = float(atemp[6])  * 2.354             #--- changing sigma to FWHM
-        atemp[7]  = float(atemp[7])
-        atemp[8]  = float(atemp[8])
-        atemp[9]  = float(atemp[9])
-        atemp[10] = float(atemp[10])
-        atemp[11] = float(atemp[11])
-        atemp[12] = float(atemp[12]) * 2.354
-        atemp[13] = float(atemp[13])
-        atemp[14] = float(atemp[14])
-        atemp[15] = float(atemp[15])
-        atemp[16] = float(atemp[16]) 
-        atemp[17] = float(atemp[17])
-        atemp[18] = float(atemp[18]) * 2.354
-        atemp[19] = float(atemp[19])
-
         chk = 0
-        for i in range(2,20):
-            if atemp[i] <= 0:
+        for k in range(2, 20):
+            if k in (6, 12, 18):
+                atemp[k] = float(atemp[k]) * 2.354      #--- changing sigma to FWHM
+            else:
+                atemp[k] = float(atemp[k])
+
+            if (atemp[k] <= 0) or (atemp[k] >1.0e5):
                 chk = 1
-                continue
-            if atemp[i] > 1e5:
-                chk = 1
-                continue
+                break
+        
         if chk == 1:
             continue
 
@@ -253,120 +227,90 @@ def readdata(ccd, node, loc):
     out  = out1 + out2
     return out
         
-#--------------------------------------------------------------------------------------------------------
-#-- convert_ytime: change time fromat from in second from 1.1.1998 to time in unit of fractional year  --
-#--------------------------------------------------------------------------------------------------------
-
-def convert_ytime(time):
-
-    '''
-    change time fromat from in second from 1.1.1998 to time in unit of fractional year
-    input time in: seconds from 1.1.1998
-    output time in : fractional year, e.g., 2011.1213
-    '''
-
-    atime = tcnv.convertCtimeToYdate(time)
-    btemp = re.split(':', atime)
-    year  = float(btemp[0])
-    ydate = float(btemp[1])
-    hour  = float(btemp[2])
-    mins  = float(btemp[3])
-    sec   = float(btemp[4])
-
-    chk   = 4.0 * int(0.25 * year)
-    if chk == year:
-        base = 366.0
-    else:
-        base = 365.0
-
-    ydate  = ydate + (hour/24.0 + mins/1440.0 + sec/86400.0)
-    frac   = ydate/base
-
-    ytime  = year + frac
-
-    return ytime
-    
-
-#-----------------------------------------------------------------------------------------------------------------------------
-#-- save_results: print out line fitted result in a file                                                                   ---
-#-----------------------------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------
+#-- save_results: print out line fitted result in a file                                   ---
+#---------------------------------------------------------------------------------------------
 
 def save_results(ccd, loc, dtype, int_list, slp_list):
     """
     print out line fitted result in a file
-    input:  ccd     --- ccd #
-            loc     --- location; low, high
-            dtype   --- data type: pos, cnt, width
+    input:  ccd         --- ccd #
+            loc         --- location; low, high
+            dtype       --- data type: pos, cnt, width
             int_list    --- a list of lists of parameter 1 [[node0-al, node0-ti, node0-mn], [node1al..}..]
             slp_list    --- a list of lists of parameter 2 [[node0-al, node0-ti, node0-mn], [node1al..}..]
     output: a file      --- ccd<ccd#>_<dtype>_<loc>_fitting_results
     """
-
-    ofile = web_dir + 'Fittings/ccd' + str(ccd) + '_' +  dtype + '_' + loc + '_fitting_results'
-    fout  = open(ofile , 'w')
-
+#
+#--- set which one to print out
+#
     if dtype == 'cnt':
-        dline   = ': Log Count Rate '
+        dline    = ': Log Count Rate '
         equation = 'y = const1 * exp*(-1 * const2 * (Time - 2000) (Time in year))\n'
+
     elif dtype == 'width':
-        dline = ': Peak Width  '
+        dline    = ': Peak Width  '
         equation = 'y = const1  +  const2 * (Time - 2000) (Time in year))\n'
+
     else:
-        dline = ': Peak Position  '
+        dline    = ': Peak Position  '
         equation = 'y = const1  +  const2 * (Time - 2000) (Time in year))\n'
+#
+#--- open the output file and start printing 
+#
+    ofile = web_dir + 'Fittings/ccd' + str(ccd) + '_' +  dtype + '_' + loc + '_fitting_results'
+    with open(ofile , 'w') as fout:
 
-    fout.write('\n')
-
-    line = 'CCD' + str(ccd) + dline + 'Al K-alpha (set Year 2000 to 0)\n'
-    fout.write(line)
-    fout.write('#\n')
-    fout.write(equation)
-    fout.write('#\n')
-    fout.write('node    rows            element     const1   const2\n')
-    fout.write('#---------------------------------------------------------------------\n')
+        fout.write('\n')
     
-    print_out_fit_result(fout, loc, 'al', 0, int_list[0][0], slp_list[0][0])
-    print_out_fit_result(fout, loc, 'al', 1, int_list[1][0], slp_list[1][0])
-    print_out_fit_result(fout, loc, 'al', 2, int_list[2][0], slp_list[2][0])
-    print_out_fit_result(fout, loc, 'al', 3, int_list[3][0], slp_list[3][0])
-
-    fout.write('\n\n')
-
-    line = 'CCD' + str(ccd) + dline +  'Ti K-alpha (set Year 2000 to 0)  \n'
-    fout.write(line)
-    fout.write('#\n')
-    fout.write(equation)
-    fout.write('#\n')
-    fout.write('node    rows            element     const1   const2\n')
-    fout.write('#---------------------------------------------------------------------\n')
+        line = 'CCD' + str(ccd) + dline + 'Al K-alpha (set Year 2000 to 0)\n'
+        fout.write(line)
+        fout.write('#\n')
+        fout.write(equation)
+        fout.write('#\n')
+        fout.write('node    rows            element     const1   const2\n')
+        fout.write('#---------------------------------------------------------------------\n')
+     
+        print_out_fit_result(fout, loc, 'al', 0, int_list[0][0], slp_list[0][0])
+        print_out_fit_result(fout, loc, 'al', 1, int_list[1][0], slp_list[1][0])
+        print_out_fit_result(fout, loc, 'al', 2, int_list[2][0], slp_list[2][0])
+        print_out_fit_result(fout, loc, 'al', 3, int_list[3][0], slp_list[3][0])
     
-    print_out_fit_result(fout, loc, 'ti', 0, int_list[0][1], slp_list[0][1])
-    print_out_fit_result(fout, loc, 'ti', 1, int_list[1][1], slp_list[1][1])
-    print_out_fit_result(fout, loc, 'ti', 2, int_list[2][1], slp_list[2][1])
-    print_out_fit_result(fout, loc, 'ti', 3, int_list[3][1], slp_list[3][1])
-
-    fout.write('\n\n')
-
-    line = 'CCD' + str(ccd) + dline + 'Mn K-alpha (set Year 2000 to 0)  \n'
-    fout.write(line)
-    fout.write('#\n')
-    fout.write(equation)
-    fout.write('#\n')
-    fout.write('node    rows            element     const1   const2\n')
-    fout.write('#---------------------------------------------------------------------\n')
+        fout.write('\n\n')
     
-    print_out_fit_result(fout, loc, 'mn', 0, int_list[0][2], slp_list[0][2])
-    print_out_fit_result(fout, loc, 'mn', 1, int_list[1][2], slp_list[1][2])
-    print_out_fit_result(fout, loc, 'mn', 2, int_list[2][2], slp_list[2][2])
-    print_out_fit_result(fout, loc, 'mn', 3, int_list[3][2], slp_list[3][2])
+        line = 'CCD' + str(ccd) + dline +  'Ti K-alpha (set Year 2000 to 0)  \n'
+        fout.write(line)
+        fout.write('#\n')
+        fout.write(equation)
+        fout.write('#\n')
+        fout.write('node    rows            element     const1   const2\n')
+        fout.write('#---------------------------------------------------------------------\n')
+     
+        print_out_fit_result(fout, loc, 'ti', 0, int_list[0][1], slp_list[0][1])
+        print_out_fit_result(fout, loc, 'ti', 1, int_list[1][1], slp_list[1][1])
+        print_out_fit_result(fout, loc, 'ti', 2, int_list[2][1], slp_list[2][1])
+        print_out_fit_result(fout, loc, 'ti', 3, int_list[3][1], slp_list[3][1])
+    
+        fout.write('\n\n')
+    
+        line = 'CCD' + str(ccd) + dline + 'Mn K-alpha (set Year 2000 to 0)  \n'
+        fout.write(line)
+        fout.write('#\n')
+        fout.write(equation)
+        fout.write('#\n')
+        fout.write('node    rows            element     const1   const2\n')
+        fout.write('#---------------------------------------------------------------------\n')
+     
+        print_out_fit_result(fout, loc, 'mn', 0, int_list[0][2], slp_list[0][2])
+        print_out_fit_result(fout, loc, 'mn', 1, int_list[1][2], slp_list[1][2])
+        print_out_fit_result(fout, loc, 'mn', 2, int_list[2][2], slp_list[2][2])
+        print_out_fit_result(fout, loc, 'mn', 3, int_list[3][2], slp_list[3][2])
+    
+        fout.write('\n\n')
 
-    fout.write('\n\n')
-
-    fout.close()
-
-#--------------------------------------------------------------------------------------------------------
-#-- print_out_fit_result: create an output line for the result                                        ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- print_out_fit_result: create an output line for the result                            ---
+#--------------------------------------------------------------------------------------------
 
 def print_out_fit_result(fout, loc, elm, node, a1, a2):
     """
@@ -390,25 +334,23 @@ def print_out_fit_result(fout, loc, elm, node, a1, a2):
     line = str(node) + '\t\t' + lpos + '\t\t\t' + elm + '\t\t' + str(b1) + '\t' + str(b2) + '\n'
     fout.write(line)
 
-
-
-#--------------------------------------------------------------------------------------------------------
-#----fit_line: kmpfit calling function to fit the lines on data                                       ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#----fit_line: kmpfit calling function to fit the lines on data                           ---
+#--------------------------------------------------------------------------------------------
     
 def fit_line(paramsinit, x, y, err, type):
-
-    '''
+    """
     kmpfit calling function to fit the lines on data
-    input: paramsinit: initial guess for the parameters
-           x, y: data
-           type: linear or exp:
+    input: paramsinit   --- initial guess for the parameters
+           x            --- a list of x data
+           y            --- a list of y data
+           err          --- a list of y error
+           type         --- linear or exp:
     output: two parameters (a, b) are returned
-    '''
-
-    sx = []
-    sy = []
-    se = []
+    """
+    sx   = []
+    sy   = []
+    se   = []
     avg  = mean(y)
     stdp = std(y)
     bot  = avg - 3.0 * stdp
@@ -441,83 +383,75 @@ def fit_line(paramsinit, x, y, err, type):
         fitobj.fit(params0 = paramsinit)
 
     return fitobj.params
-    
 
-#--------------------------------------------------------------------------------------------------------
-#---linear_fit: linear model fit                                                                      ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#---linear_fit: linear model fit                                                          ---
+#--------------------------------------------------------------------------------------------
 
 def linear_fit(param, x):
-
-    '''
+    """
     linear model fit
     input: param: (a,b)
     x     independent val
     ouptput: estimate
-    '''
+    """
 
     a, b = param
 
     return (a + b * x)
 
-#--------------------------------------------------------------------------------------------------------
-#-- linear_res: linear model resitual                                                                 ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- linear_res: linear model resitual                                                     ---
+#--------------------------------------------------------------------------------------------
 
 def linear_res(param, data):
-
-    '''
+    """
      linear model resitual
      input: param (a, b)
             data  (x, y)
      output: residual
-    '''
-
+    """
     a, b    = param
     x, y, e = data
 
     res =  y - (a + b * x)
     return res
 
-#--------------------------------------------------------------------------------------------------------
-#-- exp_fit: exponential model                                                                        ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- exp_fit: exponential model                                                            ---
+#--------------------------------------------------------------------------------------------
 
 def exp_fit(param, x):
-
-    '''
+    """
     exponential model
     input: param (a, b)
            x      independent variable
     output: estimate
-    '''
-    
+    """
     a, b = param
 
     return  (a * exp(-1.0 * b * x))
 
-#--------------------------------------------------------------------------------------------------------
-#-- exp_res: exponential model residual                                                                --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- exp_res: exponential model residual                                                    --
+#--------------------------------------------------------------------------------------------
 
 def exp_res(param, data):
-
-    '''
+    """
     exponential model residual
     input param(a, b)
           data (x, y)
     output: residual
-    '''
-
+    """
     a, b    = param
     x, y, e = data
 
     res = y - (a * exp(-1.0 * b * x))
     return res
 
-#--------------------------------------------------------------------------------------------------------
-#-- update_web_page: update "update date" on the main page                                             --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- update_web_page: update "update date" on the main page                                 --
+#--------------------------------------------------------------------------------------------
 
 def update_web_page():
     """
@@ -525,21 +459,19 @@ def update_web_page():
     input: none but read <house_keeping>/acis_hist_main.html
     output: <web_page>/acis_hist_main.html
     """
+    path  = house_keeping + 'acis_hist_main.html'
+    data  = open(path, 'r').read()
 
-    ldate = tcnv.currentTime('Display')
-
-    path = house_keeping + 'acis_hist_main.html'
-    data = open(path, 'r').read()
-    data = data.replace("#DATE#", ldate)
+    ldate = time.ctime()
+    data  = data.replace("#DATE#", ldate)
     
-    outfile = web_dir + 'acis_hist_main.html'
-    fout = open(outfile, 'w')
-    fout.write(data)
-    fout.close();
+    out   = web_dir + 'acis_hist_main.html'
+    with open(out, 'w') as fout:
+        fout.write(data)
 
-#--------------------------------------------------------------------------------------------------------
-#-- plot_interactive_trend: create an interactive web page                                            ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- plot_interactive_trend: create an interactive web page                                ---
+#--------------------------------------------------------------------------------------------
 
 def plot_interactive_trend(node_0_data, node_1_data, node_2_data, node_3_data, ccd, loc, dtype):
     """
@@ -551,10 +483,11 @@ def plot_interactive_trend(node_0_data, node_1_data, node_2_data, node_3_data, c
             ccd             --- ccd #
             loc             --- location of the data collection either "low" or "high"
             dtype           --- data type, cnt, width, or pos
-    outout: interactive html page:      acis_hist_ccd<ccd#>_<loc>_<dtype>.html  (e.g., acis_hist_cccd1_low_cnt.html)
-            line fitted result page:    ccd<ccd#>_<dtype>_<loc>_fitting_results (e.g., ccd1_cnt_low_fitting_results)
+    outout: interactive html page:      acis_hist_ccd<ccd#>_<loc>_<dtype>.html  
+                                        (e.g., acis_hist_cccd1_low_cnt.html)
+            line fitted result page:    ccd<ccd#>_<dtype>_<loc>_fitting_results 
+                                        (e.g., ccd1_cnt_low_fitting_results)
     """
-
 #
 #--- set several values used in the plots
 #
@@ -600,7 +533,6 @@ def plot_interactive_trend(node_0_data, node_1_data, node_2_data, node_3_data, c
     mpl.rcParams['font.size'] = 12
     props = font_manager.FontProperties(size=12)
     plt.subplots_adjust(hspace=0.08)
-
 #
 #---- trending plots
 #
@@ -612,13 +544,19 @@ def plot_interactive_trend(node_0_data, node_1_data, node_2_data, node_3_data, c
     for node in range(0, 4):
         a_list = []
         b_list = []
-        for k in range(0, 3):
-            exec 'xtime  = n%s_time' % (str(node))
-            exec 'ydata  = n%s_%s%s' % (str(node), dtype, str(k+1))
-            exec 'y_list = y_list%s' % (str(node))
-            exec 'm_list = m_list%s' % (str(node))
 
-            exec 't_list%s = t_list%s + ydata' % (str(k), str(k))
+        xtime  = eval('n%s_time' %(str(node)))
+        y_list = eval('y_list%s' %(str(node)))
+        m_list = eval('m_list%s' %(str(node)))
+
+        for k in range(0, 3):
+            ydata = eval('n%s_%s%s' % (str(node), dtype, str(k+1)))
+            if k == 0:
+                t_list0 = t_list0 + ydata
+            elif k == 1:
+                t_list1 = t_list1 + ydata
+            elif k == 2:
+                t_list2 = t_list2 + ydata
 
             nlabel = 'node' + str(node)
 #
@@ -749,7 +687,7 @@ def plot_interactive_trend(node_0_data, node_1_data, node_2_data, node_3_data, c
 #
     out = '<!DOCTYPE html>\n<html>\n<head>\n\t<title>ACIS Histogram Plots</title>\n'
     out = out + jscript + '\n'
-    out = out + '</head>\n<body style="width:95%;margin-left:10px; margin-right;10px">\n\n'
+    out = out + '</head>\n<body style="width:95%;margin-left:10px; margin-right;10px;background-color:#FFEBCD">\n\n'
     out = out + '<a href="https://cxc.cfa.harvard.edu/mta_days/mta_acis_hist/acis_hist_main.html" '
     out = out + 'style="float:right;padding-right:50px;font-size:120%"><b>Back to Top</b></a>'
     out = out + '<h2>CCD ' + str(ccd) + ' ' + description 
@@ -774,13 +712,12 @@ def plot_interactive_trend(node_0_data, node_1_data, node_2_data, node_3_data, c
 #--- write out the html data
 #
     name = web_dir + 'Html_pages/acis_hist_cccd' + str(ccd) + '_' + loc + '_' + dtype + '.html'
-    fo = open(name, 'w')
-    fo.write(out)
-    fo.close()
+    with open(name, 'w') as fo:
+        fo.write(out)
 
-#--------------------------------------------------------------------------------------------------------
-#-- set_plot_param: set  plotting parameters                                                           --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- set_plot_param: set  plotting parameters                                               --
+#--------------------------------------------------------------------------------------------
 
 def set_plot_range(xmin, xmax, int_list, slp_list, tlist0, tlist1, tlist2, dtype, loc):
     """
@@ -807,7 +744,7 @@ def set_plot_range(xmin, xmax, int_list, slp_list, tlist0, tlist1, tlist2, dtype
         ymin_list = []
         ymax_list = []
         for k in range(0, 3):
-            exec "ydata = tlist%s" %(str(k))
+            ydata = eval('tlist%s' %(str(k)))
             [ymin, ymax] = set_range(ydata, prange)
             ymin_list.append(ymin)
             ymax_list.append(ymax)
@@ -816,9 +753,9 @@ def set_plot_range(xmin, xmax, int_list, slp_list, tlist0, tlist1, tlist2, dtype
 
     return [ymin_list, ymax_list, ylab]
 
-#--------------------------------------------------------------------------------------------------------
-#-- find_range: setting the size of plotting range                                                   ----
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- find_range: setting the size of plotting range                                       ----
+#--------------------------------------------------------------------------------------------
 
 def find_range(xmin, xmax, int_list, slp_list):
     """
@@ -862,9 +799,9 @@ def find_range(xmin, xmax, int_list, slp_list):
 
     return int(prange)
 
-#--------------------------------------------------------------------------------------------------------
-#-- set_range: set plotting range                                                                     ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- set_range: set plotting range                                                         ---
+#--------------------------------------------------------------------------------------------
 
 def set_range(ydata, prange):
     """
@@ -900,6 +837,7 @@ def create_label_html(ccd, node, loc,  y_list, m_list):
 #
     fdir      = web_dir + 'Plot_indivisual/'
     html_plot = 'https://cxc.cfa.harvard.edu/mta_days/mta_acis_hist/Plot_indivisual/';
+    #html_plot = 'https://cxc.cfa.harvard.edu/mta_days/mta_acis_hist_test/Plot_indivisual/';
     hlink     = '<p> <img src="' + html_plot 
 #
 #--- read data for the given ccd/node/loc combination
@@ -1071,7 +1009,7 @@ def y_text(ymin, ymax):
 
     return ytext
 
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 
 from pylab import *
 import matplotlib.pyplot as plt
@@ -1081,5 +1019,3 @@ import matplotlib.lines as lines
 if __name__ == '__main__':
 
     acis_hist_plot_trend()
-
-

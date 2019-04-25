@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################################
-#                                                                                                                       #
-#       create_fornt_history_files.py: create combined front side ccds history files                                    #
-#                                                                                                                       #
-#                   author: t. isobe (tisobe@cfa.harvard.edu)                                                           #
-#                                                                                                                       #
-#                   last update: May 11, 2016                                                                           #
-#                                                                                                                       #
-#########################################################################################################################
+#############################################################################################
+#                                                                                           #
+#       create_fornt_history_files.py: create combined front side ccds history files        #
+#                                                                                           #
+#                   author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                           #
+#                   last update: Mar 25, 2019                                               #
+#                                                                                           #
+#############################################################################################
 
 import os
 import sys
@@ -19,37 +19,24 @@ import operator
 import math
 
 path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with  open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
 sys.path.append(bin_dir)
 sys.path.append(mta_dir)
-#
-#--- import several functions
-#
-import convertTimeFormat      as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions   as mcf        #---- contains other functions commonly used in MTA scripts
+import mta_common_functions as mcf
 
-#
-#--- temp writing file name
-#
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
-zspace = '/tmp/zspace' + str(rtail)
-
-#----------------------------------------------------------------------------------------------------------------
-#-- create_fornt_history_files: create combined front side ccds history files                                 ---
-#----------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- create_fornt_history_files: create combined front side ccds history files             ---
+#--------------------------------------------------------------------------------------------
 
 def create_fornt_history_files():
     """
@@ -57,48 +44,52 @@ def create_fornt_history_files():
     input:  none but read from indivisual ccd history files
     output: front_side_<part><ccd#>
     """
-
+    adict = {}
+    tdict = {}
+    date  = []
     for part in ('ccd', 'col', 'hccd'):
         for ccd in (0, 1, 2, 3, 4, 6, 8, 9):
-            infile = '/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/' + part + str(ccd) + '_cnt'
-            f      = open(infile, 'r')
-            data   = [line.strip() for line in f.readlines()]
-            f.close()
-            adict = {}
-            date  = []
+            ifile = data_dir + part + str(ccd) + '_cnt'
+            data  = mcf.read_data_file(ifile)
+#
+#--- row: (time in sec)<>(yyyy):(ddd)<>(quad0)<>(quad1)<>(quad2)<>(quad3)
+#
             for ent in data:
                 atemp = re.split('<>', ent)
-                date.append(int(atemp[0]))
-                dlist = [atemp[1], int(atemp[2]), int(atemp[3]), int(atemp[4]), int(atemp[5])]
-                adict[atemp[0]] = dlist
-    
-    
-            exec 'dict_%s = adict' % (str(ccd))
-    
+                atime = int(atemp[0])
+#
+#--- if there is already data in the dict, make the sum of each quad
+#
+                try:
+                    alist = adict[atime]
+                    for k in range(0, 4):
+                        alist[k] += int(atemp[k+2])
+                    adict[atime]  = alist
+#
+#--- if this is the first time, create a dict entry
+#
+                except:
+                    date.append(atime)
+                    tdict[atime] = atemp[1]
+                    dlist        = [int(atemp[2]), int(atemp[3]), int(atemp[4]), int(atemp[5])]
+                    adict[atime] = dlist
+#
+#--- make sure the date is unique in the list and sorted
+#
+        date = list(set(date))
+        date = sorted(date)
+#
+#--- print out the data
+#
         line = ''
         for ent in date:
-            a1 = 0
-            a2 = 0
-            a3 = 0
-            a4 = 0
-            for ccd in (0, 1, 2, 3, 4, 6, 8, 9):
-                exec 'tdict = dict_%s' % (str(ccd))
-                out = tdict[str(ent)]
-                a1 += int(out[1])
-                a2 += int(out[2])
-                a3 += int(out[3])
-                a4 += int(out[4])
+            line = line + str(ent) + '<>'    + tdict[ent] + '<>' 
+            line = line + str(adict[ent][0]) + '<>' + str(adict[ent][1]) + '<>' 
+            line = line + str(adict[ent][2]) + '<>' + str(adict[ent][3]) + '\n'
     
-                date = out[0]
-    
-    
-            line = line +  str(ent) +'<>' + date + '<>' + str(a1) + '<>' + str(a2)+ '<>' + str(a3)+ '<>' + str(a4) + '\n'
-    
-        name = '/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/front_side_' + part + '_cnt'
-        fo = open(name, 'w')
-        fo.write(line)
-        fo.close()
-
+        name = data_dir + 'front_side_' + part + '_cnt'
+        with open(name, 'w') as fo:
+            fo.write(line)
 
 #----------------------------------------------------------------------------------------------------
 

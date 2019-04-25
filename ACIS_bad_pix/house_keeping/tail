@@ -29,7 +29,7 @@
 
 
 
-<h3 style='padding-bottom:20px;color:#99FFFF'>A bad pixel was selected as follows:</h3>
+<h3 style='padding-bottom:20px;>A bad pixel was selected as follows:</h3>
 
 <ul style="font:yellow;font-size:90%">
 <li> acis*bias0.fits in a given period were obtained.</li>
@@ -38,10 +38,10 @@
 was 5 sigma higher than the average, a local average (32x32) was computed.</li>
 <li>If the pixel value was still 5 sigma higher than the local average,
 it was marked as a possible candidate for a warm pixel.</li>
-<li> If a "warm" pixel candidate  shows up <b style='color:#FFCC33'>more than 70%</b> of the time in the last two weeks, 
-the pixel is listed as <b style='color:#FFCC33'>a warm pixel</b>.</li>
-<li> If a "warm" pixel candidate shows up <b style='color:#FFCC33'>more than 30% but less than 70%</b> of the time in the last two weeks,
-the pixel is listed as <b style='color:#FFCC33'>a flickering pixel</b>.</li>
+<li> If a "warm" pixel candidate  shows up <b style='color:red'>more than 70%</b> of the time in the last two weeks, 
+the pixel is listed as <b style='color:red'>a warm pixel</b>.</li>
+<li> If a "warm" pixel candidate shows up <b style='color:red'>more than 30% but less than 70%</b> of the time in the last two weeks,
+the pixel is listed as <b style='color:red'>a flickering pixel</b>.</li>
 <li> If the pixels which appeared in "current warm pixels" list, even once in the past
  the pixels are parmanently listed in "Past Warm Pixels" list.</li>
 <li> Hot pixels are defined as warm pixels with an adu value of greater than
@@ -54,7 +54,7 @@ a ccd  average plus 1000 counts.</li>
 
 
 
-<h3 style='padding-bottom:20px;;color:#99FFFF'>A bad column was selected as follows:</h3>
+<h3 style='padding-bottom:20px;'>A bad column was selected as follows:</h3>
 
 <ul style="font:yellow;font-size:90%"><li> each column was averaged out, and compared to an average for an entire ccd.</li>
 <li> If the average of the column was 5 sigma  higher than the average of the ccd
@@ -71,7 +71,7 @@ a bad column candidate.</li>
 <hr /> 
 
 <p style='margin-top:5px'> 
-If you have any quesitons about this page, please contact <a href='mailto:swolk@head.cfa.harvard.edu'>swolk@head.cfa.harvard.edu</a>. 
+If you have any quesitons about this page, please contact <a href='mailto:tisobe@cfa.harvard.edu'>tisobe@cfa.harvard.edu</a>. 
 </p> 
 </body>
 </html>

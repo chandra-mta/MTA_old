@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################################
-#                                                                                                                       #
-#       extract_bad_pix.py: find ACIS bad pixels and bad columns and records daily variations                           #
-#                                                                                                                       #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                                   #
-#                                                                                                                       #
-#           last update May 11, 2016                                                                                    #
-#                                                                                                                       #
-#########################################################################################################################
+#############################################################################################
+#                                                                                           #
+#   extract_bad_pix.py: find ACIS bad pixels and bad columns and records daily variations   #
+#                                                                                           #
+#       author: t. isobe (tisobe@cfa.harvard.edu)                                           #
+#                                                                                           #
+#       last update Apr 04, 2019                                                            #
+#                                                                                           #
+#############################################################################################
 
 import os
 import sys
@@ -18,29 +18,27 @@ import random
 import operator
 import math
 import numpy
+import time
 import astropy.io.fits as pyfits
+import Chandra.Time
 import unittest
-
 #
 #--- from ska
 #
 from Ska.Shell import getenv, bash
 ascdsenv = getenv('source /home/ascds/.ascrc -r release', shell='tcsh')
-
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -49,23 +47,19 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat       as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions    as mcf        #---- contains other functions commonly used in MTA scripts
 import bad_pix_common_function as bcf
-
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random()) 
 zspace = '/tmp/zspace' + str(rtail)
-
 #
 #--- setting limits: factors for how much std out from the mean
 #
 factor     = 5.0        #--- warm pixel 
 col_factor = 3.0        #--- warm column 
 hot_factor = 1000.0     #--- hot pixel
-
 #
 #-- day limits
 #
@@ -73,119 +67,125 @@ day30 = 2592000.0   #---- (in sec)
 day14 = 1209600.0
 day7  = 604800.0
 
-#
-#--- a couple of things needed
-#
-dare   = mcf.get_val('.dare',   dir = bdat_dir, lst=1)
-hakama = mcf.get_val('.hakama', dir = bdat_dir, lst=1)
+#------------------------------------------------------------------------------------------
+#--- find_bad_pix_main: contorl function to extract bad pixels and bad columns          ---
+#------------------------------------------------------------------------------------------
 
-
-#---------------------------------------------------------------------------------------------------
-#--- find_bad_pix_main: contorl function to extract bad pixels and bad columns                   ---
-#---------------------------------------------------------------------------------------------------
-
-def find_bad_pix_main(dom):
-
+def find_bad_pix_main(tstart, tstop):
     """
     contorl function to extract bad pixels and bad columns
-    Input: dom    --- time in "day of mission"
-    Output: updated bad pixel and bad column list files
+    input:  tstart  --- interval starting time in seconds from 1998.1.1
+            tstop   --- interval stopping time in seconds from 1998.1.1
+    output: updated bad pixel and bad column list files
+    """
+    if tstart == '':
+        [tstart, tstop]  = find_data_collection_interval()
+
+    kcnt = int((tstop - tstart) / 86400.0)
+    if kcnt < 1:
+        kcnt = 1
+
+    for k in range(0, kcnt):
+        ctime = tstart + 86400 * k 
+        get_bad_pix_data(ctime)
+#
+#--- move old data to archive
+#
+        mv_old_file(ctime)
+
+#------------------------------------------------------------------------------------------
+#-- get_bad_pix_data: extract bad pixel data of 24 hr period                             --
+#------------------------------------------------------------------------------------------
+
+def get_bad_pix_data(ctime):
+    """
+    extract bad pixel data of 24 hr period
+    input:  ctime   --- starting time in seconds from 1998.1.1
+    output: updated bad pixel and bad column list files
     """
 #
 #---check whether "Working_dir" exists
 #
-    chk = mcf.chkFile('./','Working_dir')
-    if chk > 0:
-        mcf.rm_file('./Working_dir/*')
+    if os.path.isdir('./Working_dir'):
+        mcf.rm_files('./Working_dir/*')
     else:
         cmd = 'mkdir ./Working_dir'
         os.system(cmd)
-
-    [start,stop] = set_date(dom)
-
-    get_data_out(start, stop)
 #
-#--- find which data are new and need to be analyzed
+#--- date collection period is 24 hrs from ctime
 #
-    odir = exc_dir + '/Temp_data/'
-    main_list = regroup_data(odir)
-#
-#--- prepare files for analysis
-#
-    for  data_list in main_list:                #---- data_list contains one day amount of data
-#
-#--- remove the temporary bad_col_list, warm_list, and hot_list
-#
-        mcf.rm_file('./Working_dir/*_list')
+    stop      = ctime + 86400
+    data_list = get_data_out(ctime, stop)
 #
 #--- create data lists in ./Working_dir/new_data_ccd<ccd>
 #
-        int_file_for_day(data_list)
+    nccd_list = int_file_for_day(data_list)
 #
 #--- check today's bad cols and pixs
 #
-        dom = setup_to_extract()
+    stime = setup_to_extract(nccd_list)
 #
-#--- if there is no data, dom <= 0 
+#--- if there is no data, stime <= 0 
 #
-        if dom  <= 0:
-            continue
+    if stime  <= 0:
+        print("No data in the period")
+        exit(1)
 
-        for ccd in range(0, 10):
-            warm_data_list = []
-            hot_data_list  = []
+    for ccd in range(0, 10):
+        warm_data_list = []
+        hot_data_list  = []
 #
 #--- bad pix selected at each quad; so go though all of them and combine them
 #
-            for quad in range(0, 4):
+        for quad in range(0, 4):
 
-                (warm_data, hot_data) = select_bad_pix(ccd, quad)
+            (warm_data, hot_data) = select_bad_pix(ccd, quad)
 
-                if quad == 0:
-                    warm_data_list = warm_data
-                    hot_data_list  =  hot_data
-                else:
-                    warm_data_list = combine_ccd(warm_data_list, warm_data, quad)
-                    hot_data_list  = combine_ccd(hot_data_list,  hot_data,  quad)
+            if quad == 0:
+                warm_data_list = warm_data
+                hot_data_list  =  hot_data
+            else:
+                warm_data_list = combine_ccd(warm_data_list, warm_data, quad)
+                hot_data_list  = combine_ccd(hot_data_list,  hot_data,  quad)
 
-            if len(warm_data_list) > 1:
-                warm_data_list = mcf.removeDuplicate(warm_data_list,  chk = 0, dosort=0)
-
-            if len(hot_data_list)  > 1:
-                hot_data_list =  mcf.removeDuplicate(hot_data_list,   chk = 0, dosort=0)
+        if len(warm_data_list) > 1:
+            warm_data_list = mcf.remove_duplicated_lines(warm_data_list,  chk = 0)
+        
+        if len(hot_data_list)  > 1:
+            hot_data_list =  mcf.remove_duplicated_lines(hot_data_list,   chk = 0)
 #
 #---- print out newly found warm and hot pixels
 #
-            print_bad_pix_data(ccd, warm_data_list, 'warm', today_time = dom)
-            print_bad_pix_data(ccd, hot_data_list,  'hot',  today_time = dom)
+        print_bad_pix_data(ccd, warm_data_list, 'warm', today_time = stime)
+        print_bad_pix_data(ccd, hot_data_list,  'hot',  today_time = stime)
 #
 #--- find and print bad columns
 #
-#            cfile = './Worlking_dir/today_bad_col_' + str(ccd)
-#            bad_col_list = []
-#            chk    = mcf.isFileEmpty(cfile)
-#            if chk > 0:
+#        cfile = './Worlking_dir/today_bad_col_' + str(ccd)
+#        bad_col_list = []
+#        chk    = mcf.isFileEmpty(cfile)
+#        if chk > 0:
 
-            bad_col_list = chk_bad_col(ccd)
-            print_bad_col(ccd, bad_col_list, dom)
+        bad_col_list = chk_bad_col(ccd)
+        #print_bad_col(ccd, bad_col_list, ctime)
+        print_bad_col(ccd, bad_col_list, stime)
 #
 #--- clean up the Exc area
 #
-    mcf.rm_file('./Working_dir')
+    mcf.rm_files('./Working_dir')
 
-#---------------------------------------------------------------------------------------------------
-#--- combine_ccd: combine bad pixel positions from a different quad to one CCD coordinate system  --
-#---------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+#--- combine_ccd: combine bad pixel positions from a different quad to one CCD coordinate system 
+#------------------------------------------------------------------------------------------
 
 def combine_ccd(base, new, quad):
     """
     combine bad pixel positions from a different quad to one CCD coordinate system
-
-    Input:  base -- bad pixel positions already recorded in a CCD coordinates
+    input:  base -- bad pixel positions already recorded in a CCD coordinates
                     data format: <ccd>:<quad>:<year>:<ydate>:<x>:<y>
             new  -- new bad pixel position listed in quad coordinated
             quad -- quad # 0 - 3
-    Output: base -- updated list of bad pixels in CCD coordinates
+    output: base -- updated list of bad pixels in CCD coordinates
     """
 
     for ent in new:
@@ -199,85 +199,34 @@ def combine_ccd(base, new, quad):
 
     return base
 
-#---------------------------------------------------------------------------------------------------
-#--- regroup_data: for the case, data list is given, regroup them for farther analysis           ---
-#---------------------------------------------------------------------------------------------------
-
-def regroup_data(input_dir):
-
-    """
-    for the case that data list is given, regroup them for farther analysis
-    Input:  input_dir --- a directory path to the data
-            data_list --- a list of lists which contain data file names
-    """
-    
-    cmd = 'ls ' + input_dir +  '/acisf*bias0.fits >' + zspace
-    chk = mcf.processCMD(cmd)
-    if chk > 0:
-#        print "cannot find data: /acisf*bias0.fits. Exiting...\n"
-#        exit(1)
-        return []
-
-    bias_bg_comp_list = []
-
-    data =  mcf.readFile(zspace)
-#
-#--- this is today's input data list for bias computation
-#
-    cmd = 'mv ' + zspace + ' ' + house_keeping + '/today_bias_input_data'
-    os.system(cmd)
-
-    if len(data) < 1:
-        print "There is no bias data in this period... exiting\n"
-        exit(1)
-
-    cdate     = -999 
-    btemp     = []
-    data_list = []
-    chk       = 0
-
-    for ent in data:
-        dom = bcf.findTimeFromHead(ent)
-        if dom == cdate:
-            btemp.append(ent)
-            chk = 1
-        else:
-            if cdate == -999:
-                btemp.append(ent)
-                cdate = dom
-            else:
-                cdate = dom
-                data_list.append(btemp)
-                btemp = []
-                chk = 0
-
-    if chk == 1:
-        data_list.append(btemp)
-    return data_list
-
-#---------------------------------------------------------------------------------------------------
-#--- int_file_for_day: separate each data into appropriate ccd data list                         ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- int_file_for_day: separate each data into appropriate ccd data list                 ---
+#-------------------------------------------------------------------------------------------
 
 def int_file_for_day(data_list):
-
     """
     separate each data into appropriate ccd data list
-    Input:      data_list --- a list of bias.fits files
-    Output:     data_dir + '/Disp_dir/data_used.<ccd> --- a record of which data used for the analysis
-                ./Working_dir/new_data_ccd.<ccd>      --- a list of the data which will be used for today's analysis
+    input:  data_list --- a list of bias.fits files
+    output: <data_dir>/data_used.<ccd> 
+                    --- a record of which data used for the analysis
+            ./Working_dir/new_data_ccd.<ccd>      
+                    --- a list of the data which will be used for today's analysis
     """
-
 #
 #--- check each data and select out appropriate data
 #
+    a_list = []
+    for k in range(0, 10):
+        a_list.append([])
+
     for ent in data_list:
         stime      = bcf.extractTimePart(ent)
         if stime > 0:
-            head       = 'acis' + str(int(stime))
-            today_time = bcf.findTimeFromHead(ent)
-    
-            [ccd, readmode, date_obs, overclock_a, overclock_b, overclock_c, overclock_d] = extractCCDInfo(ent)
+            head = 'acis' + str(int(stime))
+#
+#--- extract information of the ccd
+#
+            [ccd, readmode, date_obs, overclock_a, overclock_b, overclock_c, overclock_d]  = extractCCDInfo(ent)
 #
 #--- only TIMED data will be used
 #
@@ -286,124 +235,111 @@ def int_file_for_day(data_list):
 #
 #--- keep the record of which data we used
 #
-                line = data_dir + '/Disp_dir/data_used.' + str(ccd)
-                f    = open(line, 'a')
-                line = './Working_dir/new_data_ccd.' + str(ccd)
-                fw   = open(line, 'a')
-                ntemp= re.split('acisf', ent)
+                ccd   = int(float(ccd))
+                ntemp = re.split('acisf', ent)
 
-                atemp = re.split('T', date_obs)
-                btemp = re.split('-', atemp[0])
-                tyear = int(btemp[0])
-                tmon  = int(btemp[1])
-                tday  = int(btemp[2])
-                ydate = tcnv.findYearDate(tyear, tmon, tday)
+                out   = mcf.convert_date_format(date_obs, ifmt="%Y-%m-%dT%H:%M:%S", ofmt='%Y:%j')
+                line  = out + ':acisf' + ntemp[1] + '\n'
 
-                line = str(tyear)+':' + str(ydate) + ':acisf' + ntemp[1] + '\n'
-                f.write(line)
+                out1  = data_dir + '/data_used.' + str(ccd)
+                out2  = './Working_dir/new_data_ccd.'     + str(ccd)
+                with open(out1, 'a') as f:
+                    f.write(line)
 #
 #--- a list of data to be analyzed kept in ./Working_dir
 #
-                fw.write(ent)
-                fw.write("\n")
+                a_list[ccd].append(ent)
+
+                with open(out2, 'a') as f:
+                    f.write(ent + '\n')
+    return a_list
     
-                fw.close()
-                f.close()
+#-------------------------------------------------------------------------------------------
+#--- setup_to_extract: prepare to extract data                                            --
+#-------------------------------------------------------------------------------------------
 
-
-#---------------------------------------------------------------------------------------------------
-#--- setup_to_extract: prepare to extract data                                                    --
-#---------------------------------------------------------------------------------------------------
-
-def setup_to_extract():
-
+def setup_to_extract(ccd_list):
     """
     prepare to extract data
-    Input:  ./Working_dir/new_data_ccd<ccd #>: a list of new data for the ccd. Read from ./Working_dor
-    Output: dom --- DOM of the observation (today, unless the original data are given)
+    input:  ccd_list    --- a list of lists of ccd data
+    output: stime       --- time in Chandra Time of the observation 
+                            (today, unless the original data are given)
             output from a function "extract" written in ./Working_dir
     """
-
-    dom = -999
+    stime = -999
     for ccd in range(0, 10):
-        line       = './Working_dir/new_data_ccd.' + str(ccd)
-        todaylist  = mcf.readFile(line)
 #
 #--- only when data exists, procced
 #
-        if len(todaylist) > 0:
+        if len(ccd_list[ccd]) == 0:
+            continue
 
-            file  = todaylist[0]
-            stime = bcf.extractTimePart(file)
+        ifile  = ccd_list[ccd][0]
+        stime = bcf.extractTimePart(ifile)
 
-            if stime > 0:
-                ctime = tcnv.convertCtimeToYdate(stime)
-                (year, month, date, hours, minutes, seconds, ydate, dom, sectime) = tcnv.dateFormatConAll(ctime)
-                date_obs = str(year) + ':' + str(int(ydate))
-                head     = 'acis' + str(int(stime))
+        if stime > 0:
+            out      = mcf.convert_date_format(stime, ofmt='%Y:%j')
+            atemp    = re.split(':', out)
+            date_obs = str(atemp[0]) + ':' + str(int(float(atemp[1])))
+            head     = 'acis' + str(int(stime))
 #
 #--- comb.fits is an img fits file combined all image fits files extracted
 #
-                wfile = './Working_dir/comb.fits'
-                mcf.rm_file(wfile) 
-                cmd   = 'cp ' + file +  ' ' + wfile
-                os.system(cmd)
-                f     = pyfits.open(wfile)
-                sdata = f[0].data
-                hdr   = f[0].header
+            wfile = './Working_dir/comb.fits'
+            mcf.rm_files(wfile) 
 
-                sdata[sdata <    0] = 0
-                sdata[sdata > 4000] = 0
-                pyfits.update(wfile, sdata, hdr)
-                f.close()
+            cmd   = 'cp ' + ifile +  ' ' + wfile
+            os.system(cmd)
+
+            f     = pyfits.open(wfile)
+            sdata = f[0].data
+            hdr   = f[0].header
+
+            sdata[sdata <    0] = 0
+            sdata[sdata > 4000] = 0
+            pyfits.update(wfile, sdata, hdr)
+            f.close()
 #
 #--- if there are more than one file, merge all fits into one
 #
-                if len(todaylist) > 1:
-                    for j in range(1, len(todaylist)): 
+            if len(ccd_list[ccd]) > 1:
+                for j in range(1, len(ccd_list[ccd])): 
 
-                        f     = pyfits.open(todaylist[j])
-                        tdata = f[0].data
-                        tdata[tdata <    0] = 0
-                        tdata[tdata > 4000] = 0
-                        f.close()
+                    f     = pyfits.open(ccd_list[ccd][j])
+                    tdata = f[0].data
+                    tdata[tdata <    0] = 0
+                    tdata[tdata > 4000] = 0
+                    f.close()
 
-                        sdata = sdata + tdata
+                    sdata = sdata + tdata
 
-                    pyfits.update(wfile, sdata, hdr)
+                pyfits.update(wfile, sdata, hdr)
 #
-#--- find dom of the last file
+#--- get time stamp of the last file
 #
-                file = todaylist[len(todaylist) -1]
-                stime = bcf.extractTimePart(file)
-    
-                if stime > 0:
-                    ctime = tcnv.convertCtimeToYdate(stime)
-                    (year, month, date, hours, minutes, seconds, ydate, dom, sectime) = tcnv.dateFormatConAll(ctime)
-     
-                ccd_dir = house_keeping + '/Defect/CCD' + str(ccd)
+            ifile = ccd_list[ccd][len(ccd_list[ccd]) -1]
+            stime = bcf.extractTimePart(ifile)
 #
-#---- extract(date_obs, ccd_dir, <fits header>, <input file>, <which quad>, <column position>, <x start>, <x end>)
+#--- extract(date_obs, ccd_dir, <fits header>, <input file>, <which quad>, 
+#---         <column position>, <x start>, <x end>)
 #
-                extract(ccd, date_obs, ccd_dir, head, wfile,  0,   0,   0,  255)
-                extract(ccd, date_obs, ccd_dir, head, wfile,  1, 256, 256,  511)
-                extract(ccd, date_obs, ccd_dir, head, wfile,  2, 512, 512,  767)
-                extract(ccd, date_obs, ccd_dir, head, wfile,  3, 768, 768, 1023)
+            ccd_dir = house_keeping + '/Defect/CCD' + str(ccd)
 
-#
-#--- for the test case, set dom to 4953
-#
-    return (int(dom))
+            extract(ccd, date_obs, ccd_dir, head, wfile,  0,   0,   0,  255)
+            extract(ccd, date_obs, ccd_dir, head, wfile,  1, 256, 256,  511)
+            extract(ccd, date_obs, ccd_dir, head, wfile,  2, 512, 512,  767)
+            extract(ccd, date_obs, ccd_dir, head, wfile,  3, 768, 768, 1023)
 
-#---------------------------------------------------------------------------------------------------
-#-- extract: find bad pix and bad column for the data given                                      ---
-#---------------------------------------------------------------------------------------------------
+    return (stime)
+
+#-------------------------------------------------------------------------------------------
+#-- extract: find bad pix and bad column for the data given                              ---
+#-------------------------------------------------------------------------------------------
 
 def extract(ccd, date_obs, ccd_dir, head, infile, quad, cstart, rstart, rend):
-
     """
     find bad pix and bad column for the data given
-    Input:  ccd      --- ccd #
+    input:  ccd      --- ccd #
             date_obs --- observation date
             ccd_dir  --- the location of ccd<ccd #> data kpet
             head     --- header for the file
@@ -412,7 +348,7 @@ def extract(ccd, date_obs, ccd_dir, head, infile, quad, cstart, rstart, rend):
             cstart   --- column postion
             rstart   --- column starting postion
             rend     --- column ending position
-    Output:  output from find_bad_col (warm/hot column locations)
+    output:  output from find_bad_col (warm/hot column locations)
              output from find_bad_pix_candidate (warm/hot pixel positions)
     """
 #
@@ -430,8 +366,8 @@ def extract(ccd, date_obs, ccd_dir, head, infile, quad, cstart, rstart, rend):
 #
 #---- find bad columns
 #
-    wout_dir     = './Working_dir/today_bad_col_' + str(ccd)
-    mcf.rm_file(wout_dir)
+    wout_dir = './Working_dir/today_bad_col_' + str(ccd)
+    mcf.rm_files(wout_dir)
 
     find_bad_col(varray, ccd, cstart, ccd_dir, head)
 #
@@ -447,7 +383,8 @@ def mv_old_data(ccd):
 #
 #--- find when is the 7 days ago in second from 1998.1.1
 #
-    today    = tcnv.currentTime("SEC1998")
+    out      = time.strftime("%Y:%j:%H:%M:%S", time.gmtime())
+    today    = Chandra.Time.DateTime(out).secs
 #    cut_date = today - day7
     cut_date = today - day30
 #
@@ -461,7 +398,7 @@ def mv_old_data(ccd):
         cmd = 'ls ' + house_keeping + 'Defect/CCD' + str(ccd) + '/* > ' +  zspace
         os.system(cmd)
 
-        data = mcf.readFile(zspace)
+        data = mcf.read_data_file(zspace)
         mcf.rm_file(zspace)
 #
 #--- compare the time stamp to the cut off time and if the file is older 
@@ -480,20 +417,19 @@ def mv_old_data(ccd):
             except:
                 pass
 
-#---------------------------------------------------------------------------------------------------
-#--- find_bad_col: find warm columns                                                             ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- find_bad_col: find warm columns                                                     ---
+#-------------------------------------------------------------------------------------------
 
 def find_bad_col(varray, ccd, cstart, ccd_dir, head ):
-
     """
     find warm columns
-    Input:  varray  --- data in 2 dim form [y, x] (numpy array)
+    input:  varray  --- data in 2 dim form [y, x] (numpy array)
             ccd     --- ccd #
             cstart  --- starting column #. the data are binned between 0 and 255.
             ccd_dir --- location of data saved
             head    --- header of the file
-    Output: <ccd_dir>/<head>col --- a file which keeps a list of warm columns
+    output: <ccd_dir>/<head>col --- a file which keeps a list of warm columns
     """
 #
 #--- read known bad col list
@@ -519,6 +455,7 @@ def find_bad_col(varray, ccd, cstart, ccd_dir, head ):
 #
     if bcnt > 0:
         for ent in bad_cols:
+            ent   = ent.replace('"', '')
             atemp = re.split(':', ent)
             bList.append(int(atemp[0]))
 #
@@ -529,14 +466,14 @@ def find_bad_col(varray, ccd, cstart, ccd_dir, head ):
 #--- set a global limit to find outlyers
 #
     cfactor = col_factor
-    climit = find_local_col_limit(avg_cols, 0, 255, cfactor)
+    climit  = find_local_col_limit(avg_cols, 0, 255, cfactor)
 
     bcnum = 0
     for i in range(0, 255):
 #
-#--- check the row is a known bad column
+#--- check whether the row is a known bad column
 #
-        cloc = cstart + i                       #---- modify to the actual column position on the CCD
+        cloc = cstart + i               #---- modify to the actual column position on the CCD
         chk  = 0
         if bcnt > 0:
             for comp in bList:
@@ -566,17 +503,23 @@ def find_bad_col(varray, ccd, cstart, ccd_dir, head ):
 #---- clean up the file (removing duplicated lines)
 #
     if bcnum > 0:
-        mcf.removeDuplicate(outdir_name, dosort=0)
+        mcf.remove_duplicated_lines(outdir_name)
 #
 #--- record today's bad column list name at a working directory
 #
         print_result(wout_dir, bad_col_name)
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- find_local_range: set a local range                                                   --
+#-------------------------------------------------------------------------------------------
 
 def find_local_range(i):
+    """
+    set a local range
+    input:  i       --- pixel postion
+    ouput:  llow    --- low limit
+            ltop    --- top limit
+    """
 #
 #--- setting a local area range
 #
@@ -595,12 +538,16 @@ def find_local_range(i):
 
     return(llow, ltop)
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- create_col_avg: compute the average of column value                                   --
+#-------------------------------------------------------------------------------------------
 
 def create_col_avg(varray):
-
+    """
+    compute the average of column value
+    input: varray       --- a two dim array of the data
+    output: avg_cols    --- a list of average values of columns
+    """
     avg_cols = [0 for x in range(0, 255)]
     for i in range(0, 255):
         l_mean = numpy.mean(varray[:,i])
@@ -608,62 +555,65 @@ def create_col_avg(varray):
 
     return avg_cols
 
-
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- find_local_col_limit: find local colun limit value                                    --
+#-------------------------------------------------------------------------------------------
 
 def find_local_col_limit(avg_cols, llow, ltop, cfactor,  ex=-999):
-
-    sum  = 0
+    """
+    find local colun limit value
+    input:  avg_cols    --- a list of average values of colums
+            llow        --- a low limit range
+            ltop        --- a top limit range
+            cfactor     --- the factor to set the limit
+    output: l_lim       --- local column limit
+    """
+    csum = 0
     tot  = 0
     for i in range(llow,ltop):
         if i == ex:
             continue
     
-        sum   += avg_cols[i]
+        csum  += avg_cols[i]
         tot   += 1
     
-    lavg = sum / tot
+    lavg = csum / tot
 
-    sum2 = 0
-    tot  = 0
+    csum2 = 0
+    tot   = 0
     for i in range(llow,ltop):
         if i == ex:
             continue
     
         ldiff  = avg_cols[i] - lavg
-        sum2  += ldiff * ldiff
+        csum2 += ldiff * ldiff
         tot   += 1
     
-    lstd = math.sqrt(sum2 / tot)
+    lstd = math.sqrt(csum2 / tot)
     
 #    l_lim = lavg + col_factor * lstd
     l_lim = lavg + cfactor * lstd
     
-    return(l_lim)
+    return l_lim
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
 
 def print_result(outdir_name, line):
 
-    fo3 = open(outdir_name, 'a')
-    fo3.write(str(line))
-    fo3.write('\n')
-    fo3.close()
+    with open(outdir_name, 'a') as fo:
+        fo.write(str(line) + '\n')
 
-#---------------------------------------------------------------------------------------------------
-#--- chk_bad_col: find bad columns for a given ccd                                               ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- chk_bad_col: find bad columns for a given ccd                                       ---
+#-------------------------------------------------------------------------------------------
 
 def chk_bad_col(ccd):
-
     """
     find bad columns for a given ccd
-    Input:  ccd      --- ccd #
-    Output: bad_cols --- a list of bad columns
+    input:  ccd      --- ccd #
+    output: bad_cols --- a list of bad columns
     """
     bad_cols = []
 
@@ -686,19 +636,18 @@ def chk_bad_col(ccd):
 
         cmd     = 'ls -rt ' + dfile + '/*col > ' + zspace
         os.system(cmd)
-        collist = mcf.readFile(zspace)
-        mcf.rm_file(zspace)
+        collist = mcf.read_data_file(zspace, remove=1)
 #
 #--- if there is more than three col files and if we have new bad col today, procced the process
 #
         dlen = len(collist)
     
         if dlen > 2:
-            file  = collist[dlen-1]
-            file1 = mcf.readFile(file)
+            ifile  = collist[dlen-1]
+            file1 = mcf.read_data_file(ifile)
     
-            file  = collist[dlen-2]
-            file2 = mcf.readFile(file)
+            ifile  = collist[dlen-2]
+            file2 = mcf.read_data_file(ifile)
     
             colcand = []
             for ent in file1:
@@ -715,8 +664,8 @@ def chk_bad_col(ccd):
 #
             if len(colcand) > 0: 
     
-                file  = collist[dlen-2]
-                file3 = mcf.readFile(file)
+                ifile = collist[dlen-2]
+                file3 = mcf.read_data_file(ifile)
     
                 for ent in colcand:
                     for comp in file3:
@@ -724,65 +673,70 @@ def chk_bad_col(ccd):
                             bad_cols.append(ent)
                             break
     
-    
-                if len(bad_cols) > 0:
-                    bad_cols = mcf.removeDuplicate(bad_cols,  chk = 0, dosort=0)
+    if len(bad_cols) > 0:
+        bad_cols = list(set(bad_cols))
+        bad_cols = [int(x) for x in bad_cols]
+        bad_cols = sorted(bad_cols)
+        bad_cols = [str(x) for x in bad_cols]
 
     return bad_cols
 
  
-#---------------------------------------------------------------------------------------------------
-#--- print_bad_col: update bad column output files                                               ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- print_bad_col: update bad column output files                                       ---
+#-------------------------------------------------------------------------------------------
 
-def print_bad_col(ccd, bad_col_list, dom):
-
+def print_bad_col(ccd, bad_col_list, stime):
     """
     update bad column output files
-    Input:  ccd          --- ccd #
-            bad_col_list --- a list of bad columns on the ccd
-            dom          --- today's (or given data's) DOM
-    Output: Disp_dir/col<ccd#>     --- today's bad columns
-            Disp_dir/hit_col<ccd#> --- history of bad columns
+    input:  ccd                     --- ccd #
+            bad_col_list            --- a list of bad columns on the ccd
+            stime                   --- today's (or given data's) seconds from 1998.1.
+    output: <data_dir>/col<ccd#>      --- today's bad columns
+            <data_dir>/hit_col<ccd#>  --- history of bad columns
     """
-
-    blen          = len(bad_col_list)
-    dom           = int(dom)
-    (year, ydate) = tcnv.DOMtoYdate(dom)
-    date          = str(year) + ':' + str(int(ydate))
-
-    line  = data_dir + 'Disp_dir/col' + str(ccd)
-    f1    = open(line, 'w')
-    line2 = data_dir + 'Disp_dir/hist_col' + str(ccd)
-    f2    = open(line2, 'a')
+    blen  = len(bad_col_list)
+    stime = int(stime)
+    date  = mcf.convert_date_format(stime, ifmt='chandra', ofmt='%Y:%j')
+    atemp = re.split(':', date)
+    date  = atemp[0] + ':' + atemp[1].lstrip('0')
 #
 #--- even if there is no data, update history file
 #
+    line1 = ''
+    line2 = ''
     if blen == 0:
-        line = str(dom) + '<>' + date + '<>:\n'
-        f2.write(line)
+        line2 = line2 + str(stime) + '<>' + date + '<>:\n'
+
     else:
 #
 #--- if there are bad col, update history file and update col<ccd> file
 #
-        line = str(dom) + '<>' + date + '<>' 
+        line2 = line2 +  str(stime) + '<>' + date + '<>' 
         for ent in bad_col_list:
-            f1.write(ent)
-            f1.write('\n')
+            line1 = line1 + ent + '\n'
 
-            line = line + ':' + ent
+            line2 = line2 + ':' + ent
 
-        line  = line + '\n'
-        f2.write(line)
+        line2  = line2 + '\n'
 
-    mcf.removeDuplicate(line2, chk =1, dosort=0)
+    out1 = data_dir + 'col' + str(ccd)
+    out2 = data_dir + 'hist_col' + str(ccd)
+
+    if line1 != '':
+        with open(out1, 'w') as f1:
+            f1.write(line1)
+
+    with open(out2, 'a') as f2:
+        f2.write(line2)
+
+    #mcf.remove_duplicated_lines(out2, chk =1)
  
-#---------------------------------------------------------------------------------------------------
-#--- find_bad_pix_candidate: find bad pixel candidates for the next step                        ----
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- find_bad_pix_candidate: find bad pixel candidates for the next step                ----
+#-------------------------------------------------------------------------------------------
 
 def  find_bad_pix_candidate(varray, ccd, quad, date_obs, ccd_dir, max_file, hot_max_file):
-
     """
     find dad pixel candidates for the next step... they are bad pixel for just today's data
     Input:  varray       --- 2x2 data surface  [y, x] (numpy array)
@@ -794,7 +748,6 @@ def  find_bad_pix_candidate(varray, ccd, quad, date_obs, ccd_dir, max_file, hot_
             hot_max_file --- <head>_<quad>_hot: a file name which will contain hot pixel data (e.g. acis485603580_q1_hot)
     Output: <ccd_dir>/max_file     --- file contains warm pixel list
             <ccd_dir>/hot_max_file --- file contains hot pixel list
-
     """
 #
 #--- set a couple of arrays
@@ -861,16 +814,16 @@ def  find_bad_pix_candidate(varray, ccd, quad, date_obs, ccd_dir, max_file, hot_
                         if varray[iy, ix] > chot:
                             line = ccd_dir + '/' + hot_max_file
                             hot_list.append(line)
-
-                            f     = open(line, 'a')
 #
 #--- adjusting to correction position
 #
                             mix   = ix + 1
                             miy   = iy + 1
-                            aline = str(mix) + '\t' + str(miy) + '\t' + str(varray[iy, ix]) + '\t' + date_obs + '\t' + str(cmean) + '\t' + str(cstd) + '\n'
-                            f.write(aline)
-                            f.close()
+                            aline = str(mix) + '\t' + str(miy) + '\t' + str(varray[iy, ix]) + '\t' 
+                            aline = aline + date_obs + '\t' + str(cmean) + '\t' + str(cstd) + '\n'
+
+                            with open(line, 'a') as fo:
+                                fo.write(aline)
 #
 #--- warm pix check
 #
@@ -878,22 +831,23 @@ def  find_bad_pix_candidate(varray, ccd, quad, date_obs, ccd_dir, max_file, hot_
                             line = ccd_dir + '/' + max_file
                             warm_list.append(line)
 
-                            f     = open(line, 'a')
                             mix   = ix + 1
                             miy   = iy + 1
-                            aline = str(mix) + '\t' + str(miy) + '\t' + str(varray[iy, ix]) + '\t' + date_obs + '\t' + str(cmean) + '\t' + str(cstd) + '\n'
-                            f.write(aline)
-                            f.close()
+                            aline = str(mix) + '\t' + str(miy) + '\t' + str(varray[iy, ix]) + '\t' 
+                            aline = aline + date_obs + '\t' + str(cmean) + '\t' + str(cstd) + '\n'
+
+                            with open(line, 'a') as fo:
+                                fo.write(aline)
 #
 #--- remove dupulicated line.
 #
     if len(warm_list) > 0:
-        today_warm_list = mcf.removeDuplicate(warm_list, chk = 0, dosort=0)
+        today_warm_list = mcf.remove_duplicated_lines(warm_list, chk = 0)
     else:
         today_warm_list = []
 
     if len(hot_list) > 0:
-        today_hot_list  = mcf.removeDuplicate(hot_list,  chk = 0, dosort=0)
+        today_hot_list  = mcf.remove_duplicated_lines(hot_list,  chk = 0)
     else:
         today_hot_list  = []
 #
@@ -906,10 +860,9 @@ def  find_bad_pix_candidate(varray, ccd, quad, date_obs, ccd_dir, max_file, hot_
 #--- keep the record of today's data
 #
             aline = './Working_dir/today_bad_pix_' + str(ccd) + '_q' + str(quad)
-            f     = open(aline,  'a')
-            f.write(line)
-            f.write("\n")
-            f.close()
+            with open(aline,  'a') as fo:
+                fo.write(line + '\n')
+
     except:
         pass
 
@@ -918,24 +871,21 @@ def  find_bad_pix_candidate(varray, ccd, quad, date_obs, ccd_dir, max_file, hot_
         if len(today_hot_list) > 0:
 
             aline = './Working_dir/today_hot_pix_' + str(ccd) + '_q' + str(quad)
-            f     = open(aline,  'a')
-            f.write(hot_max_file)
-            f.write("\n")
-            f.close()
+            with open(aline,  'a') as fo:
+                fo.write(hot_max_file + '\n')
     except:
         pass
 
-#---------------------------------------------------------------------------------------------------
-#--- select_bad_pix: find bad pixels                                                             ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- select_bad_pix: find bad pixels                                                     ---
+#-------------------------------------------------------------------------------------------
 
 def select_bad_pix(ccd, quad):
-
     """
     find bad pixels for a given ccd/quad
-    Input:  ccd   --- ccd #
+    input:  ccd   --- ccd #
             quad  --- quad #
-    Output: output from identifyBadEntry
+    output: output from identifyBadEntry
             warm_data_list
             hot_data_list
     """
@@ -950,80 +900,90 @@ def select_bad_pix(ccd, quad):
 
     return(warm_data_list, hot_data_list)
 
-#---------------------------------------------------------------------------------------------------
-#--- identifyBadEntry: find which pixels are warm/hot the last three observations                 --
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- identifyBadEntry: find which pixels are warm/hot the last three observations         --
+#-------------------------------------------------------------------------------------------
 
 def identifyBadEntry(ccd, quad, today_list, ftail):
-
     """
     find which pixels are warm/hot the last three observations
-    Input:  ccd        --- ccd #
+    input:  ccd        --- ccd #
             quad       --- quad #
             today_list --- today's list
             ftail      ---  pix (warm case)/hot (hot_case)
-    Output: bad_list   --- warm/hot pixel list
+    output: bad_list   --- warm/hot pixel list
     """
     bad_list = []
 #
 #--- check whether we have any bad pixels/columns in today's data
 #
-    line = './Working_dir/' + today_list +  '_' + str(ccd) + '_q' + str(quad)
+    ifile = './Working_dir/' + today_list +  '_' + str(ccd) + '_q' + str(quad)
+    bad   = mcf.read_data_file(ifile)
 
-    bad  = mcf.readFile(line)
-    if len(bad) > 0:
-
-        for i in range(0, len(bad)):
-            chk   = mcf.isFileEmpty(bad[i])
-            nfile = bad[i]
+    if len(bad) == 0:
+        return bad_list
 #
-#--- if there are, check the past data, and find two previous records
+#--- a list is not empty
 #
-            if chk > 0:
-                cmd  = 'ls ' + house_keeping + '/Defect/CCD' + str(ccd) + '/acis*_q' + str(quad) + ftail + '>' + zspace
-                os.system(cmd)
+    for i in range(0, len(bad)):
+#
+#--- if there is a bad data, check the past data: find two previous records
+#
+        if not os.path.isfile(bad[i]):
+            continue
 
-                data = mcf.readFile(zspace)
-                mcf.rm_file(zspace)
+        if os.stat(bad[i]).st_size > 0:
+            cmd  = 'ls ' + house_keeping + '/Defect/CCD' + str(ccd) 
+            cmd  = cmd   + '/acis*_q' + str(quad) + ftail + '>' + zspace
+            os.system(cmd)
 
-                lcnt  = len(data)
-                if lcnt == 0:
-                    continue
+            data = mcf.read_data_file(zspace, remove=1)
+            lcnt = len(data)
+            if lcnt == 0:
+                continue
 
-                lcnt1 = lcnt -1
-                for i in range(0, lcnt):
-                    j = lcnt1 - i
-                    if data[j] == nfile:                                    #--- Ok we located today's data in the data directory
-                        if j > 1:
-                            chk2 = mcf.isFileEmpty(data[j-1])               #--- check whether one before is empty or not
-                            if chk2 > 0:
-                                chk3 = mcf.isFileEmpty(data[j-2])           #--- if it is not, empty, check whether one before is empty or not
-                                if chk3 > 0:
+            lcnt1 = lcnt -1
+            for k in range(0, lcnt):
+                j = lcnt1 - k
+#
+#--- we located today's data in the data directory
+#
+                if data[j] == bad[i]:
+                    if j > 1:
+#
+#--- check whether one before is empty or not
+#
+                        if os.stat(data[j-1]).st_size > 0:
+#
+#--- if it is not, empty, check whether one before is empty or not
+#
+                            if os.stat(data[j-2]).st_size > 0:
 #
 #--- three consecuitve data sets are not empty, let check whether 
 #--- any pixels are warm three consecutive time.
 #
-                                    file1 = nfile 
-                                    file2 = data[j-1]
-                                    file3 = data[j-2]
- 
-                                    bad_list = find_bad_pix(ccd, quad, file1, file2, file3)
+                                file1 = bad[i]
+                                file2 = data[j-1]
+                                file3 = data[j-2]
 
-    return (bad_list)
+                                #--- I AM NOT QUITE SURE THE FOLLOWING FIX IS CORRECT!!!! (03/21/19)
+                                #bad_list = find_bad_pix(ccd, quad, file1, file2, file3)
+                                bad_list = bad_list + find_bad_pix(ccd, quad, file1, file2, file3)
 
-#---------------------------------------------------------------------------------------------------
-#-- print_bad_pix_data: update bad pixel data files                                              ---
-#---------------------------------------------------------------------------------------------------
+    return bad_list
+
+#-------------------------------------------------------------------------------------------
+#-- print_bad_pix_data: update bad pixel data files                                      ---
+#-------------------------------------------------------------------------------------------
 
 def print_bad_pix_data(ccd, data_list, bind, today_time = 'NA'):
-
     """
     update bad pixel data files
-    Input:  ccd   --- ccd #
+    input:  ccd   --- ccd #
             data_list  --- bad pixel list
             bind       --- warm/hot
             today_time --- DOM of the data
-    Output: totally_new<ccd>
+    output: totally_new<ccd>
             all_past_bad_pix<ccd>
             new_ccd<ccd>
             ccd<ccd>
@@ -1032,21 +992,25 @@ def print_bad_pix_data(ccd, data_list, bind, today_time = 'NA'):
             similar output for hot pixel data
     """
     if today_time != 'NA':
-        dom  = today_time
+        stime  = today_time
+        out    = Chandra.Time.DateTime(stime).date
+        atemp  = re.split(":", out)
     else:
-        dom  = int(tcnv.currentTime(format = 'DOM'))
+        out    = time.strftime("%Y:%j:%H:%M:%S", time.gmtime())
+        stime  = Chandra.Time.DateTime(out).secs
+        atemp  = re.split(':', out)
 
-    line = tcnv.DOMtoYdate(dom)
-    date = str(line[0]) + ':' + str(int(line[1]))
+    date = str(atemp[0]) + ':' + str(int(atemp[1]))
 #
-#--- check any pixels are listed in totally_new<ccd> list (which lists new bad pix occured only in the last two weeks)
+#--- check any pixels are listed in totally_new<ccd> list (which lists new 
+#--- bad pix occured only in the last two weeks)
 #
     if bind == 'warm':
-        file5 = data_dir + 'Disp_dir/hist_ccd'         + str(ccd)
+        file5 = data_dir + 'hist_ccd'  + str(ccd)
     else:
-        file5 = data_dir + 'Disp_dir/hist_hccd'        + str(ccd)
+        file5 = data_dir + 'hist_hccd' + str(ccd)
 
-    pline = str(dom) + '<>' + date +  '<>'
+    pline = str(stime) + '<>' + date +  '<>'
 
     if len(data_list) > 0:
         for ent in data_list:
@@ -1054,53 +1018,49 @@ def print_bad_pix_data(ccd, data_list, bind, today_time = 'NA'):
             pline = pline + ':(' + atemp[4] + ',' + atemp[5] + ')' 
 
         pline = pline + '\n'
-
     else:
         pline = pline + ':' + '\n'
 #
 #--- add to history data
 #--- first check whether this is a duplicated date, if so, just ignore
 #
-    data  = mcf.readFile(file5)
-
-    chk = 0
+    data = mcf.read_data_file(file5)
+    aaa = re.split('<>', data[-1])
     if len(data) > 0:
-        fn =open(file5, 'w')
+        dline = ''
         for ent in data:
             atemp = re.split('<>', ent)
             try:
-                float(atemp[0])
-                ldom  = int(atemp[0])
+                ltime  = int(float(atemp[0]))
             except:
                 continue
-            if ldom < dom:
-                fn.write(ent)
-                fn.write("\n")
+
+            if ltime < stime:
+                dline = dline + ent + '\n'
             else:
-                fn.write(pline)
-                chk = 1
                 break
-        fn.close()
 
-    if chk == 0:
-        fn =open(file5, 'a')
-        fn.write(pline)
-        fn.close()
+        with open(file5, 'w') as fo:
+            fo.write(dline)
+            fo.write(pline)
 
-#---------------------------------------------------------------------------------------------------
-#--- find_bad_pix: find bad pixel by comparing three consecutive data                            ---
-#---------------------------------------------------------------------------------------------------
+    else:
+        with open(file5, 'w') as fo:
+            fo.write(pline)
+
+#-------------------------------------------------------------------------------------------
+#--- find_bad_pix: find bad pixel by comparing three consecutive data                    ---
+#-------------------------------------------------------------------------------------------
 
 def  find_bad_pix(ccd, quad,  file1, file2, file3):
-
     """
     find bad pixel by comparing three consecutive data
-    Input:  ccd     --- ccd #
+    input:  ccd     --- ccd #
             quad    --- quad #
             file1   --- first data file
             file2   --- second data file
             file3   --- thrid data file
-    Output: cleaned --- bad pixel list
+    output: cleaned --- bad pixel list
     """
     out_file = []
 
@@ -1120,33 +1080,33 @@ def  find_bad_pix(ccd, quad,  file1, file2, file3):
             if len(xs2) > 0:
                 for i in range(0, len(xs2)):
                     try:
-                        val   = float(xs2[i])                         #---- checking whether there is actually values
+                        val   = float(xs2[i])
                         atemp = re.split('\s+|\t+', ls2[i])
-                        line  = str(ccd) + ':' + str(quad) + ':' + atemp[3] + ':' + xs[i] + ':' + ys[i]
+                        line  = str(ccd) + ':' + str(quad) + ':' + atemp[3] 
+                        line  = line + ':' + xs[i] + ':' + ys[i]
                         out_file.append(line)
-
                     except:
                         pass
 
     if len(out_file) > 0:
-        cleaned = mcf.removeDuplicate(out_file, chk = 0, dosort=0)
+        cleaned = mcf.remove_duplicated_lines(out_file, chk = 0)
     else:
         cleaned = []
+
     return cleaned
 
-#---------------------------------------------------------------------------------------------------
-#---  readBFile: read out ccd data file                                                         ----
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#---  readBFile: read out ccd data file                                                 ----
+#-------------------------------------------------------------------------------------------
 
-def readBFile(ccd, file):
-
+def readBFile(ccd, ifile):                  #--- ccd is not used!!!
     """
     read out ccd data file
-    Input:  ccd  --- ccd #
+    input:  ccd  --- ccd #
             file --- file name
-    Output: a list of (x position list, y position list, value list)
+    output: a list of (x position list, y position list, value list)
     """
-    data = mcf.readFile(file)
+    data = mcf.read_data_file(ifile)
 
     xa = []
     ya = []
@@ -1160,21 +1120,20 @@ def readBFile(ccd, file):
 
     return (xa, ya, la)
 
-#---------------------------------------------------------------------------------------------------
-#--- pickSamePix: find pixels appear in two files given                                          ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- pickSamePix: find pixels appear in two files given                                  ---
+#-------------------------------------------------------------------------------------------
 
 def pickSamePix(x1, y1, line1, x2, y2, line2):
-
     """
     find pixels appear in two files given
-    Input:  x1    --- x coordinates of the first file
+    input:  x1    --- x coordinates of the first file
             y1    --- y coordinates of the first file
             line1 --- all data information associates to x1, y1 pixel
             x2    --- x coordinates of the second file
             y2    --- y coordinates of the second file
             line2 --- all data information associates to x2, y2 pixel
-    Output: list of [x coordinates, y coordinates, pixel info]
+    output: list of [x coordinates, y coordinates, pixel info]
     """
     x_save = []
     y_save = []
@@ -1189,22 +1148,21 @@ def pickSamePix(x1, y1, line1, x2, y2, line2):
                 break
     return (x_save, y_save, l_save)
 
-#---------------------------------------------------------------------------------------------------
-#--- local_chk: compute local mean, std, warm limit and hot limit                                ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- local_chk: compute local mean, std, warm limit and hot limit                        ---
+#-------------------------------------------------------------------------------------------
 
 def local_chk(varray, ix, iy, lmean, lstd, warm, hot):
-
     """
     compute local mean, std, warm limit and hot limit 
-    Input:  varray --- data array (2D) [y, x] (numpy array)
+    input:  varray --- data array (2D) [y, x] (numpy array)
             ix     --- x coordinate of the pixel of interest
             iy     --- y coordinate of the pixel of interest
             lmean  --- mean value of the area
             lstd   --- standard deviation of the area
             warm   --- warm limit of the area
             hot    --- hot limit of the area
-    Output: leanm  --- mean value of the local area
+    output: leanm  --- mean value of the local area
             lstd   --- standard deviation of the local area
             warm   --- warm limit of the local area
             hot    --- hot limit of the local area
@@ -1255,16 +1213,15 @@ def local_chk(varray, ix, iy, lmean, lstd, warm, hot):
         chot  = lmean + hot_factor
         return (lmean, lstd, warm, hot)
 
-#---------------------------------------------------------------------------------------------------
-#--- extractCCDInfo: extract CCD information from a fits file                                    ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- extractCCDInfo: extract CCD information from a fits file                            ---
+#-------------------------------------------------------------------------------------------
 
-def extractCCDInfo(file):
-
+def extractCCDInfo(ifile):
     """
     extreact CCD infromation from a fits file
-    Input:  file        --- fits file name
-    Output: ccd_id      --- ccd #
+    input:  ifile       --- fits file name
+    output: ccd_id      --- ccd #
             readmode    --- read mode
             date_obs    --- observation date
             overclock_a --- overclock a 
@@ -1276,7 +1233,7 @@ def extractCCDInfo(file):
 #--- read fits file header
 #
     try:
-        f           = pyfits.open(file)
+        f           = pyfits.open(ifile)
         hdr         = f[0].header
         ccd_id      = hdr['CCD_ID']
         readmode    = hdr['READMODE']
@@ -1285,30 +1242,33 @@ def extractCCDInfo(file):
         overclock_b = hdr['INITOCLB']
         overclock_c = hdr['INITOCLC']
         overclock_d = hdr['INITOCLD']
+        f.close()
     
         return [ccd_id, readmode, date_obs, overclock_a, overclock_b, overclock_c, overclock_d]
     except:
         return ['NA', 'NA', 'NA', 'NA', 'NA', 'NA', 'NA']
 
-#---------------------------------------------------------------------------------------------------
-#--- read_bad_pix_list: read knwon bad pixel list                                                ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- read_bad_pix_list: read knwon bad pixel list                                        ---
+#-------------------------------------------------------------------------------------------
 
 def read_bad_pix_list():
-
     """
     read knwon bad pixel list
-    Input: house_keeping + '/Defect/bad_pix_list'
-    Output: bad_pix_list --- a list of lists of bad pixels separated by CCD
+    input:  <house_keeping>/Defect/bad_pix_list
+    output: bad_pix_list --- a list of lists of bad pixels separated by CCD
     """
-
-    line = house_keeping + '/Defect/bad_pix_list'
-    data = mcf.readFile(line)
 #
 #--- initialize the list
 #
+    bad_pix_list = []
     for i in range(0, 10):
-        exec "badpix%s = []" % (i)
+        bad_pix_list.append([])
+#
+#--- read data
+#
+    line = house_keeping + '/Defect/bad_pix_list'
+    data = mcf.read_data_file(line)
 #
 #--- separate bad pixels into different CCDs
 #
@@ -1316,37 +1276,33 @@ def read_bad_pix_list():
         m = re.search('#', ent)
         if m is None:
             atemp = re.split(':', ent)
-            line = '"' + str(atemp[2]) + ':' + str(atemp[3]) + '"'
-            exec "badpix%s.append(%s) " % (str(atemp[0]), line)
-#
-#--- put all bad pix lists into one list
-#
-    bad_pix_list = []
-    for i in range(0, 10):
-        exec "bad_pix_list.append(badpix%s)" % (str(i))
+            k     = int(float(atemp[0]))
+            line  = '"' + str(atemp[2]) + ':' + str(atemp[3]) + '"'
+            bad_pix_list[k].append(line)
 
     return bad_pix_list
 
-
-#---------------------------------------------------------------------------------------------------
-#---  read_bad_col_list: read in known bad column lists                                          ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#---  read_bad_col_list: read in known bad column lists                                  ---
+#-------------------------------------------------------------------------------------------
 
 def read_bad_col_list():
-
     """
     read in known bad column lists
-    Input:  house_keeping + '/Defect/bad_col_list
-    Output: bad_col_list --- a list of list of bad columns separated by CCDs
+    input:  <house_keeping>/Defect/bad_col_list
+    output: bad_col_list --- a list of list of bad columns separated by CCDs
     """
-
-    line = house_keeping + '/Defect/bad_col_list'
-    data = mcf.readFile(line)
 #
 #--- initialize the list
 #
+    bad_col_list = []
     for i in range(0, 10):
-        exec "badcol%s = []" % (str(i))
+        bad_col_list.append([])
+#
+#--- read data
+#
+    line = house_keeping + '/Defect/bad_col_list'
+    data = mcf.read_data_file(line)
 #
 #--- separate bad columns  into different CCDs
 #
@@ -1354,187 +1310,224 @@ def read_bad_col_list():
         m = re.search('#', ent)
         if m is None:
             atemp = re.split(':', ent)
-            line = '"' + str(atemp[3]) + ':' + str(atemp[2]) + ':' + str(atemp[3]) + '"'
-            exec "badcol%s.append(%s) " % (str(atemp[0]), line)
-#
-#--- put all bad col lists into one list
-#
-    bad_col_list = []
-    for i in range(0, 10):
-        exec "bad_col_list.append(badcol%s)" % (str(i))
+            k     = int(float(atemp[0]))
+            line  = '"' + str(atemp[3]) + ':' + str(atemp[2]) + ':' + str(atemp[3]) + '"'
+            bad_col_list[k].append(line)
 
     return bad_col_list
 
-#---------------------------------------------------------------------------------------------------
-#--- removeIncompteData: removing files which indicated "imcoplete"                             ----
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#--- removeIncompteData: removing files which indicated "imcoplete"                     ----
+#-------------------------------------------------------------------------------------------
 
 def removeIncompteData(cut_time):
-
     """
-    remove files which are indicated "imcoplete" by cut_time (if the file is created after cut_time)
-    Input:  cut_time: the cut time which indicates when to remove the data file
-    Output: None, but delete files
+    remove files which are indicated "imcoplete" by cut_time 
+    (if the file is created after cut_time)
+    input:  cut_time    --- the cut time which indicates when to remove the data file
+                            time is in seconds from 1998.1.1
+    output: None, but delete files
     """
-
     for ccd in range(0, 10):
-        file = data_dir + 'Disp_dir/data_used' + str(ccd)
-        trimFile(file, cut_time, 0)
+        ifile = data_dir + 'data_used' + str(ccd)
+        trimFile(ifile, cut_time, 0)
         
     for head in ('change_ccd', 'change_col', 'imp_ccd', 'new_ccd', 'imp_col', 'new_col'):
         for ccd in range(0, 10):
-            file  =  data_dir + 'Disp_dir/' + head + str(ccd)
-            trimFile(file, cut_time, 1)
+            ifile  =  data_dir +  head + str(ccd)
+            trimFile(ifile, cut_time, 1)
 
     for ccd in range(0, 10):
-        file = data_dir + 'Disp_dir/hist_ccd' + str(ccd)
-        trimFile(file, cut_time, 1)
+        ifile = data_dir + 'hist_ccd' + str(ccd)
+        trimFile(ifile, cut_time, 1)
 
-#---------------------------------------------------------------------------------------------------
-#---  trimFile: drop the part of the data from the file if the data is created after cut_time     --
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#---  trimFile: drop the part of the data from the file if the data is created after cut_time 
+#-------------------------------------------------------------------------------------------
 
-def trimFile(file, cut_time, dtype):
-
+def trimFile(ifile, cut_time, dtype):
     """
     drop the part of the data from the file if the data is created after cut_time
-    Input:  file     --- file name
+    input:  ifile    --- file name
             cut_time --- the cut time
-            dtype    --- how to find a dom, if dtype == 0: the time is in form of 20013:135. otherwise, in DOM
-    Output: file     --- updated file
+            dtype    --- how to find a stime, if dtype == 0: the time is in form of 20013:135. 
+                         otherwise, in stime (seconds from 1998.1.1)
+    output: file     --- updated file
     """
 
     try:
-        data = mcf.readFile(file)
+        data = mcf.read_data_file(ifile)
         if len(data) > 0:
-    
-            f    = open(zspace, 'w')
+            sline = ''
             for  ent in data:
                 try:
                     if dtype == 0:
                         atemp = re.split(':', ent)
-                        year  = float(atemp[0])         #--- checking whether they are in digit
-                        ydate = float(atemp[1])
-                        year  = int(year)
-                        ydate = int(ydate)
-                        dtime = tcnv.findDOM(year, ydate, 0, 0, 0)  
+                        year  = int(float(atemp[0]))
+                        ydate = int(float(atemp[1]))
+                        ydate = mcf.add_leading_zero(ydate, 3)
+                        ltime = atemp[0] + ':' + ydate + ':00:00:00'
+                        dtime = int(Chandra.Time.DateTime(ltime).secs)
                     else:
                         atemp = re.split('<>', ent)
                         dtime = int(atemp[0])
+
                     if dtime >= cut_time:
                         break
                     else:
-                        f.write(ent)
-                        f.write('\n')
+                        sline = sline + ent  + '\n'
                 except:
                     pass
 
-            f.close()
-            cmd = 'mv ' + zspace + ' ' + file
+            with open(zspace, 'w') as fo:
+                fo.write(sline)
+            
+            cmd = 'mv ' + zspace + ' ' + ifile
             os.system(cmd)
     except:
         pass
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-
-def set_date(dom):
-
-    [year, ydate] = tcnv.DOMtoYdate(dom)
-    [month, date]   = tcnv.changeYdateToMonDate(year, ydate)
-    lyear = str(year)
-
-    cmon = str(month)
-    if int(month) < 10:
-        cmon = '0' + cmon
-    cdate = str(date)
-    if int(date) < 10:
-        cdate = '0' + cdate
-    cyear = lyear[2] + lyear[3]
-    start = cmon + '/' + cdate + '/' + cyear + ',00:00:00'
-    lyear = str(year)
-
-    dom_next = dom + 1
-    [year, ydate] = tcnv.DOMtoYdate(dom_next)
-    [month, date]   = tcnv.changeYdateToMonDate(year, ydate)
-
-    cmon = str(month)
-    if int(month) < 10:
-        cmon = '0' + cmon
-    cdate = str(date)
-    if int(date) < 10:
-        cdate = '0' + cdate
-    cyear = lyear[2] + lyear[3]
-    stop = cmon + '/' + cdate + '/' + cyear + ',00:00:00'
-
-    return(start,stop)
-
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- get_data_out: extract acis bias data file                                             --
+#-------------------------------------------------------------------------------------------
 
 def get_data_out(start, stop):
-
-    fdir = exc_dir + 'Temp_data/'
-    cmd  = 'rm  -rf ' + fdir
-    os.system(cmd)
-
-    cmd  = 'mkdir ' + fdir
-    os.system(cmd)
+    """
+    extract acis bias data file
+    input:  start   --- start time in seconds from 1998.1.1
+            stop    --- stop time in seconds from 1998.1.1
+    output: asic bias data fits files
+            save    --- a list of fits files extracted
+    """
 #
-#--- write  required arc4gl command
+#--- convert data format
+#
+    tstart = mcf.convert_date_format(start, ofmt="%Y-%m-%dT%H:%M:%S")
+    tstop  = mcf.convert_date_format(stop,  ofmt="%Y-%m-%dT%H:%M:%S")
+#
+#---clean up the temporary output directory
+#
+    fdir = exc_dir + 'Temp_data/'
+    if os.path.isdir(fdir):
+        cmd  = 'rm  -rf ' + fdir + '/*'
+        os.system(cmd)
+    else:
+        cmd  = 'mkdir ' + fdir
+        os.system(cmd)
+#
+#--- write  required arc5gl command
 #
     line = 'operation=retrieve\n'
     line = line + 'dataset=flight\n'
     line = line + 'detector=acis\n'
     line = line + 'level=0\n'
     line = line + 'filetype=bias0\n'
-    line = line + 'tstart=' + str(start) + '\n'
-    line = line + 'tstop='  + str(stop) + '\n'
+    line = line + 'tstart=' + str(tstart) + '\n'
+    line = line + 'tstop='  + str(tstop) + '\n'
     line = line + 'go\n'
-    f= open(zspace, 'w')
-    f.write(line)
-    f.close()
-
-    cmd1 = "/usr/bin/env PERL5LIB="
-    cmd2 =  ' echo ' +  hakama + ' |/bin/nice -n17 arc4gl -U' + dare + ' -Sarcocc -i' + zspace 
-    cmd  = cmd1 + cmd2
-
+    with open(zspace, 'w') as f:
+        f.write(line)
+#
+#--- run arc5gl
+#
+    outf = exc_dir + 'Temp_data/zout'
     try:
-#
-#--- run arc4gl
-#
-        bash(cmd,  env=ascdsenv)
-        mcf.rm_file(zspace)
-    
-        cmd = 'ls * > ' + zspace
+        cmd = 'cd ' + exc_dir +  'Temp_data; /proj/sot/ska/bin/arc5gl -user isobe -script ' 
+        cmd = cmd   + zspace  + ' > ' + outf
         os.system(cmd)
-        ltest = open(zspace, 'r').read()
-        mcf.rm_file(zspace)
-        m1    = re.search('bias0.fits', ltest)
-        if m1 is not None:
-            cmd = "mv *fits* " + exc_dir + "/Temp_data/."
-            os.system(cmd)
-    
-            cmd = "/bin/nice -n17 gzip -d " + exc_dir +  "/Temp_data/*gz"
-            os.system(cmd)
-    
-            cmd = 'ls ' + exc_dir + '/Temp_data/*fits > '+  zspace
-            os.system(cmd)
-    
-            fx = open(zspace, 'r')
-            fdata = [line.strip() for line in fx.readlines()]
-            fx.close()
-            mcf.rm_file(zspace)
-            return fdata
-        else:
-            return 'na'
-
     except:
-        mcf.rm_file(zspace)
-        return 'na'
+        cmd1 = "/usr/bin/env PERL5LIB= "
+        cmd2 = '  cd ' + exc_dir + 'Temp_data; /proj/axaf/simul/bin/arc5gl -user isobe -script ' 
+        cmd2 = cmd2    + zspace  + '> ' + outf
+        try:
+            os.system(cmd2)
+        except:
+            cmd  = cmd1 + cmd2
+            bash(cmd,  env=ascdsenv)
 
+    mcf.rm_files(zspace)
+#
+#--- get a list of retrieved fits files
+#
+    data = mcf.read_data_file(outf)
+    mcf.rm_files(outf)
+
+    save = []
+    for ent in data:
+        mc = re.search('fits', ent)
+        if mc is not None:
+            fname = fdir + ent
+            save.append(fname)
+
+    return save
+
+#---------------------------------------------------------------------------------------
+#-- find_data_collection_interval: find data collection period in dom---
+#---------------------------------------------------------------------------------------
+
+def find_data_collection_interval():
+    """
+    find data collection period in dom
+    input:  none but read from <data_dir>/Dis_dir/hist_ccd3
+    output: ldate   --- starting time in seconds from 1998.1.1
+            tdate   --- stopping time in seconds from 1998.1.1
+    """
+#
+#--- find today's  date
+#
+    tout  = time.strftime('%Y:%j:00:00:00', time.gmtime())
+    tdate = int(mcf.convert_date_format(tout, ofmt='chandra'))
+#
+#--- find the date of the last entry
+#
+    ifile = data_dir + 'hist_ccd3'
+    data  = mcf.read_data_file(ifile)
+    data.reverse()
+    
+    for ent in data:
+        atemp = re.split('<>', ent)
+        try:
+            ldate = int(float(atemp[0]))
+            break
+        except:
+            continue
+#
+#--- the data colleciton starts from the next day of the last entry date
+#--- make sure that the time start 0hr.
+#
+    ldate += 90000.0
+    ltime  = Chandra.Time.DateTime(ldate).date
+    atemp  = re.split(':', ltime)
+    ltime  = atemp[0] + ':' + atemp[1] + ':00:00:00'
+    ldate  = int(Chandra.Time.DateTime(ltime).secs)
+
+    return [ldate, tdate]
+
+#---------------------------------------------------------------------------------------
+#-- mv_old_file: move supplemental data file older than 30 day to a reserve           --
+#---------------------------------------------------------------------------------------
+
+def mv_old_file(tdate):
+    """
+    move supplemental data file older than 30 day to a reserve
+    input:  tdate   --- the current time in seconds from 1998.1.1
+    output: none but older files are moved
+    """
+    tdate -= 30 * 86400
+
+    cmd = 'ls ' + house_keeping + '/Defect/CCD*/* > ' + zspace
+    os.system(cmd)
+    ldata = mcf.read_data_file(zspace, remove=1)
+    
+    for ent in ldata:
+        atemp = re.split('\/acis', ent)
+        btemp = re.split('_', atemp[1])
+    
+    if int(btemp[0]) < tdate:
+        out = ent
+        out = out.replace('Defect', 'Defect/Save')
+        cmd = 'mv ' + ent + ' ' + out
+        os.system(cmd)
 
 #-----------------------------------------------------------------------------------------
 #-- TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST    ---
@@ -1548,22 +1541,15 @@ class TestFunctions(unittest.TestCase):
 
     def test_bad_pix(self):
 
-        mcf.mk_empty_dir('/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/Ztemp_dir')
-        cmd = 'mv /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/data_used*  /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/Ztemp_dir'
+        mcf.mk_empty_dir('/data/mta/Script/ACIS/Bad_pixels/Data/Ztemp_dir')
+        cmd = 'mv /data/mta/Script/ACIS/Bad_pixels/Data/data_used*  /data/mta/Script/ACIS/Bad_pixels/Data/Ztemp_dir'
         os.system(cmd)
-        cmd = 'cp -r /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/Ztemp_dir/* /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/.'
+        cmd = 'cp -r /data/mta/Script/ACIS/Bad_pixels/Data/Ztemp_dir/* /data/mta/Script/ACIS/Bad_pixels/Data/.'
         os.system(cmd)
         mcf.mk_empty_dir('./Working_dir')
 
-        dom = 5532
-        [start,stop] = set_date(dom)
-        get_data_out(start, stop)
-
-        odir = exc_dir + '/Temp_data/'
-        main_list = regroup_data(odir)
-
         mcf.rm_file('./Working_dir/*_list')
-        int_file_for_day(main_list[0])
+        a_list = int_file_for_day(main_list[0])
         dom = setup_to_extract()
 
         ccd = 3
@@ -1574,14 +1560,21 @@ class TestFunctions(unittest.TestCase):
 
         self.assertEquals(warm_data, test_data)
 
-        cmd = 'mv /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/Ztemp_dir/* /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/.'
+        cmd = 'mv /data/mta/Script/ACIS/Bad_pixels/Data/Ztemp_dir/* /data/mta/Script/ACIS/Bad_pixels/Data/.'
         os.system(cmd)
 
 #--------------------------------------------------------------------
 
 if __name__ == '__main__':
 
-        unittest.main()
+    #unittest.main()
 
+    if len(sys.argv) > 1:
+        tstart = float(sys.argv[1])
+        tstop  = float(sys.argv[2])
+    else:
+        tstart = ''
+        tstop  = ''
 
+    find_bad_pix_main(tstart, tstop)
 

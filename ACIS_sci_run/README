@@ -6,9 +6,6 @@ This set of scripts retrieve ACIS science run data from MIT web site, check even
 and drop rate and plot trends. If any of these higher than specified limits, it will send out
 email notification.
 
-Dir: /data/mta/Script/ACIS/Acis_sci_run
-See also: 
-
 ##########
 How to run
 ##########
@@ -19,11 +16,6 @@ Create a directory for computation, then type:
 
 The output are automatically directed into /data/mta/www/mta_acis_sci_run directory.
 If you want to change directories of input/output, change $web_dir/$bin_dir/$current_dir etc (see below).
-
-If you want to run test run:
-
-    /data/mta/Script/ACIS/Acis_sci_run/Script/acis_sci_run_wrap_script1 ----- test a regualr operation
-    /data/mta/Script/ACIS/Acis_sci_run/Script/acis_sci_run_wrap_script2 ----- test data at year change
 
          
 ################### 
@@ -38,39 +30,32 @@ See  /data/mta/Script/ACIS/Acis_sci_run/house_keeping/dir_list_py
 '/data/mta/Script/ACIS/Acis_sci_run/house_keeping/' :house_keeping      #----- house keeping direcotry
 '/data/mta/Script/ACIS/Acis_sci_run/Script/'        :bin_dir            #----- script location
 '/data/mta/MTA/data/Acis_sci_run/'                  :bin_data_dir       #----- some information kept here
-'/data/mta/Script/Python_script2.7/'                :mta_dir            #----- mta related python function kept here
+'/data/mta/Script/Python3.6/'                       :mta_dir            #----- mta related python function kept here
 
 
 acis_sci_run_wrap_script
-acis_sci_run_wrap_script1
-acis_sci_run_wrap_script2
 --------------------------
 a wrap script to run the main script. The first one is the regular one and the latter two are for test. 
 
 acis_sci_run_main_script
-acis_sci_run_main_script1
-acis_sci_run_main_script2
 --------------------------
 a main calling scripts for a regular and two types of tests.
 
-
 acis_sci_run_get_data.py
 ------------------------
-The main script. If "test" is given as an argument, it will perform mid year test, and if "test2" is
-given, it will perform year transition test. 
+the main script to extract the data from mit sites.
 
 acis_sci_run_functions.py
 --------------------------
 several related functions are kept in this file
 
+plot_sci_run_trends.py
+----------------------
+create all plots realted to acis science run
 
 mta_common_functions.py
 -----------------------
 this is kept in "mta_dir" : give a set of functions used by mta
-
-convertTimeFormat.py
---------------------
-this is kept in 'mta_dir' : give mta realted time conversion fuctions.
 
 
 Descriptions of columns are following:
@@ -157,8 +142,17 @@ Output:
 	    $web_dir/$current_dir/te5_5.html
 	    $web_dir/$current_dir/te_raw.html
 
-	    $web_dir/Long_term/cc3_3_out.gif
-	    $web_dir/Long_term/te3_3_out.gif
-	    $web_dir/Long_term/te5_5_out.gif
-	    $web_dir/Long_term/te_raw_out.gif
+	    $web_dir/Long_term/cc3_3_out.png
+	    $web_dir/Long_term/te3_3_out.png
+	    $web_dir/Long_term/te5_5_out.png
+	    $web_dir/Long_term/te_raw_out.png
+
+web address:
+------------
+https://cxc.cfa.harvard.edu/mta_days/mta_acis_sci_run/science_run.html
+
+cron job:
+---------
+on luke-v as mta:
+7 2  * * *  cd /data/mta/Script/ACIS/Acis_sci_run/Exc; /data/mta/Script/ACIS/Acis_sci_run/Script/acis_sci_run_wrap_script >> $HOME/Logs/acis_sci_run_py.cron 2>&1
 

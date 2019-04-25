@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#       ccd_plot_history.py: create  various history plots for warm pixels and warm columns                 #
-#                                                                                                           #
-#                   author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                           #
-#                   Last update: May 13, 2014                                                               #
-#                                                                                                           #
-#############################################################################################################
+#############################################################################################
+#                                                                                           #
+#       ccd_plot_history.py: create  various history plots for warm pixels and warm columns #
+#                                                                                           #
+#                   author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                           #
+#                   Last update: Apr 02, 2019                                               #
+#                                                                                           #
+#############################################################################################
 
 import os
 import sys
@@ -22,38 +22,17 @@ import operator
 import matplotlib as mpl
 
 if __name__ == '__main__':
-
     mpl.use('Agg')
 
-#
-#--- check whether this is a test case
-#
-comp_test = 'live'
-if len(sys.argv) == 2:
-    if sys.argv[1] == 'test':                   #---- test case
-        comp_test = 'test'
-    elif sys.argv[1] == 'live':                 #---- automated read in
-        comp_test = 'live'
-    else:
-        comp_test = sys.argv[1].strip()         #---- input data name
-#
-#--- reading directory list
-#
-if comp_test == 'test' or comp_test == 'test2':
-    path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py_test'
-else:
-    path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
 #--- append a path to a private folder to python directory
 #
@@ -62,385 +41,117 @@ sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat       as tcnv
 import mta_common_functions    as mcf
-import bad_pix_common_function as bcf
 #
-#--- temp writing file name
+#--- set color list
 #
+colorList = ('blue', 'green', 'red', 'aqua', 'lime', 'fuchsia', 'maroon', 'black', 'yellow', 'olive')
 
-rtail  = int(10000 * random.random())
-zspace = '/tmp/zspace' + str(rtail)
+#-------------------------------------------------------------------------------------------
+#--- plot_ccd_history: plotting warm pixel history                                       ---
+#-------------------------------------------------------------------------------------------
 
-#
-#--- set a dimension for an array: set slightly larger than today's DOM.
-#
-[dyear, dmon, dday, dhours, dmin, dsec, dweekday, dyday, ddst] = tcnv.currentTime()
-ddom = tcnv.findDOM(dyear, dmon, dday, dhours, dmin, dsec)
-adim = int(ddom + 100)
-
-#---------------------------------------------------------------------------------------------------
-#--- plot_ccd_history: plotting warm pixel history                                               ---
-#---------------------------------------------------------------------------------------------------
-
-def plot_ccd_history():
-
+def plot_ccd_histories():
     """
-    plotting warm pixel history  
-    Input: None but read from:
-            <data_dir>/Disp_dir/ccd<ccd>_cnt
-            <data_dir>/Disp_dir/bad_ccd<ccd>_cnt
-            <data_dir>/Disp_dir/cum_ccd<ccd>_cnt
-    Output: <plot_dir>hist_plot<ccd>.png
+    plotting ccd histories 
+    input: None but read from:
+            <data_dir>ccd<ccd>_cnt
+            <data_dir>bad_ccd<ccd>_cnt
+            <data_dir>cum_ccd<ccd>_cnt
+            --- 'ccd' could be hccd, col, etc
+    output: <plot_dir>hist_plot<ccd>.png
     """
+#
+#--- set input parameters
+#
+    ctype = ['ccd', 'hccd', 'col']
+    part1 = ['Warm Pixels', 'Hot Pixels', 'Warm Columns']
+    part2 = ['Real Warm',   'Real Hot',   'Real Warm']
+#
+#--- there are three different types of data: ccd, hccd, and col
+#
+    for k in range(0, 3):
+#
+#--- plot each ccd
+#
+        for ccd in range(0, 10):
+            ifile = data_dir + ctype[k] + str(ccd) + '_cnt'
+            ofile = web_dir  + 'Plots/hist_plot_'  + ctype[k] + str(ccd) + '.png'
+            part3 = 'CCD' + str(ccd)
+            plot_each_data(ifile, ofile, part1[k], part2[k], part3)
+#
+#--- plot front side combined ccd 
+#
+        ifile = data_dir + 'front_side_' + ctype[k] + '_cnt'
+        ofile = web_dir  + 'Plots/hist_' + ctype[k] + '_plot_front_side.png'
+        part3 = 'Front Side CCDs'
+        plot_each_data(ifile, ofile, part1[k], part2[k], part3)
 
-    for ccd in range(0, 10):
-#
-#--- set input file names
-#
-        file = data_dir + '/Disp_dir/ccd' + str(ccd) + '_cnt'
+#-------------------------------------------------------------------------------------------
+#-- plot_each_data: create a plot for each data                                          ---
+#-------------------------------------------------------------------------------------------
+
+def plot_each_data(ifile, ofile, part1, part2, part3):
+    """
+    create a plot for each data
+    input:  ifile   --- input data file name
+            ofile   --- output plot file name in png
+            part1   --- description of title part
+            part2   --- description of title part
+            part3   --- description of title part
+    output: ofile   --- png plot 
+    """
 #
 #--- read data and put in one basket
 #
-        [xMinSets, xMaxSets, yMinSets, yMaxSets, xSets, ySets] = readData(file)
-        xmin = min(xMinSets)
-        xmax = max(xMaxSets)
-#
-#--- x-axis name and y-axis name
-#
-        xname = "Time (DOM)"
-        yname = "Counts"
-#
-#--- titles
-#
-        entLabels = []
-        pname = 'Cumulative Numbers of Warm Pixels: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Daily Warm Pixels: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Persisting Warm Pixels: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Potential Warm Pixels (Real Warm + Flickering): CCD ' + str(ccd)
-        entLabels.append(pname)
-#
-#--- plotting: create three panel plots
-#
-        pchk = plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, mksize=0.0, lwidth=1.5)
-        if pchk > 0:
-            cmd  = 'mv out.png ' + web_dir + 'Plots/hist_plot_ccd' + str(ccd) + '.png'
-            os.system(cmd)
-
-
-
-
-#---------------------------------------------------------------------------------------------------
-#--- plot_hccd_history: plotting hot pixel history                                               ---
-#---------------------------------------------------------------------------------------------------
-
-def plot_hccd_history():
-
-    """
-    plotting warm pixel history  
-    Input: None but read from:
-            <data_dir>/Disp_dir/ccd<ccd>_cnt
-            <data_dir>/Disp_dir/bad_ccd<ccd>_cnt
-            <data_dir>/Disp_dir/cum_ccd<ccd>_cnt
-    Output: <plot_dir>hist_plot<ccd>.png
-    """
-
-    for ccd in range(0, 10):
-#
-#--- set input file names
-#
-        file = data_dir + '/Disp_dir/hccd' + str(ccd) + '_cnt'
-#
-#--- read data and put in one basket
-#
-        [xMinSets, xMaxSets, yMinSets, yMaxSets, xSets, ySets] = readData(file)
-        xmin = min(xMinSets)
-        xmax = max(xMaxSets)
-#
-#--- x-axis name and y-axis name
-#
-        xname = "Time (DOM)"
-        yname = "Counts"
-#
-#--- titles
-#
-        entLabels = []
-        pname = 'Cumulative Numbers of Hot Pixels: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Daily Hot Pixels: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Persisting Hot Pixels: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Potential Hot Pixels (Real Hot + Flickering): CCD ' + str(ccd)
-        entLabels.append(pname)
-#
-#--- plotting: create three panel plots
-#
-        pchk = plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, mksize=0.0, lwidth=1.5)
-        if pchk > 0:
-            cmd  = 'mv out.png ' + web_dir + 'Plots/hist_plot_hccd' + str(ccd) + '.png'
-            os.system(cmd)
-
-
-
-#---------------------------------------------------------------------------------------------------
-#--- plot_col_history: plot warm column history                                                  ---
-#---------------------------------------------------------------------------------------------------
-
-def plot_col_history():
-
-    """
-    plot warm column history 
-    Input: None but read from:
-            <data_dir>/Disp_dir/col<ccd>_cnt
-            <data_dir>/Disp_dir/bad_col<ccd>_cnt
-            <data_dir>/Disp_dir/cum_col<ccd>_cnt
-    Output: <plot_dir>/hist_plot_col<ccd>.png
-    """
-
-    for ccd in range(0, 10):
-#
-#--- set input file names
-#
-        file = data_dir + '/Disp_dir/col' + str(ccd) + '_cnt'
-#
-#--- read data and put in one basket
-#
-        [xMinSets, xMaxSets, yMinSets, yMaxSets, xSets, ySets] = readData(file)
-        xmin = min(xMinSets)
-        xmax = max(xMaxSets)
-#
-#--- x-axis name and y-axis name
-#
-        xname = "Time (DOM)"
-        yname = "Counts"
-#
-#--- titles
-#
-        entLabels = []
-        pname = 'Cumulative Numbers of Warm Columns: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Daily Warm Columns: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Persisting Warm Columns: CCD ' + str(ccd)
-        entLabels.append(pname)
-        pname = 'Numbers of Potential Warm Columns (Real Warm + Flickering): CCD ' + str(ccd)
-        entLabels.append(pname)
-#
-#--- plotting
-#
-        pchk = plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, mksize=0.0, lwidth=1.5)
-        if pchk > 0:
-            cmd  = 'mv out.png ' + web_dir + 'Plots/hist_plot_col' + str(ccd) + '.png'
-            os.system(cmd)
-
-
-#---------------------------------------------------------------------------------------------------
-#--- plot_front_ccd_history: plot history of combined warm pixel counts of all front CCDs        ---
-#---------------------------------------------------------------------------------------------------
-
-def plot_front_ccd_history():
-
-    """
-    plot history of combined warm pixel counts of all front CCDs
-    CCD #: 0, 1, 2, 3, 4, 6, 8, 9
-    Input: None, but read from:
-            <data_dir>/Disp_dir/ccd<ccd>_cnt
-            <data_dir>/Disp_dir/bad_ccd<ccd>_cnt
-            <data_dir>/Disp_dir/cum_ccd<ccd>_cnt
-    Output: <plot_dir>hist_plot_front_side.png
-    """
-
-#
-#--- set input file names
-#
-    file = data_dir + '/Disp_dir/front_side_ccd_cnt'
-#
-#--- read data and put in one basket
-#
-    [xMinSets, xMaxSets, yMinSets, yMaxSets, xSets, ySets] = readData(file)
+    [xMinSets, xMaxSets, yMinSets, yMaxSets, xSets, ySets] = readData(ifile)
     xmin = min(xMinSets)
     xmax = max(xMaxSets)
 #
-#--- x-axis name and y-axis name
+#--- set titles
 #
-    xname = "Time (DOM)"
-    yname = "Counts"
-#
-#--- titles
-#
-    entLabels = []
-    pname = 'Cumulative Numbers of Warm Pixels: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Daily Warm Pixels: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Persisting Warm Pixels: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Potential Warm Pixels (Real Warm + Flickering): Front Side CCDs '
-    entLabels.append(pname)
+    tlabels = []
+    pname = 'Cumulative Numbers of '   + part1 + ': ' + part3
+    tlabels.append(pname)
+
+    pname = 'Numbers of Daily '        + part1 + ': ' + part3
+    tlabels.append(pname)
+
+    pname = 'Numbers of Persisting '   + part1 + ': ' + part3
+    tlabels.append(pname)
+
+    pname = 'Numbers of Potential '    + part1 + ' (' + part2 
+    pname = pname + ' + Flickering): ' + part3
+    tlabels.append(pname)
 #
 #--- plotting: create three panel plots
 #
-    pchk = plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, mksize=0.0, lwidth=1.5)
-    if pchk > 0:
-        cmd  = 'mv out.png ' + web_dir + 'Plots/hist_ccd_plot_front_side.png'
-        os.system(cmd)
+    plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, 'Time (Year)', 'Counts',
+              tlabels, ofile, mksize=0.0, lwidth=1.5)
 
-
-
-
-#---------------------------------------------------------------------------------------------------
-#--- plot_front_hccd_history: plot history of combined hot pixel counts of all front CCDs        ---
-#---------------------------------------------------------------------------------------------------
-
-def plot_front_hccd_history():
-
-    """
-    plot history of combined warm pixel counts of all front CCDs
-    CCD #: 0, 1, 2, 3, 4, 6, 8, 9
-    Input: None, but read from:
-            <data_dir>/Disp_dir/ccd<ccd>_cnt
-            <data_dir>/Disp_dir/bad_ccd<ccd>_cnt
-            <data_dir>/Disp_dir/cum_ccd<ccd>_cnt
-    Output: <plot_dir>hist_plot_front_side.png
-    """
-
-#
-#--- set input file names
-#
-    file = data_dir + '/Disp_dir/front_side_hccd_cnt'
-#
-#--- read data and put in one basket
-#
-    [xMinSets, xMaxSets, yMinSets, yMaxSets, xSets, ySets] = readData(file)
-    xmin = min(xMinSets)
-    xmax = max(xMaxSets)
-#
-#--- x-axis name and y-axis name
-#
-    xname = "Time (DOM)"
-    yname = "Counts"
-#
-#--- titles
-#
-    entLabels = []
-    pname = 'Cumulative Numbers of Warm Pixels: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Daily Warm Pixels: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Persisting Warm Pixels: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Potential Warm Pixels (Real Warm + Flickering): Front Side CCDs '
-    entLabels.append(pname)
-#
-#--- plotting: create three panel plots
-#
-    pchk = plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, mksize=0.0, lwidth=1.5)
-    if pchk > 0:
-        cmd  = 'mv out.png ' + web_dir + 'Plots/hist_hccd_plot_front_side.png'
-        os.system(cmd)
-
-
-#---------------------------------------------------------------------------------------------------
-#--- plot_front_col_history: plot history of combined warm column counts of all front CCDs       ---
-#---------------------------------------------------------------------------------------------------
-
-def plot_front_col_history():
-
-    """
-    plot history of combined warm column counts of all front CCDs
-    CCD #: 0, 1, 2, 3, 4, 6, 8, 9
-    Input: None, but read from:
-            <data_dir>/Disp_dir/col<ccd>_cnt
-            <data_dir>/Disp_dir/bad_col<ccd>_cnt
-            <data_dir>/Disp_dir/cum_col<ccd>_cnt
-    Output: <plot_dir>hist_col_plot_front_side.png
-    """
-    file = data_dir + '/Disp_dir/front_side_col_cnt'
-#
-#--- read data and put in one basket
-#
-    [xMinSets, xMaxSets, yMinSets, yMaxSets, xSets, ySets] = readData(file)
-    xmin = min(xMinSets)
-    xmax = max(xMaxSets)
-#
-#--- x-axis name and y-axis name
-#
-    xname = "Time (DOM)"
-    yname = "Counts"
-#
-#--- titles
-#
-    entLabels = []
-    pname = 'Cumulative Numbers of Warm Columns: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Daily Warm Columns: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Persisting Warm Columns: Front Side CCDs '
-    entLabels.append(pname)
-    pname = 'Numbers of Potential Warm Columns (Real Warm + Flickering): Front Side CCDs '
-    entLabels.append(pname)
-#
-#--- plotting: create three panel plots
-#
-    pchk = plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, mksize=0.0, lwidth=1.5)
-    if pchk > 0:
-        cmd  = 'mv out.png ' + web_dir + 'Plots/hist_col_plot_front_side.png'
-        os.system(cmd)
-
-
-#---------------------------------------------------------------------------------------------------
-#--- addupVal: add a value to an arry at a given location                                        ---
-#---------------------------------------------------------------------------------------------------
-
-def addupVal(barray, xval, yval):
-
-    """
-    add a value to an arry at a given location
-    Input:      barray: one dim array of length len(xval) which contains the original data values
-                xval:   one dim array of length len(xval) which contains the array location info
-                yval:   one dim array of length len(xval) which contains the adding values
-    Output:     barray: updated array 
-    """
-
-    for i in range(0, len(xval)):
-        x = int(xval[i])
-        y = int(yval[i])
-        barray[x] += y
-
-
-    return barray
-    
 #---------------------------------------------------------------------------------------------------
 #---  readData: read data and set plotting range                                                 ---
 #---------------------------------------------------------------------------------------------------
 
 def readData(dataname):
-
     """
     read data and set plotting range
-    Input: dataname  --- data file name (need a full path to the file)
-    Output: xval     --- an array of independent values (dom)
+    input: dataname  --- data file name (need a full path to the file)
+    output: xval     --- an array of independent values (time in seconds from 1998.1.1)
             cval     --- cumulative counts
             dval     --- daily counts
             bval     --- actual bad point counts
             pval     --- potential bad point counts
     """
-
 #
 #--- read data
 #
-    data = mcf.readFile(dataname)
-
+    data = mcf.read_data_file(dataname)
     xval = []
     cval = []
     dval = []
     bval = []
     pval = []
-
     prev = 0
     for ent in data:
         atemp = re.split('<>', ent)
@@ -451,7 +162,10 @@ def readData(dataname):
             if val == prev:
                 continue
 
-            xval.append(int(val))
+            stime = int(float(val))
+            ytime = mcf.chandratime_to_fraq_year(stime)
+            xval.append(ytime)
+            prev  = ytime
         
             val1  = float(atemp[2])
             val2  = float(atemp[3])
@@ -472,38 +186,14 @@ def readData(dataname):
     ymax_list = []
     x_list    = []
     y_list    = []
-
-    (xmin, xmax, ymin, ymax) = findPlottingRange(xval, cval)
-    xmin_list.append(xmin)
-    xmax_list.append(xmax)
-    ymin_list.append(ymin)
-    ymax_list.append(ymax)
-    x_list.append(xval)
-    y_list.append(cval)
-
-    (xmin, xmax, ymin, ymax) = findPlottingRange(xval, dval)
-    xmin_list.append(xmin)
-    xmax_list.append(xmax)
-    ymin_list.append(ymin)
-    ymax_list.append(ymax)
-    x_list.append(xval)
-    y_list.append(dval)
-
-    (xmin, xmax, ymin, ymax) = findPlottingRange(xval, bval)
-    xmin_list.append(xmin)
-    xmax_list.append(xmax)
-    ymin_list.append(ymin)
-    ymax_list.append(ymax)
-    x_list.append(xval)
-    y_list.append(bval)
-
-    (xmin, xmax, ymin, ymax) = findPlottingRange(xval, pval)
-    xmin_list.append(xmin)
-    xmax_list.append(xmax)
-    ymin_list.append(ymin)
-    ymax_list.append(ymax)
-    x_list.append(xval)
-    y_list.append(pval)
+    for dlist in (cval, dval, bval, pval):
+        (xmin, xmax, ymin, ymax) = findPlottingRange(xval, dlist)
+        xmin_list.append(xmin)
+        xmax_list.append(xmax)
+        ymin_list.append(ymin)
+        ymax_list.append(ymax)
+        x_list.append(xval)
+        y_list.append(dlist)
 
     return [xmin_list, xmax_list, ymin_list, ymax_list, x_list, y_list]
 
@@ -512,12 +202,11 @@ def readData(dataname):
 #---------------------------------------------------------------------------------------------------
 
 def findPlottingRange(xval, yval):
-
     """
     setting plotting range
-    Input:  xval --- an array of x-axis
+    input:  xval --- an array of x-axis
             yval --- an array of y-axis
-    Output: xmin --- the lower boundary of x axis plotting range
+    output: xmin --- the lower boundary of x axis plotting range
             xmax --- the upper boundary of x axis plotting range
             ymin --- the lower boundary of y axis plotting range
             ymax --- the upper boundary of y axis plotting range
@@ -536,8 +225,9 @@ def findPlottingRange(xval, yval):
 #--- since there is a huge peak during the first year, avoid that to set  y plotting range
 #
     ytemp = []
+
     for i in range(0, len(yval)):
-        if xval[i] < 300:
+        if xval[i] < 2001.4986301:         #--- 2001:182:00:00:00
             continue
         ytemp.append(yval[i])
 
@@ -560,52 +250,24 @@ def findPlottingRange(xval, yval):
 
     return(xmin, xmax, ymin, ymax)
 
-
-#---------------------------------------------------------------------------------------------------
-#--- fillGaps: fill missing values                                                               ---
-#---------------------------------------------------------------------------------------------------
-
-def fillGaps(yval):
-
-    """
-    fill missing values
-    Input:  yval
-    Output: yval (modified)
-    """
-
-    prev = 0
-    for i in range(0, len(yval)):
-        if yval[i] == 0:
-            yval[i] = prev
-        else:
-            prev = yval[i]
-
-    return yval
-
-
 #---------------------------------------------------------------------------------------------------
 #--- plotPanel: plots multiple data in separate panels                                           ---
 #---------------------------------------------------------------------------------------------------
 
-def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, mksize=1.0, lwidth=1.5):
-
+def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, ofile, mksize=1.0, lwidth=1.5):
     """
     This function plots multiple data in separate panels
-    Input:  xmin, xmax, ymin, ymax: plotting area
-            xSets: a list of lists containing x-axis data
-            ySets: a list of lists containing y-axis data
-            yMinSets: a list of ymin 
-            yMaxSets: a list of ymax
-            entLabels: a list of the names of each data
-            mksize:     a size of maker
-            lwidth:     a line width
-
-    Output: a png plot: out.png
+    input:  xmin, xmax, ymin, ymax: plotting area
+            xSets       --- a list of lists containing x-axis data
+            ySets       --- a list of lists containing y-axis data
+            yMinSets    --- a list of ymin 
+            yMaxSets    --- a list of ymax
+            entLabels   --- a list of the names of each data
+            ofile       --- output file name
+            mksize      --- a size of maker
+            lwidth      --- a line width
+    output: ofile       --- a png plot 
     """
-#
-#--- set line color list
-#
-    colorList = ('blue', 'green', 'red', 'aqua', 'lime', 'fuchsia', 'maroon', 'black', 'yellow', 'olive')
 #
 #--- close all opened plot
 #
@@ -633,29 +295,26 @@ def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLab
             line = str(tot) + '1' + str(j) + ', sharex=ax0'
             line = str(tot) + '1' + str(j)
 
-        exec "%s = plt.subplot(%s)"       % (axNam, line)
-        exec "%s.set_autoscale_on(False)" % (axNam)      #---- these three may not be needed for the new pylab, but 
-        exec "%s.set_xbound(xmin,xmax)"   % (axNam)      #---- they are necessary for the older version to set
+        exec("%s = plt.subplot(%s)"       % (axNam, line))
+        exec("%s.set_autoscale_on(False)" % (axNam))
+        exec("%s.set_xbound(xmin ,xmax)"   % (axNam))
 
-        exec "%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam)
-        exec "%s.set_ylim(ymin=yMinSets[i], ymax=yMaxSets[i], auto=False)" % (axNam)
+        exec("%s.set_xlim(left=%s,   right=%s, auto=False)" % (axNam, str(xmin), str(xmax)))
+        exec("%s.set_ylim(bottom=%s, top=%s,   auto=False)" % (axNam, str(yMinSets[i]), str(yMaxSets[i])))
 
         xdata  = xSets[i]
         ydata  = ySets[i]
-  
 #
 #---- actual data plotting
 #
         p, = plt.plot(xdata, ydata, color=colorList[i], marker='.', markersize=mksize, lw = lwidth)
-
 #
 #--- add legend
 #
-        leg = legend([p],  [entLabels[i]], prop=props, loc=2)
+        leg = legend([p], [entLabels[i]], prop=props, loc=2)
         leg.get_frame().set_alpha(0.5)
 
-        exec "%s.set_ylabel(yname, size=8)" % (axNam)
-
+        exec("%s.set_ylabel(yname, size=8)" % (axNam))
 #
 #--- add x ticks label only on the last panel
 #
@@ -663,115 +322,24 @@ def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLab
         ax = 'ax' + str(i)
 
         if i != tot-1: 
-            exec "line = %s.get_xticklabels()" % (ax)
+            line = eval("%s.get_xticklabels()" % (ax))
             for label in  line:
                 label.set_visible(False)
         else:
             pass
-
     xlabel(xname)
-
 #
 #--- set the size of the plotting area in inch (width: 10.0in, height 2.08in x number of panels)
 #
-    fig = matplotlib.pyplot.gcf()
+    fig    = matplotlib.pyplot.gcf()
     height = (2.00 + 0.08) * tot
     fig.set_size_inches(10.0, height)
 #
 #--- save the plot in png format
 #
-    plt.savefig('out.png', format='png', dpi=100)
-
-    return mcf.chkFile('./out.png')
-
-#-----------------------------------------------------------------------------------------------
-#-- plotPanel2: plotting multiple data in a single panel                                     ---
-#-----------------------------------------------------------------------------------------------
-
-def plotPanel2(xmin, xmax, ymin, ymax, xSets, ySets, xname, yname, entLabels):
-
-    """
-    This function plots multiple data in a single panel.
-    Input:  xmin, xmax, ymin, ymax: plotting area
-            xSets: a list of lists containing x-axis data
-            ySets: a list of lists containing y-axis data
-            xname: a name of x-axis
-            yname: a name of y-axis
-            entLabels: a list of the names of each data
-
-    Output: a png plot: out.png
-    """
-
-    colorList = ('blue', 'green', 'red', 'aqua', 'lime', 'fuchsia', 'maroon', 'black', 'yellow', 'olive')
-    plt.close('all')
-#
-#---- set a few parameters
-#
-    mpl.rcParams['font.size'] = 9
-    props = font_manager.FontProperties(size=9)
-    plt.subplots_adjust(hspace=0.08)
-
-#
-#---- set a panel
-#
-    ax = plt.subplot(111)
-    ax.set_autoscale_on(False)      #---- these three may not be needed for the new pylab, but 
-    ax.set_xbound(xmin,xmax)        #---- they are necessary for the older version to set
-
-    ax.set_xlim(xmin=xmin, xmax=xmax, auto=False)
-    ax.set_ylim(ymin=ymin, ymax=ymax, auto=False)
-
-    tot = len(entLabels)
-#
-#--- start plotting each data set
-#
-    lnamList = []
-    for i in range(0, tot):
-        xdata  = xSets[i]
-        ydata  = ySets[i]
-
-        if tot > 1:
-            lnam = 'p' + str(i)
-            lnamList.append(lnam)
-            exec "%s, = plt.plot(xdata, ydata, color=colorList[i], lw =1 , marker='.', markersize=0.5, label=entLabels[i])" % (lnam)
-        else:
-#
-#--- if there is only one data set, ignore legend
-#
-            plt.plot(xdata, ydata, color=colorList[i], lw =1 , marker='.', markersize=0.5)
-
-#
-#--- add legend
-#
-    if tot > 1:
-        line = '['
-        for ent in lnamList:
-            if line == '[':
-                line = line + ent
-            else:
-                line = line +', ' +  ent
-        line = line + ']'
-
-        exec "leg = legend(%s,  entLabels, prop=props)" % (line)
-        leg.get_frame().set_alpha(0.5)
-
-    ax.set_xlabel(xname, size=8)
-    ax.set_ylabel(yname, size=8)
-
-
-#
-#--- set the size of the plotting area in inch (width: 10.0in, height 5.0in)
-#
-    fig = matplotlib.pyplot.gcf()
-    fig.set_size_inches(10.0, 5.0)
-#
-#--- save the plot in png format
-#
-    plt.savefig('out.png', format='png', dpi=100)
-
+    plt.savefig(ofile, format='png', dpi=200)
 
 #--------------------------------------------------------------------
-
 #
 #--- pylab plotting routine related modules
 #
@@ -782,11 +350,4 @@ import matplotlib.lines as lines
 
 if __name__ == '__main__':
 
-    plot_ccd_history()
-    plot_front_ccd_history()
-
-    plot_hccd_history()
-    plot_front_hccd_history()
-
-    plot_col_history()
-    plot_front_col_history()
+    plot_ccd_histories()

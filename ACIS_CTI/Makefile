@@ -4,7 +4,7 @@
 # 	Make file for ACIS CTI Monitoring                      			#
 # 																	#
 # 		author: t isobe (tisobe@cfa.harvard.edu)					#
-# 		last update: Jun 18, 2018									#
+# 		last update: Apr 25, 2019									#
 # 																	#
 #####################################################################
 
@@ -25,9 +25,9 @@ SOFT    = /soft
 NSITE   = $(WEB)/$(TASK)
 NBIN    = $(ROOT)/bin
 NBDATA  = $(ROOT)/bdata
-NPYTHON = python
+NPYTHON = /data/mta/Script/Python3.6/envs/ska3/bin/python
 NPERL   = /usr/bin/perl
-NPPKG   = /usr/bin/python2.7/site-packages
+NPPKG   = /data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages
 NWADRS  = cxc.cfa.harvard.edu/mta
 #
 #--- Define generic installation paths
@@ -59,8 +59,8 @@ OWEB2   = /data/mta_www
 OSITE   = $(OWEB)/mta_cti
 OHPATH  = $(OMAIN)/house_keeping
 ASCDS   = /home/ascds
-OPYTHON = /proj/sot/ska/bin/python
-OPPKG   = /proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages
+OPYTHON = /data/mta/Script/Python3.6/envs/ska3/bin/python
+OPPKG   = /data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages
 OPERL   = /usr/local/bin/perl
 OBIN    = /data/mta/MTA/bin
 OBDATA  = /data/mta/MTA/data

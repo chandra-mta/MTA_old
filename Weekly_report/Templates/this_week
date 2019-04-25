@@ -27,6 +27,16 @@
     		msgWindow.document.close();
     		msgWindow.focus();
     	}
+
+    	function WindowOpener3(imgname) {
+    		msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=yes,status=no,,width=1000,height=1500,resize=no");
+    		msgWindow.document.clear();
+    		msgWindow.document.write("<html><title>Trend plot:   "+imgname+"</TITLE>");
+    		msgWindow.document.write("<body bgcolor='black'>");
+    		msgWindow.document.write("<iframe src='" +imgname+ "' border =0 width=980 height=1480><p></p></body></html>")
+    		msgWindow.document.close();
+    		msgWindow.focus();
+        }
     </script>
 
 </head>
@@ -238,7 +248,7 @@ PHOTON_TABLE
 
 <!-- ### TRENDING ### -->
 
-<h2><a href ="/mta/DAILY/mta_deriv/">Trending</a> </h2>
+<h2><a href ="https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.html">Trending</a> </h2>
 
 
 <p>
@@ -258,6 +268,7 @@ Only the most interesting or representative msids are shown below.
 For a full listing choose the bulletted link.<br>
 </p>
 
+<!--
 <p>
 Min/max envelopes in dark blue appear on the trending plots. The envelopes are 4th degree 
 fits to the monthly minimum and maximum values for each MSID.
@@ -267,6 +278,8 @@ to the trending pages a report of the fits and predictions they give on future l
 The light blue curve is our original smoothing of all the data over 30 day moving boxcars.  
 The green/yellow line is a linear fit to all the data; the break occurs at a limit change.
 </p>
+-->
+
 <br />
 
 
@@ -280,8 +293,6 @@ The green/yellow line is a linear fit to all the data; the break occurs at a lim
 </table>
 </ul>
 
-
- ####### DON'T FORGET QTR ENTRIES!!!! ####### 
 
 -->
 #TREND#

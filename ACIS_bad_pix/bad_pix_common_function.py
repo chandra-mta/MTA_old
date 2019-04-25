@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################################
-#                                                                                                                       #
-#       bad_pix_common_function.py: collections of functions used in ACIS Bad Pixel Scripts                             #
-#                                                                                                                       #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                                   #
-#                                                                                                                       #
-#           last update May 13, 2014                                                                                    #
-#                                                                                                                       #
-#########################################################################################################################
+#############################################################################################
+#                                                                                           #
+#       bad_pix_commections of functions used in ACIS Bad Pixel Scripts                     #
+#                                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                       #
+#                                                                                           #
+#           last update Mar 28, 2019                                                        #
+#                                                                                           #
+#############################################################################################
 
 import os
 import sys
@@ -17,46 +17,38 @@ import string
 import random
 import operator
 import math
-import pyfits
+import astropy.io.fits as pyfits
+import time
 
 path = '/data/mta/Script/ACIS/Bad_pixels/house_keeping/dir_list_py'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
 sys.path.append(bin_dir)
-sys.path.append(mta_dir)
-#
-#--- import several functions
-#
-import convertTimeFormat      as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions   as mcf        #---- contains other functions commonly used in MTA scripts
-
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #---------------------------------------------------------------------------------------------------
 #--- extractCCDInfo: extract CCD information from a fits file                                    ---
 #---------------------------------------------------------------------------------------------------
 
-def extractCCDInfo(file):
-
+def extractCCDInfo(ifile):
     """
     extreact CCD infromation from a fits file
-    Input:  file        --- fits file name
-    Output: ccd_id      --- ccd #
+    input:  file        --- fits file name
+    output: ccd_id      --- ccd #
             readmode    --- read mode
             date_obs    --- observation date
             overclock_a --- overclock a 
@@ -64,15 +56,14 @@ def extractCCDInfo(file):
             overclock_c --- overclock c 
             overclock_d --- overclock d 
     """
-
 #
 #--- read fits file header
 #
     try:
-        hdr = pyfits.getheader(file)
-        ccd_id      = hdr['CCD_ID']
-        readmode    = hdr['READMODE']
-        date_obs    = hdr['DATE-OBS']
+        hdr = pyfits.getheader(ifile)
+        ccd_id   = hdr['CCD_ID']
+        readmode = hdr['READMODE']
+        date_obs = hdr['DATE-OBS']
         try:
             overclock_a = hdr['OVERCLOCK_A']
             overclock_b = hdr['OVERCLOCK_B']
@@ -92,12 +83,12 @@ def extractCCDInfo(file):
 #--- extractBiasInfo: extract Bias information from a fits file                                  ---
 #---------------------------------------------------------------------------------------------------
 
-def extractBiasInfo(file):
+def extractBiasInfo(ifile):
 
     """
     extreact CCD infromation from a fits file
-    Input:  file        --- fits file name
-    Output: feb_id      --- FEB ID
+    input:  file        --- fits file name
+    output: feb_id      --- FEB ID
             datamode    --- DATAMODE
             start_row   --- STARTROW
             row_cnt     --- ROWCNT
@@ -107,12 +98,11 @@ def extractBiasInfo(file):
             biasarg#    --- BIASARG# #: 0 - 3
             overclock_# --- INITOCL# #: A, B, C, D
     """
-
 #
 #--- read fits file header
 #
 #    try:
-    hdr  = pyfits.getheader(file)
+    hdr  = pyfits.getheader(ifile)
 
     fep_id      = hdr['FEP_ID']
     datamode    = hdr['DATAMODE']
@@ -142,11 +132,10 @@ def findHeadVal(name, data):
 
     """
     find header information for a given header keyword name   
-    Input:  name --- header keyword name
+    input:  name --- header keyword name
             data --- a list of fits file name
-    Output  val  --- header keyword value
+    output  val  --- header keyword value
     """
-
     val = 'INDEF'
     for ent in data:
         m = re.search(name, ent)
@@ -163,10 +152,47 @@ def findHeadVal(name, data):
     return(val)
 
 #---------------------------------------------------------------------------------------------------
+#--- extractTimePart: extract the time part from fits file name                                  ---
+#---------------------------------------------------------------------------------------------------
+
+def extractTimePart(ifile):
+    """
+    extract the time part from fits file name
+    input:  file  --- file name
+    output: stime --- file creation time in seconds from 1.1.1998
+    """
+#
+#--- first check whether this is acis file
+#
+    cpart = ''
+    try:
+        m1 = re.search('acisf', ifile)
+        m2 = re.search('acis',  ifile)
+        if m1 is not None:
+            cpart = 'acisf'
+
+        elif m2 is not None:
+            cpart = 'acis'
+    
+        if cpart == '':
+            return  -999
+#
+#--- now extract time stamp
+#
+        else:
+            atemp = re.split(cpart, ifile)
+            btemp = re.split('N',   atemp[1])
+
+            stime = int(float(btemp[0]))
+            return stime
+    except:
+        return -999
+
+#---------------------------------------------------------------------------------------------------
 #--- convertTime: extract time part from a data path (year, month, day) and covnert to DOM       ---
 #---------------------------------------------------------------------------------------------------
 
-def convertTime(line):
+def convertTime_xxx(line):
 
     """
     extract time part from a data path (year, month, day) and covnert to DOM 
@@ -189,12 +215,11 @@ def convertTime(line):
 #--- sortAndclean: sort and clean a list (removing duplicated entries)                           ---
 #---------------------------------------------------------------------------------------------------
 
-def sortAndclean(inlist, icol = 0):
-    
+def sortAndclean_xxx(inlist, icol = 0):
     """
     sort and clean a list (removing duplicated entries) 
-    Input:  inlist --- a list
-    Output: inlist --- a list cleaned
+    input:  inlist --- a list
+    output: inlist --- a list cleaned
     """
     inlist.sort()
     inlist = list(set(inlist))
@@ -205,48 +230,15 @@ def sortAndclean(inlist, icol = 0):
 #---- findTimeFromHead: isolate time part from a file and convert to DOM                         ---
 #---------------------------------------------------------------------------------------------------
 
-def findTimeFromHead(file):
-
+def findTimeFromHead_xxx(ifile):
     """
     isolate time part from a file and convert to DOM
-    Input:  file --- fits file name
+    input:  file --- fits file name
             dom  --- file creation time in DOM
     """
 
-    stime = extractTimePart(file)
+    stime = extractTimePart(ifile)
     ctime = tcnv.convertCtimeToYdate(stime)
     (year, month, date, hours, minutes, seconds, ydate, dom, sectime) = tcnv.dateFormatConAll(ctime)
 
     return int(dom)
-
-#---------------------------------------------------------------------------------------------------
-#--- extractTimePart: extract the time part from fits file name                                  ---
-#---------------------------------------------------------------------------------------------------
-
-def extractTimePart(file):
-
-    """
-    extract the time part from fits file name
-    Input:  file  --- file name
-            stime --- file creation time in seconds from 1.1.1998
-    """
-
-    cpart = ''
-    try:
-        m  = re.search('acisf', file)
-        m2 = re.search('acis',  file)
-        if m is not None:
-            cpart = 'acisf'
-        elif m2 is not None:
-            cpart = 'acis'
-    
-        if cpart == '':
-            return  -999
-        else:
-            atemp = re.split(cpart, file)
-            btemp = re.split('N',     atemp[1])
-            stime = float(btemp[0])
-    
-            return stime
-    except:
-        return -999

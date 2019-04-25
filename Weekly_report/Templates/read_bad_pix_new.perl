@@ -6,7 +6,7 @@
 #                                                                                                                   #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                                                           #
 #                                                                                                                   #
-#               Last update: May. 16, 2014                                                                          #
+#               Last update: Apr, 05, 2019                                                                          #
 #                                                                                                                   #
 #                                                                                                                   #
 #####################################################################################################################
@@ -27,7 +27,8 @@ print OUT '<tr style="text-align:center"><td>Previously Unknown Bad Pixels</td>'
 
 for($i = 0; $i < 10; $i++){
 
-    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/ccd$i"."_information";
+    #$file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/ccd$i"."_information";
+    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/ccd$i"."_information";
     open(FH, $file);
     @new  = ();
     $ncnt = 0;
@@ -70,7 +71,8 @@ print OUT "</tr>\n\n";
 print OUT '<tr style="text-align:center"><td>Current Warm  Pixels</td>',"\n";
 for($i = 0; $i < 10; $i++){
 
-    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/ccd$i"."_information";
+    #$file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/ccd$i"."_information";
+    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/ccd$i"."_information";
     open(FH, $file);
     @warm = ();
     $wcnt = 0;
@@ -114,7 +116,8 @@ print OUT '<tr style="text-align:center"><td>Flickering Warm Pixels</td>',"\n";
 
 for($i = 0; $i < 10; $i++){
 
-    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/ccd$i"."_information";
+    #$file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/ccd$i"."_information";
+    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/ccd$i"."_information";
     open(FH, $file);
     @flick = ();
     $fcnt  = 0;
@@ -156,10 +159,12 @@ print OUT "</tr>\n\n";
 #
 
 print OUT '<tr style="text-align:center"><td>Current Hot Pixels</td>',"\n";
-$test = `ls /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/hccd*`;
+#$test = `ls /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/hccd*`;
+$test = `ls /data/mta/Script/ACIS/Bad_pixels/Data/hccd*`;
 for($i = 0; $i < 10; $i++){
 
-    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/hccd$i"."_information";
+    #$file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/hccd$i"."_information";
+    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/hccd$i"."_information";
     open(FH, $file);
     @hot = ();
     $hcnt = 0;
@@ -206,7 +211,8 @@ print OUT "</tr>\n\n";
 print OUT '<tr style="text-align:center"><td>Flickering Hot Pixels</td>',"\n";
 for($i = 0; $i < 10; $i++){
 
-    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/hccd$i"."_information";
+    #$file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/hccd$i"."_information";
+    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/hccd$i"."_information";
     open(FH, $file);
     @flick = ();
     $fcnt  = 0;
@@ -246,10 +252,12 @@ print OUT "</tr>\n\n";
 #
 
 print OUT '<tr style="text-align:center"><td>Warm column candidates</td>',"\n";
-$test = `ls /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/col*`;
+#$test = `ls /data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/col*`;
+$test = `ls /data/mta/Script/ACIS/Bad_pixels/Data/col*`;
 for($i = 0; $i < 10; $i++){
 
-    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/col$i"."_information";
+    #$file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/col$i"."_information";
+    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/col$i"."_information";
     open(FH, $file);
     @warm = ();
     $wcnt = 0;
@@ -293,7 +301,8 @@ print OUT "</tr>\n\n";
 print OUT '<tr style="text-align:center"><td>Flickering Warm Column Candidates</td>',"\n";
 for($i = 0; $i < 10; $i++){
 
-    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/col$i"."_information";
+    #$file = "/data/mta/Script/ACIS/Bad_pixels/Data/Disp_dir/col$i"."_information";
+    $file = "/data/mta/Script/ACIS/Bad_pixels/Data/col$i"."_information";
     open(FH, $file);
     @flick = ();
     $fcnt = 0;

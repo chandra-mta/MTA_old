@@ -1,4 +1,3 @@
-
 ##############################################################################
 ####               ACIS CTI Monitoring and Trending                       ####
 ##############################################################################
@@ -6,22 +5,14 @@
 This directory contains a set of python scripts which extract cti data, estimate
 trends, and plots the trends.
 
-Dir: /data/mta/Script/ACIS/CTI/Scripts/ 
-See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_acis_cti.html
-
 --------------------------
 Entivonmental Requirements
 --------------------------
 
-Scripts are written in python and required v2.7 with Cen OS6 and run with
-/proj/sot/ska/bin/python.
-
-It also needs to set PYTHONPATH to:
-    "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages"
+setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
 While running the scripts, they create "Working_dir" and "Temp_comp_area" under
 "Exc" directoy where all proccess is done. See directory setting below.
-
 
 -----------
 Directories
@@ -33,8 +24,7 @@ Directories
 '/data/mta/Script/ACIS/CTI/Data/'           : data_dir      ---- all computed results are kept here
 '/data/mta/Script/ACIS/CTI/house_keeping/'  : house_keeping ---- house keeping related files holder
 '/data/mta/Script/ACIS/CTI/Exc/'            : exc_dir       ---- all processes will be run in this directory
-'/data/mta/Script/Python_script2.7/'        : mta_dir       ---- python function depository
-
+'/data/mta/Script/Python3.6/MTA/'           : mta_dir       ---- python function depository
 
 -------
 Scripts
@@ -43,10 +33,9 @@ Scripts
 acis_cti_wrap_script:   env setting script calls acis_cti_main_script
 acis_cti_main_script:   controlling script. this runs python scripts to extract data
 acis_cti_wrap_script2:  env setting script calls acis_cti_main_script2
-acis_cti_main_script2:  controlling script. this runs python scripts to plot trends
-
-acis_cti_test_wrap_script: env setting script calls acis_cti_test_main_script
-acis_cti_test_main_script: controlling script. this runs phyton scripts in test mode
+acis_cti_main_script2:  controlling script. this runs python scripts to plot data
+            --- plotting takes time as there are quite many plots to make.
+                cron job runs only once a week.
 
 acis_cti_get_data.py: 
 ---------------------
@@ -54,7 +43,7 @@ acis_cti_get_data.py:
         Input:  data are read from  /data/mta/www/mp_reports/photons/acis/cti/*
         Output: <working_dir>/acisf<obsid>*evt1.fits
 
-        This script uses ascds system function "arc4gl" which is done through ska.shell setting
+        This script uses ascds system function "arc5gl" which is done through ska.shell setting
 
 create_cti_data_table.py:
 -------------------------
@@ -69,8 +58,9 @@ clean_table.py:
     sort and cleaned data tables in <data_dir>/Results
         Input:  <data_dir>/Results/<elm>_ccd<ccd#>
         Output: cleaned up <data_dir>/Results/<elm>_ccd<ccd#>
-            <data_dir>/Results/Save_mmddyy  ---- backup directory which keeps the data tables before cleaning
-                                                 this directory is created every time clean_table.py is run
+            <data_dir>/Results/Save_mmddyy  
+                    ---- backup directory which keeps the data tables before cleaning
+                         this directory is created every time clean_table.py is run
 
 cti_detrend_factor.py:
 ----------------------
@@ -80,7 +70,7 @@ cti_detrend_factor.py:
         Output: <house_keeping>/amp_avg_list
                 <data_dir>/Det_Results/<elm>_ccd<ccd#>
 
-        This script uses ascds system function "arc4gl" which is done through ska.shell setting
+        This script uses ascds system function "arc5gl" which is done through ska.shell setting
 
 create_adjusted_cti_tables.py:
 ------------------------------
@@ -100,7 +90,15 @@ create_adjusted_cti_tables.py:
             Det_Data_adjust:        detrended version of Data_adjust
             Det_Data_cat_adjust:    detrended version of Data_cat_adjust
 
-acis_cti_plot.py:
+acis_cti_plot_two_section.py
+-----------------------------
+    create trending plots for all data with two trending lines separated at a given date
+    Input:  data table under <data_dir>
+    Output: plots in <web_dir>/*Plots* and <web_dir>/Det_Plots*
+            <web_dir>/*Plots*/fitting_result
+            this script also updates the web page (just update date)
+
+acis_cti_plot.py:   --- retired and replaced by above
 -----------------
     create trending plots for all data
     Input:  data table under <data_dir>
@@ -110,24 +108,11 @@ acis_cti_plot.py:
 
     this script uses pylab to creates plots which is available under /proj/sot/ska/bin/python
 
-acis_cti_trend_dom.py:
-----------------------
-    compute trend line with dom instead of fractional year
-    Input:  data table under <data_dir>
-    Output: <web_dir>/*Plot*/fitting_result_dom
-
 --------
 Cron Job
 --------
+mta on luke-v
 
 35 2  * * *  cd /data/mta/Script/ACIS/CTI/Exc;/data/mta/Script/ACIS/CTI/Scripts/acis_cti_wrap_script >>  $HOME/Logs/acis_cti.cron 2>&1
 35 3  * * 7  cd /data/mta/Script/ACIS/CTI/Exc;/data/mta/Script/ACIS/CTI/Scripts/acis_cti_wrap_script2 >> $HOME/Logs/acis_cti.cron 2>&1
-
-
-
-
-
-
-
-
 

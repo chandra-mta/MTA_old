@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#       plot_count_rate.py: plot ACIS count rate related plots                                      #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           Last Update: Mar 26, 2015                                                               #
-#                                                                                                   #
-#####################################################################################################
+#############################################################################
+#                                                                           #
+#       plot_count_rate.py: plot ACIS count rate related plots              #
+#                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
+#                                                                           #
+#           Last Update: Apr 18, 2019                                       #
+#                                                                           #
+#############################################################################
 
 import os
 import sys
@@ -17,6 +17,7 @@ import string
 import operator
 import math
 import numpy
+import time
 #
 #--- pylab plotting routine related modules
 #
@@ -26,377 +27,313 @@ if __name__ == '__main__':
 
     mpl.use('Agg')
 
-#import mpl.pyplot as plt
-#import mpl.font_manager as font_manager
-#import mpl.lines as lines
-#
 from pylab import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as lines
 
 import random                   #--- random must be called after pylab
-#
-#--- check whether this is a test case
-#
-comp_test = 'live'
-if len(sys.argv) == 2:
-    if sys.argv[1] == 'test':   #---- test case
-        comp_test = 'test'
-    elif sys.argv[1] == 'live': #---- automated read in
-        comp_test = 'live'
-    else:
-        comp_test = sys.argv[1].strip() #---- input data name
-#
-#--- reading directory list
-#
-if comp_test == 'test' or comp_test == 'test2':
-    path = '/data/mta/Script/ACIS/Count_rate/house_keeping/dir_list_py_test'
-else:
-    path = '/data/mta/Script/ACIS/Count_rate/house_keeping/dir_list_py'
-#    path = '/data/mta/Script/ACIS/Count_rate/house_keeping2/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/ACIS/Count_rate/house_keeping/dir_list_py'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
 sys.path.append(bin_dir)
 sys.path.append(mta_dir)
 #
-#--- import several functions
+#--- import libraries
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-
+import mta_common_functions       as mcf 
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
-#----------------------------------------------------------------------------------------------
-#--- create_plots: a control function to crate all acis dose plots                          ---
-#----------------------------------------------------------------------------------------------
+m_list = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 
-def create_plots(directory):
+#----------------------------------------------------------------------------------
+#--- create_plots: a control function to crate all acis dose plots              ---
+#----------------------------------------------------------------------------------
 
+def create_plots(year):
     """
     a control function to crate all acis dose plots
-    Input: directory --- output directory 
-    Output: all plots in png form
+    input: year --- the year of the plot to be created
+    output: all plots in png form
     """
-    generate_count_rate_plot(directory)
+#
+#--- if the date is not given, create plots for the last month
+#
+    chk = 0
+    if year == '':
+        out   = time.strftime('%Y', time.gmtime())
+        year  = int(float(out))
+        chk = 1
+#
+#--- create ccd monthly plots
+#
+    generate_count_rate_plot(year)
+#
+#--- ephin data are available only before Nov 2018
+#
+    if (year <= 2018):
+        generate_ephin_rate_plot(year)
+#
+#--- full range plots (create only when the most recent data are plotted)
+#
+    if chk > 0:
+        full_range_plot()
 
-    generate_ephin_rate_plot(directory)
+#----------------------------------------------------------------------------------
+#--- generate_count_rate_plot: create count rate plots                          ---
+#----------------------------------------------------------------------------------
 
-    full_range_plot()
-
-
-#----------------------------------------------------------------------------------------------
-#--- generate_count_rate_plot: create count rate plots                                      ---
-#----------------------------------------------------------------------------------------------
-
-def generate_count_rate_plot(directory):
-
+def generate_count_rate_plot(year):
     """
     create count rate plots
-    Input: directory --- the directory where data is located and the plot will be created
-            <directory>/ccd<ccd> --- count rate data file
-    Output: <directory>/acis_dose_ccd<ccd>.png
+    input:  year    --- the year of the data
+            mon     --- the month of the data
+    output: <directory>/acis_dose_ccd<ccd>.png
             <directory>/acis_dose_ccd_5_7.png
     """
 
-    xname  = 'Time (DOM)'
-    yname  = 'Count/Sec'
+    odir    = web_dir + 'Plots/' + str(year)
+    if not os.path.isdir(odir):
+        cmd = 'mkdir -p ' + odir
+        os.system(cmd)
 
-    data1_x = []
-    data1_y = []
-    data2_x = []
-    data2_y = []
-    data3_x = []
-    data3_y = []
+    xname   = 'Time (Day of Year: Year ' + str(year) + ')'
+    yname   = 'Count/Sec'
+#
+#--- save data sets for each ccd
+#
+    data_x  = []
+    data_y  = []
 #
 #--- plot count rates for each ccd
 #
     for ccd in range(0, 10):
-        file = directory + '/ccd' + str(ccd)
-        chk  = mcf.chkFile(file)
-        if chk == 0:
-            continue
-
-        f    = open(file, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
         xdata = []
         ydata = []
-        for ent in data:
-            atemp = re.split('\s+', ent)
-            if mcf.chkNumeric(atemp[0]) and mcf.chkNumeric(atemp[1]):
-                xdata.append(float(atemp[0]))
+        for mon in m_list:
+            directory = mon + str(year)
+            ifile = data_dir + directory + '/ccd' + str(ccd)
+            if not os.path.isfile(ifile):
+                continue
 #
-#--- normalized to cnts/sec
+#--- get the data
 #
-                ydata.append(float(atemp[1]) / 300.0)
+            data  = mcf.read_data_file(ifile)
+            for ent in data:
+                atemp = re.split('\s+', ent)
+#
+#--- convert time to a fractional year and normalized y data to cnts/sec --- 300 sec cumurative
+#
+                try:
+                    xval = float(atemp[0])
+                    xval = mcf.chandratime_to_yday(xval)
+                    yval = float(atemp[1]) / 300.0
+                except:
+                    continue
+#
+#--- don't care to plot 'zero' values; so skip them
+#
+                if yval == 0:
+                    continue
+                if yval > 500:
+                    continue
+    
+                xdata.append(xval)
+                ydata.append(yval)
 
         title   = 'ACIS Count Rate: CCD' + str(ccd)
-        outname = directory + '/acis_dose_ccd' + str(ccd) + '.png'
+        outname = web_dir + 'Plots/' +  str(year) + '/acis_dose_ccd' + str(ccd) + '.png'
 
         plot_panel(xdata, ydata, xname, yname, title, outname)
-#
-#--- save data for three panel plot
-#
-        if ccd == 5:
-            data1_x = xdata
-            data1_y = ydata
-        elif ccd == 6:
-            data2_x = xdata
-            data2_y = ydata
-        elif ccd == 7:
-            data3_x = xdata
-            data3_y = ydata
-#
-#--- create three panel plot for ccd5, ccd6, and ccd7
-#
-    title1  = 'ACIS Count Rate: CCD5'
-    title2  = 'ACIS Count Rate: CCD6'
-    title3  = 'ACIS Count Rate: CCD7'
-    outname = directory + '/acis_dose_ccd_5_7.png'
 
-    x_set_list = [data1_x, data2_x, data3_x]
-    y_set_list = [data1_y, data2_y, data3_y]
-    yname_list = [yname,   yname,   yname]
-    title_list = [title1,  title2, title3]
-
-    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname)
-
-
-#----------------------------------------------------------------------------------------------
-#--- full_range_plot: create long term trending plots                                       ---
-#----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+#--- full_range_plot: create long term trending plots                           ---
+#----------------------------------------------------------------------------------
 
 def full_range_plot():
-
     """
     create long term trending plots
-    Input: none but all data are read from web_dir/<MON><YEAR> directories
-    Output: <web_dir>/long_term_plot.png
+    input: none but all data are read from web_dir/<MON><YEAR> directories
+    output: <web_dir>/long_term_plot.png
             <web_dir>/month_avg_img.png
             <web_dir>/month_avg_spc.png
             <web_dir>/month_avg_bi.png
     """
-
-    ccd5_x = []
-    ccd5_y = []
-    ccd6_x = []
-    ccd6_y = []
-    ccd7_x = []
-    ccd7_y = []
-    for ccd in range(0, 10):
-
-        xname = 'mccd'+ str(ccd) + '_x'
-        yname = 'mccd'+ str(ccd) + '_y'
-        sname = 'mccd'+ str(ccd) + '_s'
-        exec "%s = []" % (xname)
-        exec "%s = []" % (yname)
-        exec "%s = []" % (sname)
-
-        cmd  = 'ls ' + web_dir + '/*/ccd' + str(ccd) + ' >' + zspace
-        os.system(cmd)
-        try:
-            f    = open(zspace, 'r')
-            data = [line.strip() for line in f.readlines()]
-            f.close()
-            mcf.rm_file(zspace)
-        except:
-            continue
-
-        for ent in data:
-            f     = open(ent, 'r')
-            fdata = [line.strip() for line in f.readlines()]
-            f.close()
-    
-            time = []
-            sum  = 0
-            sum2 = 0
-            cnt  = 0
-            for line in fdata:
-                atemp = re.split('\s+', line)
-
-                if mcf.chkNumeric(atemp[0]) and mcf.chkNumeric(atemp[1]):
-                    xt = float(atemp[0])
-                    yt = float(atemp[1]) 
-                    if xt >= 0 and xt < 20000 and yt >= 0:
-                        sum += yt
-                        sum2+= yt * yt
-                        cnt += 1
-                        time.append(xt)
-#
-#--- for ccd 5, 6,  7, we need 5 min average data (then normalized to cnt /sec)
-#
-                        if ccd  == 5:
-                            ccd5_x.append(xt)
-                            ccd5_y.append(yt/300.0)
-                        if ccd  == 6:
-                            ccd6_x.append(xt)
-                            ccd6_y.append(yt/300.0)
-                        if ccd  == 7:
-                            ccd7_x.append(xt)
-                            ccd7_y.append(yt /300.0)
-#
-#--- get monthly average
-#
-            date = int(0.5 * (min(time) + max(time)))
-            avg  = sum / float(cnt) / 300.0
-            sig  = sqrt(sum2 / float(cnt) / 90000.0 - avg * avg)
-
-            xname = 'mccd'+ str(ccd) + '_x'
-            yname = 'mccd'+ str(ccd) + '_y'
-            sname = 'mccd'+ str(ccd) + '_s'
-            exec "%s.append(%s)" % (xname , date)
-            exec "%s.append(%s)" % (yname , avg)
-            exec "%s.append(%s)" % (sname , sig)
-#
-#--- ploting starts here
-#
-    xname = 'Time (DOM)'
+    xname = 'Time (Year)'
     yname = 'Counts/Sec'
 #
-#---- ccd 7 full history
+#--- imaging ccds full history (monthly average)
 #
-    title = 'ACIS Count Rate: CCD 7'
-    outname = web_dir + '/acis_ccd7_dose_plot.png'
-
-    plot_panel(ccd7_x, ccd7_y, xname, yname, title, outname, autox='yes')
-#
-#--- long term plot (for ccd 5, 6, and 7)
-#
-    x_set_list = [ccd5_x, ccd6_x, ccd7_x]
-    y_set_list = [ccd5_y, ccd6_y, ccd7_y]
-    yname_list = [yname,  yname,  yname,  yname]
-    title_list = ['CCD5', 'CCD6', 'CCD7']
-    outname    = web_dir + '/long_term_plot.png'
-    y_limit    = [1000, 1000, 1000]
-
-    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname, ylim =2, y_limit=y_limit, autox='yes')
-
-#
-#--- imaging ccds full history
-#
-    x_set_list = [mccd0_x, mccd1_x, mccd2_x, mccd3_x]
-    y_set_list = [mccd0_y, mccd1_y, mccd2_y, mccd3_y]
+    [x0, y0]   = get_data_set('month_avg_data', 0)
+    [x1, y1]   = get_data_set('month_avg_data', 1)
+    [x2, y2]   = get_data_set('month_avg_data', 2)
+    [x3, y3]   = get_data_set('month_avg_data', 3)
+    x_set_list = [x0, x1, x2, x3]
+    y_set_list = [y0, y1, y2, y3]
     yname_list = [yname,  yname,  yname,  yname]
     title_list = ['CCD0', 'CCD1', 'CCD2', 'CCD3']
-    outname    = web_dir + '/month_avg_img.png'
+    outname    = web_dir + 'Plots/month_avg_img.png'
 
-    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname, linew=0, mrk='+', ylim=1, autox='yes')
+    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list,\
+                     outname, linew=0, mrk='+', ylim=1, autox='yes')
 #
-#--- spectral ccds full history
+#--- spectral ccds full history (monthly average)
 #
-    x_set_list = [mccd4_x, mccd6_x, mccd8_x, mccd9_x]
-    y_set_list = [mccd4_y, mccd6_y, mccd8_y, mccd9_y]
+    [x4, y4]   = get_data_set('month_avg_data', 4)
+    [x6, y6]   = get_data_set('month_avg_data', 6)
+    [x8, y8]   = get_data_set('month_avg_data', 8)
+    [x9, y9]   = get_data_set('month_avg_data', 9)
+    x_set_list = [x4, x6, x8, x9]
+    y_set_list = [y4, y6, y8, y9]
     yname_list = [yname,  yname,  yname,  yname]
     title_list = ['CCD4', 'CCD6', 'CCD8', 'CCD9']
-    outname    = web_dir + '/month_avg_spc.png'
+    outname    = web_dir + 'Plots/month_avg_spc.png'
 
-    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname, linew=0, mrk='+', ylim=1, autox='yes')
+    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, \
+                     outname, linew=0, mrk='+', ylim=1, autox='yes')
 #
-#--- backside ccds full history
+#--- backside ccds full history (monthly average)
 #
-    x_set_list = [mccd5_x, mccd7_x]
-    y_set_list = [mccd7_y, mccd7_y]
-    yname_list = [yname,  yname,  yname,  yname]
+    [x5, y5]   = get_data_set('month_avg_data', 5)
+    [x7, y7]   = get_data_set('month_avg_data', 7)
+    x_set_list = [x5, x7]
+    y_set_list = [y5, y7]
+    yname_list = [yname,  yname]
     title_list = ['CCD5', 'CCD7']
-    outname    = web_dir + '/month_avg_bi.png'
+    outname    = web_dir + 'Plots/month_avg_bi.png'
+    y_limit    = [50, 50]
 
-    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname, linew=0, mrk='+', ylim=1, autox='yes')
-
-    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname, autox='yes')
+    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list,\
+                     outname, linew=0, mrk='+', ylim=2,y_limit=y_limit, autox='yes')
 #
-#--- write out monthly average data
+#--- long term plot of ccds 5, 6, and 7
 #
-    for ccd in range(0, 10):
-        name = web_dir + 'monthly_avg_data_ccd' + str(ccd) + '.dat'
-        f    = open(name, 'w')
-        exec 'xdat = mccd%s_x' % (ccd)
-        exec 'ydat = mccd%s_y' % (ccd)
-        exec 'ysig = mccd%s_s' % (ccd)
-        xdat =numpy.array(xdat)
-        ydat =numpy.array(ydat)
-        ysig =numpy.array(ysig)
-        sorted_index = numpy.argsort(xdat)
-        xsorted = xdat[sorted_index]
-        ysorted = ydat[sorted_index]
-        ssorted = ysig[sorted_index]
+    [x5, y5]   = get_data_set('full_data', 5, skip=5)
+    [x6, y6]   = get_data_set('full_data', 6, skip=5)
+    [x7, y7]   = get_data_set('full_data', 7, skip=5)
+    x_set_list = [x5, x6, x7]
+    y_set_list = [y5, y6, y7]
+    yname_list = [yname,  yname,  yname]
+    title_list = ['CCD5', 'CCD6', 'CCD7']
+    outname    = web_dir + 'Plots/long_term_plot.png'
+    y_limit    = [750, 750, 750]
 
-        for i in range(0, len(xsorted)):
-            yrnded  = '%.3f' % ysorted[i]
-            ysrnded = '%.3f' % ssorted[i]
-            line  = str(xsorted[i]) + '\t' + yrnded + '+/-' + ysrnded + '\n'
-            f.write(line)
-        f.close()
+    plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list,\
+                     outname, ylim =2, y_limit=y_limit, autox='yes')
 
+#----------------------------------------------------------------------------------
+#-- get_data_set: read data a data file and create lists of x and y              --
+#----------------------------------------------------------------------------------
 
-#----------------------------------------------------------------------------------------------
-#--- generate_ephin_rate_plot: create ephin rate plots                                      ---
-#----------------------------------------------------------------------------------------------
+def get_data_set(head, ccd, skip=1):
+    """
+    read data a data file and create lists of x and y
+    input:  head    --- header of the data file
+            ccd     --- ccd #
+            skip    --- step; default: 1 -- read every data point
+    output: [x, y]  --- a list of lists of x and y
+    """
 
-def generate_ephin_rate_plot(directory):
+    ifile = data_dir + head + '_ccd' + str(ccd) + '.dat'
+    data  = mcf.read_data_file(ifile)
+    x     = []
+    y     = []
+    for ent in data[::skip]:
+        atemp = re.split('\s+', ent)
+        val = int(float(atemp[0]))
+        val = mcf.chandratime_to_fraq_year(val)
+        x.append(val)
+        y.append(int(float(atemp[1])))
 
+    return [x, y]
+
+#----------------------------------------------------------------------------------
+#--- generate_ephin_rate_plot: create ephin rate plots                          ---
+#----------------------------------------------------------------------------------
+
+def generate_ephin_rate_plot(year):
     """
     create ephin rate plots
-    Input: directory --- a directory where the data is kept and the plot will be created
+    input: year --- year of the data
+           mon  --- month of the data
            <directory>/ephin_rate --- ephin data file
-    Ouput: <directory>/ephin_rate.png
+    ouput: <directory>/ephin_rate.png
     """
+    odir      = web_dir + 'Plots/' + str(year)
+    if not os.path.isdir(odir):
+        cmd = 'mkdir -p ' + odir
+        os.system(cmd)
 
-    xname  = 'Time (DOM)'
+    xname  = 'Time (Day of Year: Year ' + str(year) + ')'
     yname  = 'Count/Sec'
 
-    file   = directory + '/ephin_rate'
-    chk  = mcf.chkFile(file)
-    if chk == 0:
-        return ""
-
-    f      = open(file, 'r')
-    data   = [line.strip() for line in f.readlines()]
-    f.close()
-
-    dom   = []
+    stime = []
     p4    = []
     e150  = []
     e300  = []
     e1300 = []
-    for ent in data:
-        atemp = re.split('\s+', ent)
-        if mcf.chkNumeric(atemp[0]) and mcf.chkNumeric(atemp[1]):
-            dom.append(float(atemp[0]))
-            p4.append(float(atemp[1])    / 300.0)
-            e150.append(float(atemp[2])  / 300.0)
-            e300.append(float(atemp[3])  / 300.0)
-            e1300.append(float(atemp[4]) / 300.0)
+    for mon in m_list:
+        directory = mon + str(year)
+        ifile  = data_dir + directory + '/ephin_rate'
+        if not os.path.isfile(ifile):
+            continue
 
-    x_set_list = [dom, dom,  dom,  dom]
+        data   = mcf.read_data_file(ifile)
+
+        for ent in data:
+            atemp = re.split('\s+', ent)
+            try:
+                val0 = int(float(atemp[0]))
+                val0 = mcf.chandratime_to_yday(val0)
+                val1 = float(atemp[1]) /300.0
+                if val1 > 100000:
+                    continue
+                val2 = float(atemp[2]) /300.0
+                if val2 > 100000:
+                    continue
+                val3 = float(atemp[3]) /300.0
+                if val3 > 100000:
+                    continue
+                val4 = float(atemp[4]) /300.0
+                if val4 > 100000:
+                    continue
+            except:
+                continue
+    
+            stime.append(val0)
+            p4.append(val1)
+            e150.append(val2)
+            e300.append(val3)
+            e1300.append(val4)
+    
+    x_set_list = [stime, stime,  stime,  stime]
     y_set_list = [p4,  e150, e300, e1300]
     yname_list = [yname, yname, yname, yname]
     title_list = ['P4', 'E150', 'E300', 'E1300']
-    outname    = directory + '/ephin_rate.png'
+
+    outname    = web_dir + 'Plots/' +  str(year) + '/ephin_rate.png'
 
     plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname)
 
-#----------------------------------------------------------------------------------------------
-#--- plot_panel: createa single pamel plot                                                  ---
-#----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+#--- plot_panel: createa single pamel plot                                      ---
+#----------------------------------------------------------------------------------
 
 def plot_panel(xdata, ydata, xname, yname, title, outname, autox='no'):
-
     """
     createa single pamel plot
     Input:  xdata  --- x data
@@ -412,7 +349,8 @@ def plot_panel(xdata, ydata, xname, yname, title, outname, autox='no'):
 #
     xmin = int(min(xdata) - 1)
     if autox == 'no':
-        xmax = xmin + 33
+        xmin = 0
+        xmax = 370
     else:
         xmax = max(xdata)
         diff = xmax - xmin
@@ -426,13 +364,17 @@ def plot_panel(xdata, ydata, xname, yname, title, outname, autox='no'):
                 xmin = 0
 
     ymin = 0
-    ymax = max(ydata)
+#
+#--- drop extreme case for ymax 
+#
+    avg  = numpy.mean(ydata)
+    sig  = numpy.std(ydata)
+    ymax = avg + 3.0 *sig
     diff = ymax - ymin
     if diff == 0 and ymin >= 0:
         ymax = ymin + 1
     else:
         ymax += 0.05 * diff
-
 #
 #--- clean up all plotting param
 #
@@ -440,7 +382,6 @@ def plot_panel(xdata, ydata, xname, yname, title, outname, autox='no'):
 #
 #---- set a few parameters
 #
-####    mpl.rcParams['font.size'] = 9
     props = font_manager.FontProperties(size=9)
     plt.subplots_adjust(hspace=0.08)
 #
@@ -455,7 +396,7 @@ def plot_panel(xdata, ydata, xname, yname, title, outname, autox='no'):
 #
 #--- plot data
 #
-    p, = plt.plot(xdata, ydata, color='black', lw =0 , marker='.', markersize=0.5)
+    p, = plt.plot(xdata, ydata, color='black', lw =0 , marker='.', markersize=1.5)
 #
 #--- add legend
 #    
@@ -470,18 +411,18 @@ def plot_panel(xdata, ydata, xname, yname, title, outname, autox='no'):
 #
 #--- save the plot in png format
 #
-    plt.savefig(outname, format='png', dpi=100)
+    plt.savefig(outname, format='png', dpi=200)
 #
 #--- clean up all plotting param
 #
     plt.close('all')
 
-
 #----------------------------------------------------------------------------------------------
 #--- plot_multi_panel: create multiple panel plots                                          ---
 #----------------------------------------------------------------------------------------------
 
-def plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname, linew=0, mrk='.', ylim=0, y_limit=[], autox='no'):
+def plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outname,\
+                     linew=0, mrk='.', ylim=0, y_limit=[], autox='no'):
 
     """
     create multiple panel plots
@@ -493,10 +434,11 @@ def plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outn
             outname    --- output file name
             linew      --- line width of the plot. if 0 is given, no line is drawn
             mrk        --- a marker used for plot such as '.', '*', 'o'  '+'
-            ylim       --- if it is 0, each panel uses different y plotting range, otherwise set to the same 
+            ylim       --- if it is 0, each panel uses different y plotting range, 
+                           otherwise set to the same 
                            if it is 2, read y_list
             y_limit    --- a list of limit in y axis
-    Output: outname    --- a png plot file
+    iutput: outname    --- a png plot file
     """
 #
 #--- how many panels?
@@ -508,12 +450,15 @@ def plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outn
     (xmin, xmax) = find_plot_range(x_set_list)
     xmin = int(xmin) -1
     if autox == 'no':
-        xmax = xmin + 33
+        xmin = 0
+        xmax = 370
 #
 #--- if it is requested set limit
 #
     if ylim == 1:
         (ymin, ymax) = find_plot_range(y_set_list)
+        ymin = int(ymin)
+        ynax = int(ymax) + 1
 
 #--- clean up all plotting param
 #
@@ -521,7 +466,6 @@ def plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outn
 #
 #---- set a few parameters
 #
-####    mpl.rcParams['font.size'] = 9
     props = font_manager.FontProperties(size=9)
     plt.subplots_adjust(hspace=0.08)
 
@@ -552,28 +496,31 @@ def plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outn
         else: 
             pline = str(pnum) + '1' + str(j) + ', sharex=ax0'
 
-        exec "%s= plt.subplot(%s)" % (axNam, pline)
-        exec "%s.set_autoscale_on(False)" % (axNam)      #---- these three may not be needed for the new pylab, but 
-        exec "%s.set_xbound(xmin,xmax)" % (axNam)        #---- they are necessary for the older version to set
-
-        exec "%s.set_xlim(xmin=%s, xmax=%s, auto=False)" % (axNam, xmin, xmax)
-        exec "%s.set_ylim(ymin=%s, ymax=%s, auto=False)" % (axNam, ymin, ymax)
+        exec("%s= plt.subplot(%s)" % (axNam, pline))
+        exec("%s.set_autoscale_on(False)" % (axNam))
+#
+#--- these are necessary for the older version
+#
+        exec("%s.set_xbound(xmin,xmax)" % (axNam)) 
+        exec("%s.set_xlim(xmin=%s, xmax=%s, auto=False)" % (axNam, xmin, xmax))
+        exec("%s.set_ylim(ymin=%s, ymax=%s, auto=False)" % (axNam, ymin, ymax))
 #
 #--- plot data
 #
-        p, = plt.plot(x_set_list[i], y_set_list[i], color='black', lw =linew , marker= mrk, markersize=1.5)
+        p, = plt.plot(x_set_list[i], y_set_list[i], color='black', lw =linew,\
+                      marker= mrk, markersize=1.5)
 #
 #--- add legend
         leg = legend([p],  [title_list[i]], prop=props, loc=2)
         leg.get_frame().set_alpha(0.5)
     
-        exec "%s.set_ylabel('%s', size=8)" % (axNam, yname_list[i])
+        exec("%s.set_ylabel('%s', size=8)" % (axNam, yname_list[i]))
 #
 #-- add x ticks label only on the last panel
 #
         pval = pnum-1
         if i != pval:
-            exec "line = %s.get_xticklabels()" % (axNam)
+            line = eval("%s.get_xticklabels()" % (axNam))
             for label in line:
                 label.set_visible(False)
         else:
@@ -590,24 +537,22 @@ def plot_multi_panel(x_set_list, y_set_list, xname, yname_list, title_list, outn
 #
 #--- save the plot in png format
 #
-    plt.savefig(outname, format='png', dpi=100)
+    plt.savefig(outname, format='png', dpi=200)
 #
 #--- clean up all plotting param
 #
     plt.close('all')
 
-#----------------------------------------------------------------------------------------------
-#--- find_plot_range: find a unifiedplotting range for multiple data sets                   ---
-#----------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------
+#--- find_plot_range: find a unifiedplotting range for multiple data sets       ---
+#----------------------------------------------------------------------------------
 
 def find_plot_range(p_set_list):
-
     """
     find a unifiedplotting range for multiple data sets
-    Input: p_set_list --- a list of data sets 
-    Output: pmin / pmax --- min and max of the data
+    input: p_set_list --- a list of data sets 
+    output: pmin / pmax --- min and max of the data
     """
-
     if len(p_set_list[0]) > 0:
         ptmin = min(p_set_list[0])
         ptmax = max(p_set_list[0])
@@ -635,26 +580,13 @@ def find_plot_range(p_set_list):
 
     return(ptmin, ptmax)
 
-
-
 #--------------------------------------------------------------------
-#
-#--- pylab plotting routine related modules
-#
-#from pylab import *
-#import matplotlib.pyplot as plt
-#import matplotlib.font_manager as font_manager
-#import matplotlib.lines as lines
 
 if __name__ == '__main__':
 
     if len(sys.argv) > 1:
-        directory = sys.argv[1]
-        directory.strip()
-
+        year = int(float(sys.argv[1]))
     else:
-        print "please specify the directory"
-        exit(1)
+        year = ''
 
-    create_plots(directory)
-
+    create_plots(year)

@@ -3,14 +3,6 @@ cd /data/mta/Script/ACIS/CTI/Exc/
 rm -rf /data/mta/Script/ACIS/CTI/Exc/param
 cp -rf  /data/mta/Script/ACIS/CTI/house_keeping/param /data/mta/Script/ACIS/CTI/Exc/.
 
-setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages"
+setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
-/data/mta/Script/ACIS/CTI/Scripts/acis_cti_plot.py
-
-/data/mta/Script/ACIS/CTI/Scripts/acis_cti_trend_dom.py
-
-rm -rf /data/mta_www/mta_cti/Results/*_ccd*
-cp  /data/mta/Script/ACIS/CTI/Data/Results/*_ccd* /data/mta_www/mta_cti/Results/.
-
-chmod 755      /data/mta_www/mta_cti/Results/*
-chgrp mtagroup /data/mta_www/mta_cti/Results/*
+/data/mta/Script/ACIS/CTI/Scripts/acis_cti_plot_two_section.py

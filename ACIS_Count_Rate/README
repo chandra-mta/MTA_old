@@ -1,20 +1,17 @@
+/data/mta/Script/ACIS/Count_rate/Scripts
 
 This directory contains a set of python scripts which extracts ACIS
 countrates for each CCD and creates trend plots.
-
-Dir: /data/mta/Script/ACIS/Count_rate/Scripts
-See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_acis_count_rate.html
 
 #########
 Directory
 #########
 
 '/data/mta/Script/ACIS/Count_rate/Scripts/'        :bin_dir
-'/data/mta4/MTA/data/'                             :bdata_dir
+'/data/mta/Script/ACIS/Count_rate/Data/'           :data_dir
 '/data/mta/www/mta_dose_count/'                    :web_dir
 '/data/mta/Script/ACIS/Count_rate/house_keeping/'  :house_keeping
-'/data/mta/Script/Python_script2.7/'               :mta_dir
-'/usr/local/bin/'                                  :op_dir
+'/data/mta/Script/Python_script3.6/'               :mta_dir
 
 
 #######
@@ -26,81 +23,59 @@ count_rate_main_script  --- controlling tsh scripts
 
 All scripts need the following environment setting:
 
-setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:$PYTHONPATH"
+setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
-------------------
-count_rate_main.py
-------------------
+----------------------
+get_data_for_month.py
+----------------------
 
-The main script controlling all other python scripts
+get a month amount of data and update data files
 
-Input: comp_test   ---- if it is "yes", the test case will be run.
+Input:  year    --- the year of the data 
+        month   --- the month of the data
+        the data are obtained using arc5gl
 
-Needed script files:
-------------------
+Output: <data_dir>/<MMM><YYYY>/ccd<ccd#>
+        <data_dir>/<MMM><YYYY>/ephin_data
+        Note: there is no ephin data after Nov 2019
 
-convertTimeFormat.py    --- a set of time conversion related functions
-mta_common_functions.py --- a set of mscrenious mta related funtions
-(these are kpet in /data/mta/Script/Python_script2.7)
+-----------------------------
+create_aggragate_data_sets.py
+-----------------------------
 
-update_data_files.py    --- a set of scripts which are used to extract data
-plot_count_rate.py      --- a set of scripts which create plots
-print_html_page.py      --- a set of scripts which update html pages
+create aggregate data sets
 
-
-
---------------------
-update_data_files.py
---------------------
-
-This script updates/creates ACIS count rate data sets
-
-Input: comp_test   ---- if it is "yes", the test case will be run.
-                        if not, it reads data from the current data directory:
-                                 /dsops/ap/sdp/cache/*/acis/*evt1.fits
-                                 /dsops/ap/sdp/cache/*/ephin/*lc1.fits
-
-Output: <LTTER MONTH><year> --- e.g. OCT2013. a directory to keep data and plots
-        <outdir>ccd<ccd>    --- 5 min average data for ccd<ccd> in dom and (cnt/sec)
-        <outdir>ephin_rate  --- ephin rate data
-
-Needed script files:
-------------------
-
-convertTimeFormat.py    --- a set of time conversion related functions
-mta_common_functions.py --- a set of mscrenious mta related funtions
-(these are kpet in /data/mta/Script/Python_script2.7)
-
-
+Input:  chk     --- whether start from beginning (=1) or just the last month (=0)
+        <data_dir>/<MMM><YYYY>/ccd<ccd#>
+Output: <data_dir>/full_data_ccd<ccd#>.dat --- full data (sampling evey 25 mins or so)
+        <data_dir>/mont_avg_data_ccd<ccd#>.dat  --- month averaged data
+        
 ------------------
 plot_count_rate.py
 ------------------
 
 This script creates several trending plots related to ACIS count rates
 
-Input: directory            --- a directory location e.g. OCT2013
-       web_dir/*/ccd<ccd>   --- all past count rates 
-       web_dir/*/ephin_rate --- all past ephin data
+Input: year
+       <data_dir>/<MMM><YYYY>/ccd<ccd#>         --- all past count rates 
+       <data_dir>/<MMM><YYYY>/ephin_rate        --- all past ephin data
+       <data_dir>/full_data_ccd<ccd#>.dat       --- full data
+       <data_dir>/mont_avg_data_ccd<ccd#>.dat   --- month averaged data
 
-Output:<dir>acis_dose_ccd<ccd>.png --- trend of count rate for that month
-       <dir>acis_dose_ccd_5_7.png  --- trend of ccd5, 6, and 7 for that month
-       <dir>ephin_rate.png         --- trend of ephin rate for that month
+Output:<web_dir>/Plots/<year>/acis_dose_ccd<ccd>.png --- trend of count rate for that month
+       <web_dir>/Plots/<year>/ephin_rate.png         --- trend of ephin rate for that month
 
-       <web_dir>acis_ccd7_dose_plot.png --- a full range trend plot for ccd7
-       <web_dir>long_term_plot.png      --- a full range trend plot for ccds 5, 6, and 7
-       <web_dir>month_avg_bi.png        --- monthly average trend plots for back side CCDs
-       <web_dir>month_avg_img.png       --- monthly average trend plots for imaging CCDs
-       <web_dir>month_avg_spc.png       --- monthly average trend plots for spec CCDs
-
-       <web_dir>monthly_avg_data_ccd<ccd>.dat --- monthly average data fro ccd<ccd>
+       <web_dir>/long_term_plot.png      --- a full range trend plot for ccds 5, 6, and 7
+       <web_dir>/month_avg_bi.png        --- monthly average trend plots for back side CCDs
+       <web_dir>/month_avg_img.png       --- monthly average trend plots for imaging CCDs
+       <web_dir>/month_avg_spc.png       --- monthly average trend plots for spec CCDs
 
 Needed script files:
 ------------------
 
-convertTimeFormat.py    --- a set of time conversion related functions
 mta_common_functions.py --- a set of mscrenious mta related funtions
 matplotlib              --- a plotting rouine
-(these are kpet in /data/mta/Script/Python_script2.7)
+(these are kpet in /data/mta/Script/Python_script3.6)
 
 ------------------
 print_html_page.py
@@ -108,22 +83,17 @@ print_html_page.py
 
 This script creates/updates html pages
 
-Input: directory            --- a directory location e.g. OCT2013
+Input: year --- the year you like to create the page
 
-Output: <web_dir>main_acis_dose_plot.html  --- main page
-        <web_dir>month_avg_bi.html       
-        <web_dir>month_avg_im,html
-        <web_dir>month_avg_spc.html
+Output: <web_dir>main_acis_dose_plot.html       --- main page
 
-        <dir>acis_<moth><year>_dose_plot.html   e.g acis_oct2013_dose_plot
-        <dir>acis_dose_ccd<ccd>.html
-        <dir>acis_dose_ccd_5_7.html
-        <dir>ephin_rate.html
-        <dir>
+        <web_dir>/Plots/plot_page_<yyyy>.html   --- the page to dispaly <year> trend data
 
 ########
 CRON Job
 ########
 
-0 3,9,15,21 * * *    cd /data/mta/Script/ACIS/Count_rate/Exc2/; /data/mta/Script/ACIS/Count_rate/Scripts/count_rate_wrap_script >> $HOME/Logs/acis_dose_py.cron 2>&1
+on luke-v as mta
+
+35 3 3 * * cd /data/mta/Script/ACIS/Count_rate/Exc; /data/mta/Script/ACIS/Count_rate/Scripts/count_rate_wrap_script >> $HOME/Logs/acis_dose_py.cron
 

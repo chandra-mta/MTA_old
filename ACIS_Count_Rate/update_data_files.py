@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################
-#                                                                                                       #
-#   update_data_files.py: update/create ACIS count rate data sets                                       #
-#                                                                                                       #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                   #
-#                                                                                                       #
-#           Last Update: Nov 05, 2018                                                                   #
-#                                                                                                       #
-#########################################################################################################
+#####################################################################################
+#                                                                                   #
+#   update_data_files.py: update/create ACIS count rate data sets                   #
+#                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                   #
+#           Last Update: Apr 04, 2019                                               #
+#                                                                                   #
+#####################################################################################
 
 import os
 import os.path
@@ -16,26 +16,25 @@ import sys
 import re
 import string
 import random
+import time
 import operator
 import math
 import numpy
 import pyfits
 import unittest
-
 #
 #--- reading directory list
-#
-path = '/data/mta/Script/ACIS/Count_rate/house_keeping/dir_list_py'
+#-
+path = '/data/mta/Script/ACIS/Count_rate/Scripts3.6/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -44,46 +43,41 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-
+import mta_common_functions  as mcf
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random()) 
 zspace = '/tmp/zspace' + str(rtail)
 
-
-#---------------------------------------------------------------------------------------------------
-#--- update_data_files: main function to run all function to create/update ACIS Dose Plots       ---
-#---------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------------
+#--- update_data_files: main function to run all function to create/update ACIS Dose Plots
+#-----------------------------------------------------------------------------------------
 
 def update_data_files():
     """
     main function to run all function to create/update ACIS Dose Plots
-    Input:  none, but data are extracted according to current date
-    Output: all data, plots, and html 
+    input:  none, but data are extracted according to current date
+    output: all data, plots, and html 
     """
-
     (uyear, umon, mon_name) = check_date()          #--- mon_name is this month's data/plot directory
     dir_save = [mon_name]
-
 #
 #--- ACIS count rate data
 #
     data_list = get_data_list()
 
-    for file in data_list:
+    for dfile in data_list:
 #
 #--- check when the data is created
 #
-        (tyear, tmonth, tdate) = find_date_obs(file)
+        (tyear, tmonth, tdate) = find_date_obs(dfile)
         if tyear == 1900:
             continue
 #
 #--- choose an appropriate output directory
 #
-        cmonth    = tcnv.changeMonthFormat(tmonth)      #--- convert digit to letter month
+        cmonth    = mcf.change_month_format(tmonth)    #--- convert digit to letter
         ucmon     = cmonth.upper()
         tmon_name = web_dir + '/' + ucmon + str(tyear)
 #
@@ -99,37 +93,15 @@ def update_data_files():
 #
 #--- now actually extract data and update/create the count rate data
 #
-#        try:
-        extract_data(file, tmon_name)
-#        except:
-#            pass
+        extract_data(dfile, tmon_name)
 #
-#--- EPHIN count rate data  (ephin data reading is removed Nov 06, 2018)
+#--- if date is before Nov 2018, extract ephin data
 #
-##    data_list = get_ephin_list()
-##
-##    for file in data_list:
-###        try:
-##        (tyear, tmonth, tdate) = find_date_obs(file)
-##        if tyear == 1900:
-##            continue
-##
-##        cmonth    = tcnv.changeMonthFormat(tmonth) 
-##        ucmon     = cmonth.upper()
-##        tmon_name = web_dir + '/' + ucmon + str(tyear)
-##
-##        chk = 0
-##        for test in dir_save:
-##            if tmon_name == test:
-##                chk = 1
-##                break
-##        if chk == 0:
-##            dir_save.append(tmon_name)
-##
-##        extract_ephin_data(file, tmon_name)
-#        except:
-#            pass
+        if (tyear == 2018) and (tmonth < 11):
+            ephin_data(dir_save)
 
+        elif tyear < 2018:
+            ephin_data(dir_save)
 #
 #-- clean the data files
 #
@@ -138,259 +110,172 @@ def update_data_files():
 
     return dir_save
 
-#---------------------------------------------------------------------------------------------------
-#--- check_date: check wether there is an output directory and if it is not, create one          ---
-#---------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+#-- ephin_data: extract ephin data                                                     --
+#----------------------------------------------------------------------------------------
 
-def check_date(comp_test=''):
+def ephin_data(dir_save):
+    """
+    extract ephin data
+    input:  dir_save    --- a list of directory
+    output: <out_dir>/ephin_data --- ephin data (300 sec accumulation)
+    Note: EPHIN data is not available after Nov 2018
+    """
+    data_list = get_ephin_list()
 
+    for ifile in data_list:
+        try:
+            (tyear, tmonth, tdate) = find_date_obs(ifile)
+            if tyear == 1900:
+                continue
+    
+            cmonth    = mcf.change_month_format(tmonth)
+            ucmon     = cmonth.upper()
+            tmon_name = web_dir + '/' + ucmon + str(tyear)
+    
+            chk = 0
+            for test in dir_save:
+                if tmon_name == test:
+                    chk = 1
+                    break
+
+            if chk == 0:
+                dir_save.append(tmon_name)
+    
+            extract_ephin_data(ifile, tmon_name)
+       except:
+           pass
+
+#----------------------------------------------------------------------------------------
+#--- check_date: check wether there is an output directory and if it is not, create one 
+#---------------------------------------------------------------------------------------
+
+def check_date():
     """
     check wether there is an output directory and if it is not, create one
-    Input:  comp_test --- if it is "test", the test data is used
-    Output: uyear     --- the current year
-            umon      --- the current month
-            mon_name  --- the current output direcotry (if it is not there, created)
+    input:  none
+    output: year   --- the current year
+            mon    --- the current month
+            mdir   --- the current output direcotry 
     """
-
-    start_year  = []
-    start_month = []
-    start_date  = []
-    end_year    = []
-    end_month   = []
-    end_date    = []
-    tot_ent     = 1
-
-    if comp_test == 'test':
-#
-#--- test case, date is fixed
-#
-        tyear = 2013
-        tmon  = 2
-        tday  = 13
-        uyear = tyear
-        umon  = tmon
-    else:
 #
 #--- find today's date
 #
-        [uyear, umon, uday, hours, min, sec, weekday, yday, dst] = tcnv.currentTime()
-        tyear = uyear
-        tmon  = umon
-        tday  = uday
-
-    end_year.append(tyear)
-    end_month.append(tmon)
-    end_date.append(tday)
+    out   = time.strftime('%Y:%j:00:00:00', time.gmtime())
+    stime = Chandra.Time.DateTime(out).secs)
 #
-#--- check 10 days ago
+#--- find 10 days ago and create the output directory based on that date
 #
-    lday  = tday - 10
-    lmon  = tmon
-    lyear = tyear
+    s10   = stime - 10 * 86400.0
+    out   = mcf.convert_date_format(s10, ifmt='chandra', ofmt='%Y:%m:%d')
+    atemp = re.split(':', out)
+    year  = int(float(atemp[0]))
+    mon   = int(float(atemp[1]))
+    lmon  = mcf.change_month_format(mon)
+    mdir  =  web_dir  + lmon.upper() + str(year)
 
-    if lday < 1:
-#
-#--- if 10 days ago is the last month, set starting time in the last month
-#
-        tot_ent = 2
-        start_year.append(tyear)
-        start_month.append(tmon)
-        start_date.append(1)
+    if not os.path.isdir(mdir)
+        cmd   = 'mkdir -p ' + mfile
+        os.system(cmd)
+    
+    return (year, mon, mdir)
 
-        if tmon == 5 or tmon == 7 or tmon == 10 or tmon == 12:
-            lday += 30
-            lmon  =  tmon - 1
+#---------------------------------------------------------------------------------------
+#-- get_data_list: compare the current input list to the old one and select data       -
+#---------------------------------------------------------------------------------------
 
-            end_year.append(tyear)
-            end_month.append(lmon)
-            end_date.append(30)
-            start_year.append(tyear)
-            start_month.append(lmon)
-            start_date.append(lday)
-
-        elif tmon == 2 or tmon == 4 or tmon == 6 or tmon == 8 or tmon == 9 or tmon == 11:
-            lday += 31
-            lmon  = tmon - 1
-
-            end_year.append(tyear)
-            end_month.append(lmon)
-            end_date.append(31)
-            start_year.append(tyear)
-            start_month.append(lmon)
-            start_date.append(lday)
-
-        elif tmon == 3:
-#
-#--- last month is in Feb
-#
-            fday = 28
-            if tcnv.isLeapYear(tyear) > 0:
-                fday = 29
-
-            lday += fday 
-            lmon  = tmon -1
-
-            end_year.append(tyear)
-            end_month.append(lmon)
-            end_date.append(fday)
-            start_year.append(tyear)
-            start_month.append(lmon)
-            start_date.append(lday)
-            
-        elif tmon == 1:
-#
-#--- last month is the year before
-#
-            lday += 31
-            lmon  = 12
-            lyear = tyear -1
-
-            end_year.append(tyear)
-            end_month.append(lmon)
-            end_date.append(31)
-            start_year.append(tyear)
-            start_month.append(lmon)
-            start_date.append(lday)
-    else:
-#
-#--- 10 days ago is in the same month
-#
-        start_year.append(lyear)
-        start_month.append(lmon)
-        start_date.append(lday)
-#
-#--- reverse the list
-#
-    start_year.reverse()
-    start_month.reverse()
-    start_date.reverse()
-    end_year.reverse()
-    end_month.reverse()
-    end_date.reverse()
-#
-#--- start checking whether directory exists. if not create it
-#
-    no = 0
-    for dmon in(start_month):
-        cmonth = tcnv.changeMonthFormat(dmon)      #--- convert digit to letter month
-        ucmon  = cmonth.upper()
-
-        mon_name = web_dir + '/' + ucmon + str(start_year[no])
-        no += 1
-        chk = mcf.chkFile(mon_name)
-        if chk == 0:
-            cmd = 'mkdir ' + mon_name
-            os.system(cmd)
-
-
-    return (uyear, umon, mon_name)
-
-#---------------------------------------------------------------------------------------------------
-#-- get_data_list: compare the current input list to the old one and select data                 ---
-#---------------------------------------------------------------------------------------------------
-
-def get_data_list(comp_test=''):
-
+def get_data_list():
     """
     compare the current input list to the old one and select out the data which are not used
-    Input:  comp_test  --- if it is "test" the test data is used
-            house_keeping/old_file_list --- previous data list
+    input:  house_keeping/old_file_list --- previous data list
             house_keeping/bad_fits_file --- bad fits data list
-
             the data are read from /dsops/ap/sdp/cache/*/acis/*evt1.fits (if it is an actual run)
 
-    Output: input_data --- the data list
+    output: input_data --- the data list
     """
 #
-#--- create a current file list
+#--- create a current data file list
 #
-    if comp_test == 'test':
-        cmd = 'ls -d /data/mta/Script/ACIS/Count_rate/house_keeping/Test_data_save/ACIS_rad_data/*evt1.fits > '
-    else:
-        cmd = 'ls -d  /dsops/ap/sdp/cache/*/acis/*evt1.fits > '
-
-    cmd = cmd + zspace
+    cmd = 'ls -d  /dsops/ap/sdp/cache/*/acis/*evt1.fits > ' + zspace
     os.system(cmd)
-
-    f    = open(zspace, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-    mcf.rm_file(zspace)
 #
-#--- choose files with only non-calibration data
+#--- use only non-calibration data files
 #
-    file_list = []
-    for ent in data:
-        atemp = re.split('acisf', ent)
-        btemp = re.split('_', atemp[1])
-        try:
-            val = float(btemp[0])                   #---- for the new format :  acisf16218_000N001_evt1.fits
-            mark= int(val)
-        except:
-            ctemp = re.split('N', btemp[1])         #---- for the older format :  acisf16218N001_evt1.fits
-            mark  = int(ctemp[0])
+    data = mcf.read_data_file(zspace, remove=1)
 
-        if mark < 50000:
-            file_list.append(ent)
+    file_list = find_obs_data_files(data)
 #
 #--- read the old file list
 #
-    file     = house_keeping + 'old_file_list'
-    old_list = mcf.readFile(file)
+    ifile    = house_keeping + 'old_file_list'
+    old_list = mcf.read_data_file(ifile)
 #
 #--- read bad fits file list
 #
     try:
         file2    = house_keeping + 'bad_fits_file'
-        bad_list = mcf.readFile(file2)
+        bad_list = mcf.read_data_file(file2)
     except:
         bad_list = []
-        
 #
-#--- update old_file_list while reading out new files
+#--- update "old_file_list"
 #
-    f = open(file, 'w')
+    with  open(ifile, 'w') as fo:
+        for line in file_list:
+            fo.write(line + '\n')
 #
 #--- compara two files and select out new file names
 #
-    input_data = []
-    for ent in file_list:
+    n_list = list(numpy.setdiff1d(file_list, old_list))
 
-        f.write(ent)
-        f.write('\n')
+    if len(bad_list) > 0:
+        n_list = list(numpy.setdiff1d(n_list, bad_list))
 
-        chk = 1
-        for comp in old_list:
-            if ent == comp:
-                chk = 0
-                break
-        if chk == 1:
-            chk2 = 1
-            for bad in bad_list:
-                if ent == bad:
-                    chk2 = 0
-                    break
-            if chk2 == 1:
-                input_data.append(ent)
+    return n_list
 
-    f.close()
+#---------------------------------------------------------------------------------------
+#-- find_obs_data_files: choose files with only non-calibration data files            --
+#---------------------------------------------------------------------------------------
 
-    return input_data
+def find_obs_data_files(data):
+    """
+    choose files with only non-calibration data files
+    input:  data        --- a list of data file names
+    output: file_list   --- a list of non-calibration data file
 
+    """
+    file_list = []
+    for ent in data:
+        atemp = re.split('acisf', ent)
+        btemp = re.split('_', atemp[1])
+#
+#--- for the older format : acisf16218N001_evt1.fits
+#--- for the new format :   acisf16218_000N001_evt1.fits
+#
+        try:
+            val = float(btemp[0])     
+            mark= int(float(val))
+        except:
+            ctemp = re.split('N', btemp[1])
+            mark  = int(float(ctemp[0]))
 
-#---------------------------------------------------------------------------------------------------
-#--- find_date_obs: find observation time                                                        ---
-#---------------------------------------------------------------------------------------------------
+        if mark < 50000:
+            file_list.append(ent)
 
-def find_date_obs(file):
-  
+    return file_list
+
+#---------------------------------------------------------------------------------------
+#--- find_date_obs: find observation time                                            ---
+#---------------------------------------------------------------------------------------
+
+def find_date_obs(ifile):
     """ 
     find observation time
-    Input: file --- input fits file name
-    Output: year, month, and date
+    input: file --- input fits file name
+    output: year, month, and date
     """
     try:
-        dout  = pyfits.open(file)
+        dout  = pyfits.open(ifile)
         date  = dout[0].header['DATE-OBS']
 
         atemp = re.split('T', date)
@@ -404,17 +289,16 @@ def find_date_obs(file):
     except:
         return (1900, 1, 1)
 
-#---------------------------------------------------------------------------------------------------
-#--- extract_data: extract time and ccd_id from the fits file and create count rate data         ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- extract_data: extract time and ccd_id from the fits file and create count rate data
+#---------------------------------------------------------------------------------------
 
-def extract_data(file, out_dir, comp_test =''):
-
+def extract_data(file, out_dir ):
     """
     extract time and ccd_id from the fits file and create count rate data
-    Input:  file    --- fits file data
+    input:  file    --- fits file data
             out_dir --- the directory in which data will be saved
-    Output: ccd<ccd>--- 5 min accumulated count rate data file
+    output: ccd<ccd>--- 5 min accumulated count rate data file
     """
 #
 #--- extract time and ccd id information from the given file
@@ -433,44 +317,40 @@ def extract_data(file, out_dir, comp_test =''):
 #--- check each line and count the numbers of ccd in the each 300 sec intervals
 #
     for k in range(0, len(time_col)):
-
-        if mcf.chkNumeric(time_col[k]) and mcf.chkNumeric(ccdid_col[k]) :
+        try:
             ftime  = float(time_col[k])
+            ccd_id = int(ccdid_col[k])
+        except:
+            continue
 
-            if ftime > 0:
-                ccd_id = int(ccdid_col[k])
-
-                if chk == 0:
-                    ccd_c[ccd_id] += 1
-                    s_time = ftime
-                    diff   = 0
-                    chk    = 1
-                elif diff >= 300.0:
-#
-#--- convert time in dom
-#
-                    dom = tcnv.stimeToDom(s_time)
+        if ftime > 0:
+            if chk == 0:
+                ccd_c[ccd_id] += 1
+                stime = ftime
+                diff   = 0
+                chk    = 1
+            elif diff >= 300.0:
 #
 #--- print out counts per 300 sec 
 #
-                    for i in range(0, 10):
-                        line = str(dom) + '\t' + str(ccd_c[i]) + '\n'
-                        ccd_h[i].append(line)
+                for i in range(0, 10):
+                    line = str(stime) + '\t' + str(ccd_c[i]) + '\n'
+                    ccd_h[i].append(line)
 #
 #--- re initialize for the next round
 #
-                        ccd_c[i] = 0
+                    ccd_c[i] = 0
 
-                    ccd_c[ccd_id] += 1
-                    s_time = ftime
-                    diff   = 0
-                    chk    = 0
+                ccd_c[ccd_id] += 1
+                stime = ftime
+                diff   = 0
+                chk    = 0
 #
 #--- accumurate the count until the 300 sec interval is reached
 #
-                else:
-                    diff = ftime - s_time
-                    ccd_c[ccd_id] += 1
+            else:
+                diff = ftime - stime
+                ccd_c[ccd_id] += 1
 #
 #--- for the case the last interval is less than 300 sec, 
 #--- estimate the the numbers of hit and adjust
@@ -481,62 +361,39 @@ def extract_data(file, out_dir, comp_test =''):
         for i in range(0, 10):
             ccd_c[i] *= ratio
 
-            line = str(dom) + '\t' + str(ccd_c[i]) + '\n'
+            line = str(stime) + '\t' + str(ccd_c[i]) + '\n'
             ccd_h[i].append(line)
-#
-#--- if this is a test, return output 
-#
-    if comp_test == 'test':
 
-        return ccd_h
-#
-#--- otherwise, print out the results
-#
-    else:
-        for i in range(0, 10):
-            file = out_dir + '/ccd' + str(i)
-            f    = open(file, 'a')
-
+    for i in range(0, 10): 
+        ifile = out_dir + '/ccd' + str(i)
+        with open(ifile, 'a') as fo:
             for ent in ccd_h[i]:
-                f.write(ent)
-            f.close()
+                fo.write(ent)
 
-#---------------------------------------------------------------------------------------------------
-#--- get_ephin_list: create an ephin data list                                                   ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- get_ephin_list: create an ephin data list                                       ---
+#---------------------------------------------------------------------------------------
 
-def get_ephin_list(comp_test=''):
+def get_ephin_list():
 
     """
     create an ephin data list
-    Input: comp_test --- if it is test, test data is used
-           ephin data ---  /dsops/ap/sdp/cache/*/ephin/*lc1.fits
-    Output: input_data_list: a list of ephin data file which is not extract
+    input: ephin data ---  /dsops/ap/sdp/cache/*/ephin/*lc1.fits
+    output: input_data_list: a list of ephin data file which is not extract
     """
-
-    if comp_test == 'test':
-        cmd = 'ls -d  /data/mta/Script/ACIS/Count_rate/house_keeping/Test_data_save/Ephin_data/*lc1.fits >'
-        cmd = cmd + house_keeping + '/ephin_dir_list'
-    else:
-        cmd = 'ls -d  /dsops/ap/sdp/cache/*/ephin/*lc1.fits > '
-        cmd = cmd + house_keeping + '/ephin_dir_list'
-
+    cmd = 'ls -d  /dsops/ap/sdp/cache/*/ephin/*lc1.fits > '
+    cmd = cmd + house_keeping + '/ephin_dir_list'
     os.system(cmd)
-
 #
 #--- get a list of the current entries
 #
-    file = house_keeping + '/ephin_dir_list'
-    f    = open(file, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    ifile = house_keeping + '/ephin_dir_list'
+    data  = mcf.read_data_file(ifile)
 #
 #--- read the list which we read the last time
 #
-    file = house_keeping + '/ephin_old_dir_list'
-    f    = open(file, 'r')
-    old  = [line.strip() for line in f.readlines()]
-    f.close()
+    ifile = house_keeping + '/ephin_old_dir_list'
+    old   = mcf.read_data_file(ifile)
 #
 #--- find the last entry of the list
 #
@@ -555,30 +412,29 @@ def get_ephin_list(comp_test=''):
 #
 #--- replace the old list with the new one
 #
-    file = house_keeping + '/ephin_dir_list'
-    if os.path.isfile(file):
+    ifile = house_keeping + '/ephin_dir_list'
+    if os.path.isfile(ifile):
         cmd = 'mv ' + house_keeping + '/ephin_dir_list ' + house_keeping + '/ephin_old_dir_list'
         os.system(cmd)
 
     return input_data_list
 
+#---------------------------------------------------------------------------------------
+#-- extract_ephin_data: extract ephine data from a given data file name and save it in out_dir 
+#---------------------------------------------------------------------------------------
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-
-def extract_ephin_data(file, out_dir, comp_test=''):
+def extract_ephin_data(ifile, out_dir):
 
     """
     extract ephine data from a given data file name and save it in out_dir
-    Input:  file    --- ephin data file name
+    input:  ifile   --- ephin data file name
             out_dir --- directory which the data is saved
-    Output: <out_dir>/ephin_data --- ephin data (300 sec accumulation) 
+    output: <out_dir>/ephin_data --- ephin data (300 sec accumulation) 
     """
 #
 #--- extract time and ccd id information from the given file
 #
-    data      = pyfits.getdata(file, 1)
+    data      = pyfits.getdata(ifile, 1)
     time_r    = data.field("TIME")
     scp4_r    = data.field("SCP4")
     sce150_r  = data.field("SCE150")
@@ -593,74 +449,84 @@ def extract_ephin_data(file, out_dir, comp_test=''):
 #
 #--- sdata[0]: scp4, sdata[1]: sce150, sdata[2]: sce300, and sdata[3]: sce1300
 #
-    sdata = [0 for x in range(0,4)]
-
+    sdata = [0 for x in range(0, 4)]
 #
 #--- check each line and count the numbers of ccd in the each 300 sec intervals
 #
-
     for k in range(0, len(time_r)):
-        if mcf.chkNumeric(time_r[k]):
+        try:
             ftime  = float(time_r[k])
-            if ftime > 0:
-                if chk == 0:
-#                    for j in range(2, 6):
-#                        sdata[j-2] += atemp[j]
+            val1   = float(scp4_r[k])
+            val2   = float(sce150_r[k])
+            val3   = float(sce300_r[k])
+            val4   = float(sce1500_r[k])
+        except:
+            continue
 
-                    if mcf.chkNumeric(scp4_r[k]) and mcf.chkNumeric(sce150_r[k]) \
-                        and mcf.chkNumeric(sce300_r[k]) and mcf.chkNumeric(sce1500_r[k]):
-                        sdata[0] += float(scp4_r[k])
-                        sdata[1] += float(sce150_r[k])
-                        sdata[2] += float(sce300_r[k])
-                        sdata[3] += float(sce1500_r[k])
+        if ftime > 0:
+            if chk == 0:
+                sdata[0] += val1
+                sdata[1] += val2
+                sdata[2] += val3
+                sdata[3] += val4
 
-                    s_time = ftime
-                    diff   = 0
-                    chk    = 1
-                elif diff >= 300.0:
-#
-#--- convert time in dom
-#
-                    dom = tcnv.stimeToDom(s_time)
+                stime = ftime
+                diff   = 0
+                chk    = 1
+
+            elif diff >= 300.0:
 #
 #--- print out counts per 300 sec 
 #
-                    line = str(dom) + '\t' 
-                    for j in range(0, 4):
-                        line = line + str(sdata[j]) + '\t'
-                        sdata[j] = 0
-                    line = line + '\n'
-                    ephin_data.append(line)
-                    chk = 0
+                line = str(stime) + '\t' 
+                for j in range(0, 4):
+                    line = line + str(sdata[j]) + '\t'
+                    sdata[j] = 0
+                line = line + '\n'
+                ephin_data.append(line)
+                chk = 0
 #
 #--- re initialize for the next round
 #
-                    if mcf.chkNumeric(scp4_r[k]) and mcf.chkNumeric(sce150_r[k]) \
-                        and mcf.chkNumeric(sce300_r[k]) and mcf.chkNumeric(sce1500_r[k]):
-                        sdata[0] += float(scp4_r[k])
-                        sdata[1] += float(sce150_r[k])
-                        sdata[2] += float(sce300_r[k])
-                        sdata[3] += float(sce1500_r[k])
-                    s_time = ftime
-                    diff   = 0
+                try:
+                    val1   = float(scp4_r[k])
+                    val2   = float(sce150_r[k])
+                    val3   = float(sce300_r[k])
+                    val4   = float(sce1500_r[k])
+                except:
+                    continue
+
+                sdata[0] += val1
+                sdata[1] += val2
+                sdata[2] += val3
+                sdata[3] += val4
+
+                stime     = ftime
+                diff      = 0
 #
 #--- accumurate the count until the 300 sec interval is reached
 #
-                else:
-                    diff = ftime - s_time
-                    if mcf.chkNumeric(scp4_r[k]) and mcf.chkNumeric(sce150_r[k]) \
-                        and mcf.chkNumeric(sce300_r[k]) and mcf.chkNumeric(sce1500_r[k]):
-                        sdata[0] += float(scp4_r[k])
-                        sdata[1] += float(sce150_r[k])
-                        sdata[2] += float(sce300_r[k])
-                        sdata[3] += float(sce1500_r[k])
+            else:
+                diff = ftime - stime
+                try:
+                    val1   = float(scp4_r[k])
+                    val2   = float(sce150_r[k])
+                    val3   = float(sce300_r[k])
+                    val4   = float(sce1500_r[k])
+                except:
+                    continue
+
+                sdata[0] += val1
+                sdata[1] += val2
+                sdata[2] += val3
+                sdata[3] += val4
 #
 #--- for the case the last interval is less than 300 sec, 
 #--- estimate the the numbers of hit and adjust
 #
     if diff > 0 and diff < 300:
 
-        line = str(dom) + '\t' 
+        line = str(stime) + '\t' 
 
         ratio = 300.0 / diff
         for j in range(0, 4):
@@ -669,48 +535,36 @@ def extract_ephin_data(file, out_dir, comp_test=''):
 
         line = line + '\n'
         ephin_data.append(line)
-#
-#--- if this is a test, reutrn the result
-#
-    if comp_test == 'test':
-        return ephin_data
-#
-#--- otherwise, print the result
-#
-    else:
 
-        file = out_dir + '/ephin_rate'
-        f    = open(file, 'a')
+    ifile = out_dir + '/ephin_rate'
+    with open(ifile, 'a') as fo:
         for ent in ephin_data:
-            f.write(ent)
-        f.close()
+            fo.write(ent)
 
-#---------------------------------------------------------------------------------------------------
-#-- cleanUp: sort and remove duplicated lines in all files in given data directory               ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- cleanUp: sort and remove duplicated lines in all files in given data directory   ---
+#---------------------------------------------------------------------------------------
 
 def cleanUp(cdir):
-    
     """
     sort and remove duplicated lines in all files in given data directory
-    Input       cdir   --- directory name
-    Output      cdir/files ---- cleaned up files
+    input       cdir        --- directory name
+    output      cdir/files  --- cleaned up files
 
     """
     if os.listdir(cdir) != []:
         cmd = 'ls ' + cdir + '/* > ' +  zspace
         os.system(cmd)
-        data = mcf.readFile(zspace)
-        mcf.rm_file(zspace)
+        data = mcf.read_data_file(zspace, remove=1)
 
-        for file in data:
+        for ifile in data:
 #
 #--- avoid html and png files
 #
             try:
-                m = re.search('\.', file)
+                m = re.search('\.', ifile)
                 if m is None:
-                    mcf.removeDuplicate(file, chk = 1, dosort=1)
+                    mcf.remove_duplicated_lines(ifile, chk = 1, srt=1)
             except:
                 pass
 
@@ -723,26 +577,10 @@ class TestFunctions(unittest.TestCase):
     testing functions
 
     """
-#------------------------------------------------------------
+    def test_check_date(self):
 
-    def test_extract_data(self):
-
-        file = '/data/mta/Script/ACIS/Count_rate/house_keeping/Test_data_save/ACIS_rad_data/acisf14962_000N001_evt1.fits'
-        tmon_name = './'
-        out = extract_data(file, tmon_name,comp_test='test')
-
-        self.assertEquals(out[8][3], '4954.71086806\t1601\n')
-
-
-#------------------------------------------------------------
-    def test_extract_ephin_data(self):
-
-        file = '/data/mta/Script/ACIS/Count_rate/house_keeping/Test_data_save/Ephin_data/ephinf476924026N001_lc1.fits'
-        tmon_name = './'
-        out = extract_ephin_data(file, tmon_name, comp_test='test')
-
-        self.assertEquals(out[1], '4953.95931713\t0.0\t235.042737424\t3.100896425\t1.94131750977\t\n')
-
+        out = check_date()
+        print("YEAR: MON:  Dir: " + str(out))
 
 #------------------------------------------------------------
 

@@ -6,7 +6,7 @@
 #                                                                                                           #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
 #                                                                                                           #
-#           last update: Oct 24, 2018                                                                       #
+#           last update: Mar 04, 2019                                                                       #
 #                                                                                                           #
 #############################################################################################################
 
@@ -169,7 +169,9 @@ def extract_data(dfits, obsid):
 #
     for k in range(0, 10):
         if len(s_evtsent[k]) == 0:
-            break 
+            #break 
+            continue                                #----- 03/04/19 TI
+
         a_evtsent   = numpy.mean(s_evtsent[k])
         d_evtsent   = numpy.std(s_evtsent[k])
         a_drop_amp  = numpy.mean(s_drop_amp[k])
