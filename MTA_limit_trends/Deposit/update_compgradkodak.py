@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 19, 2018                                               #
+#           last update: May 22, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -20,20 +20,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -42,15 +41,13 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
-import fits_operation           as mfo
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #-------------------------------------------------------------------------------------------
@@ -68,7 +65,7 @@ def update_compgradkodak():
     
     [tstart, tstop, year] = ecf.find_data_collecting_period(out_dir, t_file)
     
-    print "Period: " + str(tstart) + '<-->' + str(tstop) + ' in Year: ' + str(year)
+    print("Period: " + str(tstart) + '<-->' + str(tstop) + ' in Year: ' + str(year))
     
     get_data(tstart, tstop, year, out_dir)
 #
@@ -298,8 +295,9 @@ def get_data(start, stop, year, out_dir):
                 'aftblkhdt', 'obaaxgrd', 'mzobacone', 'pzobacone', 'obadiagrad', 'hrmarange',\
                 'tfterange', 'hrmastrutrnge', 'scstrutrnge']:
 
-        exec "odata = %s"   % (col)
-        exec "tdata = t_%s" % (col)
+        odata = eval("%s"   % (col))
+        tdata = eval("t_%s" % (col))
+        
 
         olen  = len(odata)
 
@@ -326,7 +324,8 @@ def compute_hrmaavg(ohrthr, pos):
             pos     --- the position of the data in the ohrthr[*]
     output: hrmaavg --- hrma temp average
     """
-    olist    = range(2,14) + range(21,31) + [33, 36, 37, 42] + range(44,48) + range(49,54) + [55, 56]
+    olist    = list(range(2,14)) + list(range(21,31)) + [33, 36, 37, 42] 
+    olist    = olist + list(range(44,48)) + list(range(49,54)) + [55, 56]
     hrmaavg  = take_sum(olist, ohrthr, pos, achk=1)
 
     return hrmaavg
@@ -342,7 +341,8 @@ def compute_hrmacav(ohrthr, pos):
             pos     --- the position of the data in the ohrthr[*]
     output: hrmacav --- hrma temp average
     """
-    olist   = range(6,16)+ [17, 25, 26] + range(29,32) + range(33,38) +[39, 40] + range(50,59) + [60, 61]
+    olist   = list(range(6,16))+ [17, 25, 26] + list(range(29,32))
+    olist   = olist + list(range(33,38)) +[39, 40] + list(range(50,59)) + [60, 61]
     hrmacav = take_sum(olist, ohrthr, pos, achk=1)
 
     return hrmacav
@@ -404,7 +404,7 @@ def compute_obaavg(oobthr, pos):
             pos     --- the position of the data in the ohrthr[*]
     output: obaavg  --- oba/tfte temp average
     """
-    olist  = range(8,16) + range(17,32) + range(33,42) + [44, 45, 11, 12, 36]
+    olist  = list(range(8,16)) + list(range(17,32)) + list(range(33,42)) + [44, 45, 11, 12, 36]
     obaavg = take_sum(olist, oobthr, pos, achk=1)
 
     return obaavg 
@@ -420,7 +420,7 @@ def compute_obaconeavg(oobthr, pos):
             pos     --- the position of the data in the ohrthr[*]
     output: obaconeavg  --- oba cone temperature average
     """
-    olist      = range(8,16) + range(17,31) + range(57,62)
+    olist      = list(range(8,16)) + list(range(17,31)) + list(range(57,62))
     obaconeavg = take_sum(olist, oobthr, pos, achk=1)
 
     return obaconeavg
@@ -439,7 +439,7 @@ def compute_fwblkhdt(oobthr, rt7, pos):
     olist   = [62, 63]
     oobtsum = take_sum(olist, oobthr, pos, achk=1)
 
-    olist   = range(0,12) 
+    olist   = list(range(0,12))
     rt7sum  = take_sum(olist, rt7, pos, achk=1)
 
     if oobtsum == 'na':
@@ -562,7 +562,8 @@ def compute_hrmarange(ohrthr, pos):
             pos     --- the position of the data in the ohrthr[*]
     output: hrmarange   ---  hrma total temp range
     """
-    olist = range(2,14) + range(21,28) + [29, 30, 33, 36, 37, 42] + range(44,48) +  range(49,54) +[55, 56]
+    olist = list(range(2,14)) + list(range(21,28)) + [29, 30, 33, 36, 37, 42] 
+    olist = olist + list(range(44,48)) +  list(range(49,54)) +[55, 56]
 
     hrmarange  = find_range(olist, ohrthr, pos)
 
@@ -595,7 +596,7 @@ def compute_hrmastrutrnge(oobthr, pos):
             pos     --- the position of the data in the ohrthr[*]
     output: hrmastrutrnge   --- hrma strut temp range
     """
-    olist         = range(2,8)
+    olist         = list(range(2,8))
     hrmastrutrnge = find_range(olist, oobthr, pos)
 
     return hrmastrutrnge
@@ -612,7 +613,7 @@ def compute_scstrutrnge(oobthr, pos):
             pos     --- the position of the data in the ohrthr[*]
     output: scstrutrnge --- compute sc strut temp range
     """
-    olist       = range(49,55)
+    olist       = list(range(49,55))
     scstrutrnge = find_range(olist, oobthr, pos)
 
     return scstrutrnge
@@ -664,7 +665,7 @@ def find_range(olist, data, pos):
     input:  olist   --- a list of data ids
             data    --- a list of data
             pos     --- the position of the data to be used in data[*]
-    output: range   --- the range of the data
+    output: arange  --- the range of the data
     """
     amin = ''
     amax = ''
@@ -683,12 +684,11 @@ def find_range(olist, data, pos):
             pass
     
     if amin == '':
-        range = 'na'
+        arange = 'na'
     else:
-        range = amax - amin
+        arange = amax - amin
     
-    return range
-
+    return arange
 
 #-------------------------------------------------------------------------------------------
 #-- fill_gaps: match the numbers of entries accroding to two time lists                   --

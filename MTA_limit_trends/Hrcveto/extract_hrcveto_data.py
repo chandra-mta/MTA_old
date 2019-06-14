@@ -1,11 +1,11 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
 #       extract_hrcveto_data.py: extract hrc veto data using arc5gl                 #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 21, 2017                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -19,20 +19,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -41,7 +40,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -50,7 +48,7 @@ import update_database_suppl    as uds
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mday_list  = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -84,7 +82,7 @@ def extract_hrcveto_data():
     ctime = Chandra.Time.DateTime(today).secs - 43200.0
     stop  = Chandra.Time.DateTime(ctime).date 
 
-    print "Group: " + group + ': ' + str(start) + '<-->' + str(stop)
+    print("Group: " + group + ': ' + str(start) + '<-->' + str(stop))
 
     [xxx, tbdata] = uds.extract_data_arc5gl('hrc', '0', 'hrcss', start, stop) 
 #
@@ -114,8 +112,6 @@ def extract_hrcveto_data():
 #--- update database
 #
         uds.update_database(msid, group, dtime, data, glim)
-
-
 
 #-------------------------------------------------------------------------------------------
 

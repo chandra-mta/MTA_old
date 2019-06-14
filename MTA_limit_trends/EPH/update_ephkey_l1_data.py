@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #       this is to recover just 2017 data for long term and short term              #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 09, 2018                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -20,20 +20,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -42,7 +41,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -51,7 +49,7 @@ import update_database_suppl    as uds
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mday_list  = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -72,10 +70,8 @@ def update_ephkey_l1_data(date = ''):
 #
 #--- read group names which need special treatment
 #
-    file   = house_keeping + 'msid_list_ephkey'
-    f      = open(file, 'r')
-    data   = [line.strip() for line in f.readlines()]
-    f.close()
+    ifile  = house_keeping + 'msid_list_ephkey'
+    data   = mcf.read_data_file(ifile)
 
     msid_list = []
     for ent in data:
@@ -114,11 +110,10 @@ def update_ephkey_l1_data(date = ''):
             sday -= 1
             if sday < 0:
                 syear -= 1
-                if tcnv.isLeapYear(syear) == 1:
+                if mcf.is_leapyear(year):
                     sday = 366 
                 else:
                     sday = 365
-    
 #
 #--- find today's date
 #
@@ -130,30 +125,29 @@ def update_ephkey_l1_data(date = ''):
         date_list = []
         if syear == lyear:
             for day in range(sday+1, lday):
-                lday = ecf.add_lead_zeros(day, 2)
+                lday = mcf.add_leading_zero(day, 2)
     
                 date = str(syear) + ':' + lday
                 date_list.append(date)
         else:
-            if tcnv.isLeapYear(syear) == 1:
+            if mcf.is_leapyear(syear):
                 base = 367 
             else:
                 base = 366
     
             for day in range(sday+1, base):
-                lday = ecf.add_lead_zeros(day, 2)
+                lday = mcf.add_leading_zero(day, 2)
     
                 date = str(syear) + ':' + lday
                 date_list.append(date)
     
             for day in range(1, lday):
-                lday = ecf.add_lead_zeros(day, 2)
+                lday = mcf.add_leading_zero(day, 2)
     
                 date = str(lyear) + ':' + lday
                 date_list.append(date)
     else:
         date_list.append(date)
-
 
     for date in (date_list):
         tstart = date + ':00:00:00'

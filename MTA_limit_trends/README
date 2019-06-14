@@ -15,6 +15,8 @@ Script Directory
 Data Update Related Scripts
 ----------------------------
 update_msid_data.py                         #----   data update from SKA database
+extract_data_with_dataseeker.py             #----   data update from dataseeker database
+run_dataseeker.py                           #----   dataseeker accessor
 
 -----------------------
 DEA related data update                     #----  the data are from /dsops/GOT/input/*Dump_EM*.gz
@@ -46,7 +48,7 @@ Comp and Grad data udpate                   #----   the data are obtained from /
 Gratings data in different positions
 ------------------------------------
 ./Gratgen/create_otg_time_list.py           #----   create otg time start stop time list files (in <hosue_keeping>
-./Gratgen/gratgen_categorize_data           #----   separate gratgen data into different categories
+./Gratgen/gratgen_categorize_data.py        #----   separate gratgen data into different categories
 
 ---------------
 HRC data upate
@@ -112,6 +114,7 @@ update_sub_html_pages.py                    #----   create html pages for differ
 create_top_html.py                          #----   create the top html page
 create_top_sun_angle_html.py                #----   create the top sun angle htlm page
 date_update.py                              #----   update html page footer date to today
+copy_alias_plot.py                          #----   copying alias plots from the original plots
 
 -----------------------
 Derivative Plot Script
@@ -306,19 +309,26 @@ Web Address:     https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.h
 ++++++++++++++++++++++
 Environmental Setting
 ++++++++++++++++++++++
+/data/mta/Script/Python3.6/envs/ska3/bin/python
 
-Most scripts need to access SKA python libraries:
-    source /proj/sot/ska/bin/ska_envs.csh
-
+PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
 ++++++++++
 Cron Jobs
 ++++++++++
 
 on r2d2-v as mta
+16 0 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_dea_wrap_script
 
+on luke-v as mta
 24 0 * * * cd /data/mta/Script/MTA_limit_trends/Exc;  /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_fetch_wrap_script
-36 1 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_data_wrap_script
+11 1 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_data_wrap_script1
+16 1 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_data_wrap_script2
+23 1 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_data_wrap_script3
+34 1 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_data_wrap_script4
+46 1 * * * cd /data/mta/Script/MTA_limit_trends/Exc2; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_data_wrap_script5
+11 2 * * * cd /data/mta/Script/MTA_limit_trends/Deposit; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_deposit_wrap_script
+36 6 * * * cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_html_wrap_script
 14 3 * * 0 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_sun_wrap_script
 14 3 * * 1 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_mon_wrap_script
 14 3 * * 2 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_tus_wrap_script
@@ -326,7 +336,7 @@ on r2d2-v as mta
 14 3 * * 4 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_thu_wrap_script
 14 3 * * 5 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_fri_wrap_script
 14 3 * * 6 cd /data/mta/Script/MTA_limit_trends/Exc3; /data/mta/Script/MTA_limit_trends/Scripts/mta_limit_sat_wrap_script
-24 9 * * * cd /data/mta/Script/MTA_limit_trends/Exc;  /data/mta/Script/MTA_limit_trends/Scripts/mta_sun_angle_wrap_script
+24 9 * * 0,2,4 cd /data/mta/Script/MTA_limit_trends/Exc;  /data/mta/Script/MTA_limit_trends/Scripts/mta_sun_angle_wrap_script
 24 11 * * 0 cd /data/mta/Script/MTA_limit_trends/Exc; /data/mta/Script/MTA_limit_trends/Scripts/mta_tephin_wrap_script
 
 

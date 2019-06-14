@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Jun 08, 2018                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -20,20 +20,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -42,7 +41,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -51,7 +49,7 @@ import update_database_suppl    as uds
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 testfits = data_dir + 'Ephhk/eiostatus_a_data.fits'
@@ -63,14 +61,15 @@ testfits = data_dir + 'Ephhk/eiostatus_a_data.fits'
 def update_eph_data_from_comm(date = ''):
     """
     collect eph data for trending
-    input:  date    ---- the data collection end date in yyyymmdd format. if not given, yesterday's date is used
+    input:  date    ---- the data collection end date in yyyymmdd format. 
+                        if not given, yesterday's date is used
     output: fits file data related to grad and comp
     """
 #
 #--- read group names which need special treatment
 #
     #sfile = house_keeping + 'eph_list'
-    #glist = ecf.read_file_data(sfile)
+    #glist = mcf.read_data_file(sfile)
     glist = ['ephhk',]
 #
 #--- create msid <---> unit dictionary
@@ -101,15 +100,14 @@ def update_eph_data_from_comm(date = ''):
 #--- find the names of the fits files of the day of the group
 #
         dline = "Date: " + str(day)
-        print dline
+        print(dline)
     
         for group in glist:
-            print "Group: " + str(group)
-            #cmd = 'ls /data/mta_www/mp_reports/' + day + '/' + group + '/data/eph*static*fits* > ' + zspace
+            print("Group: " + str(group))
             cmd = 'ls /data/mta_www/mp_reports/' + day + '/' + group + '/data/* > ' + zspace
             os.system(cmd)
     
-            tlist = ecf.read_file_data(zspace, remove=1)
+            tlist = mcf.read_data_file(zspace, remove=1)
             flist = []
             for ent in tlist:
                 mc = re.search('_STephhk_static_eio0.fits',  ent)
@@ -128,7 +126,7 @@ def update_eph_data_from_comm(date = ''):
                 os.system(cmd)
     
             else:
-                mcf.rm_file('ztemp.fits')
+                mcf.rm_files('ztemp.fits')
                 mfo. appendFitsTable(flist[0], flist[1], 'ztemp.fits')
                 if flen > 2:
                     for k in range(2, flen):
@@ -191,9 +189,10 @@ def update_eph_data_from_comm(date = ''):
         fo = open(zspace, 'w')
         fo.write(error_message)
         fo.close()
-        cmd  = 'cat ' + zspace + ' | mailx -s "Subject: EPH data update problem " tisobe@cfa.harvard.edu'
+        cmd  = 'cat ' + zspace + ' | mailx -s "Subject: EPH data update problem "'
+        cmd  = cmd    + 'tisobe@cfa.harvard.edu'
         os.system(cmd)
-        mcf.rm_file(zspace)
+        mcf.rm_files(zspace)
 
 #-------------------------------------------------------------------------------------------
 #-- create_date_list: find the last entry date and then make a list of dates up to yesterday
@@ -254,7 +253,6 @@ def create_date_list(yesterday):
         otime.append(oday)
 
     return otime
-
 
 #-------------------------------------------------------------------------------------------
 

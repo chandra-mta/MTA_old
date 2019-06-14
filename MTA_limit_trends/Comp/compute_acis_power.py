@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 08, 2018                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -24,15 +24,14 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with  open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -41,16 +40,10 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
-import update_database_from_ska as udfs       #---- database update related scripts
-#
-#--- set a temporary file name
-#
-rtail  = int(time.time())
-zspace = '/tmp/zspace' + str(rtail)
+import update_database_suppl    as uds        #---- database update related scripts
 
 #-------------------------------------------------------------------------------------------
 #-- compute_acis_power: compute acis power from existing msid values and update database  --
@@ -90,7 +83,7 @@ def compute_acis_power():
 #
 #--- update database
 #
-        udfs.update_database(msid, group,  glim, msid_sub = msid_sub)
+        uds.update_week_database(msid, group,  glim, msid_sub = msid_sub)
 
 #-------------------------------------------------------------------------------------------
 #-- get_limit_for_acis_power: compute acis power limits from voltage and current          --
@@ -100,7 +93,7 @@ def get_limit_for_acis_power(msid,  mta_db):
     """
     compute acis power limits from voltage and current
     input:  msid        --- msid
-            mta_db      --- a dictionary of mta msid <---> limist
+            mta_db      --- a dictionary of mta msid <---> limits
     output: glim        --- a list of lists of lmits. innter lists are:
                             [start, stop, yl, yu, rl, ru]
     """

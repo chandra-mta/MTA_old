@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#          create_ephin_leak_html_page.py: create tephin - eph quantity page                        #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Feb 08, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#####################################################################################
+#                                                                                   #
+#      create_ephin_leak_html_page.py: create tephin - eph quantity page            #
+#                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                   #
+#           last update: May 21, 2019                                               #
+#                                                                                   #
+#####################################################################################
 
 import os
 import sys
@@ -26,29 +26,27 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
-
+import create_html_suppl        as chs
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 web_address = 'https://' + web_address
@@ -71,21 +69,14 @@ def create_ephin_leak_html_page():
 #--- read msid lists
 #
     ifile = house_keeping + 'msid_list_eph_tephin'
-    f     = open(ifile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data  = mcf.read_data_file(ifile)
 #
 #--- read template
 #
-    tfile    = house_keeping + 'Templates/slide_template.html'
-    f        = open(tfile, 'r')
-    template = f.read()
-    f.close()
+    template = chs.read_template('slide_template.html')
 
-    tfile     = house_keeping + 'Templates/html_close'
-    f         = open(tfile, 'r')
-    tail_part = f.read()
-    f.close()
+    tail_part= chs.read_template('html_close')
+
     tail_part = tail_part.replace("#JAVASCRIPT#", '')
 #
 #--- for each msid, create a html page
@@ -123,7 +114,6 @@ def create_ephin_leak_html_page():
         else:
                 m_save.append(msid)
 
-
         if len(m_save) > 0:
             g_dict[group] = m_save
 
@@ -140,7 +130,8 @@ def create_ephin_leak_html_page():
             line1 = '<tr>\n'
             for k in range(1, tot):
                 line1 = line1 + '\t<th>\n'
-                line1 = line1 + '\t<span class="dot" onclick="currentSlide(' + str(k+1) +')"></span>'
+                line1 = line1 + '\t<span class="dot" onclick="currentSlide(' 
+                line1 = line1 + str(k+1) +')"></span>'
                 line1 = line1 + str(year_list[k]) + '\n\t</th>\n'
     
                 if (k < tot) and ((year_list[k] + 1) % 10 == 0):
@@ -152,9 +143,11 @@ def create_ephin_leak_html_page():
     
             for k in range(0, tot):
                 line2 = line2 + '\t<div class="mySlides xfade">\n'
-                line2 = line2 + '\t\t<div class="numbertext">' + str(k+1) + '/' + str(tot) + '</div>\n'
+                line2 = line2 + '\t\t<div class="numbertext">' + str(k+1) 
+                line2 = line2 + '/' + str(tot) + '</div>\n'
                 line2 = line2 + '\t\t<img src="' +  web_address + 'Eleak/'
-                line2 = line2 + msid.capitalize() + '/Plots/' + msid + '_' + ltype +  '_' + str(year_list[k]) 
+                line2 = line2 + msid.capitalize() + '/Plots/' + msid + '_' 
+                line2 = line2 + ltype +  '_' + str(year_list[k]) 
                 line2 = line2 + '.png" style="width:100%">\n'
                 line2 = line2 + '\t\t<!--<div class="text"> Text</div> -->\n'
                 line2 = line2 + '\t</div>\n\n'
@@ -192,18 +185,16 @@ def create_ephin_leak_html_page():
             hpage = hpage + tail_part
 
             try:
-                fo    = open(oname, 'w')
-                fo.write(hpage)
-                fo.close()
+                with  open(oname, 'w') as fo:
+                    fo.write(hpage)
+
             except:
-                print "cannot create: " + oname
+                print("cannot create: " + oname)
 #
 #--- create the mid level (group level) web pages
 #
-    hfile     = house_keeping + 'Templates/html_head'
-    f         = open(hfile, 'r')
-    head_part = f.read()
-    f.close()
+    head_part = chs.read_template('html_head')
+    
     head_part = head_part.replace("#MSID#", 'Tephin - EPH')
     head_part = head_part.replace("#JAVASCRIPT#", '')
 
@@ -222,7 +213,8 @@ def create_ephin_leak_html_page():
             line = line + '<h2>' + group.upper() + ' --- ' + mdisc +  '</h2>\n'
 
             line = line + '<div style="float:right;padding-right:50px;">'
-            line = line + '<a href="' + web_address + 'mta_trending_eph_tephin_main.html"><b>Back to Top</b></a>\n'
+            line = line + '<a href="' + web_address + 'mta_trending_eph_tephin_main.html">'
+            line = line + '<b>Back to Top</b></a>\n'
             line = line + '</div>\n'
 
             line = line + '<table border=1 cellpadding=2 cellspacing=1><tr>\n'
@@ -244,7 +236,8 @@ def create_ephin_leak_html_page():
 
             line = line + '<p>Please click a msid to open the tephin - eph page.</p>\n'
 
-            line = line + '<table border=1 cellpadding=2 cellspacing=1 style="margin-left:auto;margin-right:auto;text-align:center;">\n'
+            line = line + '<table border=1 cellpadding=2 cellspacing=1 '
+            line = line + 'style="margin-left:auto;margin-right:auto;text-align:center;">\n'
             line = line + '<tr><th>MSID</th><th>Description</th></tr>\n'
 
             for msid in msids:
@@ -263,12 +256,10 @@ def create_ephin_leak_html_page():
             oline = head_part + line + tail_part
 
             oname = web_dir + 'Eleak/' +  group.lower() + '_' +  mtype  + '_eph_tephin.html'
-            fo    = open(oname, 'w')
-            fo.write(oline)
-            fo.close()
+            with  open(oname, 'w') as fo:
+                fo.write(oline)
 
 #-----------------------------------------------------------------------------------
-
 
 if __name__ == "__main__":
 

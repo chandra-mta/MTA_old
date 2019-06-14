@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-###########################################################################################################
-#                                                                                                         #
-#       gratgen_categorize_data.py: separate gratgen data into different categories                       #
-#                                                                                                         #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                     #
-#                                                                                                         #
-#           last update: Mar 21, 2018                                                                     #
-#                                                                                                         #
-###########################################################################################################
+#######################################################################################
+#                                                                                     #
+#       gratgen_categorize_data.py: separate gratgen data into different categories   #
+#                                                                                     #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                 #
+#                                                                                     #
+#           last update: May 20, 2019                                                 #
+#                                                                                     #
+#######################################################################################
 
 import sys
 import os
@@ -23,41 +23,40 @@ import time
 import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
-
+import random
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import update_database_suppl    as uds
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- other settings
 #
 na     = 'na'
 cname_list = ['retr_hetg', 'retr_letg', 'insr_hetg', 'insr_letg', 'grat_active', 'grat_inactive']
-msid_list  = ['4hposaro', '4hposbro', '4lposaro', '4lposbro', '4mp28av', '4mp28bv', '4mp5av', '4mp5bv']
+msid_list  = ['4hposaro', '4hposbro', '4lposaro', '4lposbro',\
+              '4mp28av', '4mp28bv', '4mp5av', '4mp5bv']
 
-#--------------------------------------------------------------------------------------------------------
-#-- gratgen_categorize_data: separate gratgen data into different categories                           --
-#--------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+#-- gratgen_categorize_data: separate gratgen data into different categories           --
+#----------------------------------------------------------------------------------------
 
 def gratgen_categorize_data():
     """
@@ -71,22 +70,18 @@ def gratgen_categorize_data():
     [udict, ddict, mta_db, mta_cross] = ecf.get_basic_info_dict()
 
     for msid in msid_list:
-        cols = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper',\
-                      'dcount', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
-
+        cols = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+                'yupper', 'rlower', 'rupper', 'dcount', 'ylimlower',\
+                'ylimupper', 'rlimlower', 'rlimupper']
 
         glim = ecf.get_limit(msid, 0, mta_db, mta_cross)
 
         for category in cname_list:
-            print "Running: " + str(msid) + '<-->'  + category 
+            print("Running: " + str(msid) + '<-->'  + category )
 
             cfile1 = data_dir + 'Gratgen/' + category.capitalize() + '/' + msid + '_data.fits'
             cfile2 = data_dir + 'Gratgen/' + category.capitalize() + '/' + msid + '_short_data.fits'
             cfile3 = data_dir + 'Gratgen/' + category.capitalize() + '/' + msid + '_week_data.fits'
-
-            #cfile1 = category + '/' + msid + '_data.fits'
-            #cfile2 = category + '/' + msid + '_short_data.fits'
-            #cfile3 = category + '/' + msid + '_week_data.fits'
 
             stday = time.strftime("%Y:%j:00:00:00", time.gmtime())
             tcut1  = 0.0
@@ -99,7 +94,7 @@ def gratgen_categorize_data():
                 tchk = 0
 
             ifile = house_keeping + category
-            data  = ecf.read_file_data(ifile)
+            data  = mcf.read_data_file(ifile)
             start = []
             stop  = []
             for ent in data:
@@ -262,8 +257,6 @@ def get_stat(ttime, tdata, glim, step):
     wdata = [wtime, wdata, wmed, wstd, wmin, wmax, wyl, wyu, wrl, wru, wcnt] +  vtemp
 
     return wdata
-
-
 
 #--------------------------------------------------------------------------------------------------------
 

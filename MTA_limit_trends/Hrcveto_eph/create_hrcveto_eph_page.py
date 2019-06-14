@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#          create_hrcveto_eph_page.py: create shevart - eph key plot page                           #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Feb 13, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#######################################################################################
+#                                                                                     #
+#          create_hrcveto_eph_page.py: create shevart - eph key plot page             #
+#                                                                                     #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                 #
+#                                                                                     #
+#           last update: May 20, 2019                                                 #
+#                                                                                     #
+#######################################################################################
 
 import os
 import sys
@@ -26,29 +26,26 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
-
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 web_address = 'https://' + web_address
@@ -76,18 +73,15 @@ def create_hrcveto_eph_page():
 #--- read template
 #
     tfile    = house_keeping + 'Templates/slide_template.html'
-    f        = open(tfile, 'r')
-    template = f.read()
-    f.close()
+    with  open(tfile, 'r') as f:
+        template = f.read()
 
     tfile     = house_keeping + 'Templates/html_close'
-    f         = open(tfile, 'r')
-    tail_part = f.read()
-    f.close()
+    with  open(tfile, 'r') as f:
+        tail_part = f.read()
 #
 #--- for each msid, create a html page
 #
-
     for msid in msid_list:
 
         for ltype in ['mid', 'min', 'max']:
@@ -142,7 +136,6 @@ def create_hrcveto_eph_page():
             hpage = hpage.replace('Sun Angle', 'Shevart')
 
             hpage = hpage + tail_part
-
 #
 #--- print out the html page
 #
@@ -154,21 +147,19 @@ def create_hrcveto_eph_page():
             oname = oname   + msid  + '_' +ltype+ '_hrcveto_eph.html'
     
             try:
-                fo    = open(oname, 'w')
-                fo.write(hpage)
-                fo.close()
+                with  open(oname, 'w') as fo:
+                    fo.write(hpage)
             except:
-                print "cannot create: " + oname
+                print("cannot create: " + oname)
 #
 #--- create the mid level (group level) web pages
 #
     hfile     = house_keeping + 'Templates/html_head'
-    f         = open(hfile, 'r')
-    head_part = f.read()
-    f.close()
+    with  open(hfile, 'r') as f:
+        head_part = f.read()
+    
     head_part = head_part.replace("#MSID#", 'Shevart - Eph Rate')
     head_part = head_part.replace("#JAVASCRIPT#", '')
-
 
     for mtype in ['mid', 'min', 'max']:
 
@@ -228,27 +219,22 @@ def create_hrcveto_eph_page():
         oline = head_part + line + tail_part
 
         oname = web_dir + 'Hrcveto_eph/' +  group.lower() + '_' +  mtype  + '_hrcveto_eph.html'
-        fo    = open(oname, 'w')
-        fo.write(oline)
-        fo.close()
+        with  open(oname, 'w') as fo:
+            fo.write(oline)
 #
 #--- update the top page
 #
     top_template = house_keeping + 'Templates/mta_trending_hrcveto_eph_main_template'
-    f            = open(top_template, 'r')
+    with  open(top_template, 'r') as f:
     top_page     = f.read()
-    f.close()
+    
     top_page     = top_page + tail_part
 
     top_out      = web_dir + 'mta_trending_hrcveto_eph_main.html'
-    fo           = open(top_out, 'w')
-    fo.write(top_page)
-    fo.close()
-
-
+    with  open(top_out, 'w') as fo:
+        fo.write(top_page)
 
 #-----------------------------------------------------------------------------------
-
 
 if __name__ == "__main__":
 

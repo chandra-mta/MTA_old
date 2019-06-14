@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#           create_msid_sun_angle_file.py: create sun angle -- msid value data fits file            #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Feb 13, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#############################################################################################
+#                                                                                           #
+#       create_msid_sun_angle_file.py: create sun angle -- msid value data fits file        #
+#                                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                       #
+#                                                                                           #
+#           last update: May 23, 2019                                                       #
+#                                                                                           #
+#############################################################################################
 
 import os
 import sys
@@ -28,55 +28,60 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 sun_angle_file = data_dir +  'sun_angle.fits' 
 
 #-----------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------
+#-- create_msid_sun_angle_file: create sun angle - msid data fits file            --
 #-----------------------------------------------------------------------------------
 
 def create_msid_sun_angle_file(msid_list, inyear = ''):
     """
     create sun angle - msid data fits file
     input:  msid_list   --- the name of msid list which list msids and group id
-            inyear      --- the year in which you want to extract the data; if "", 1999-current year
+            inyear      --- the year in which you want to extract the data; if "all", 1999-current year
     output: <data_dir>/<group>/<msid>_sun_angle_<year>.fits
     """
     if inyear == '':
+        tyear = int(float(time.strftime('%Y', time.gmtime())))
+        tday  = int(float(time.strftime('%j', time.gmtime())))
+        if tday < 5:
+            year_list = [tyear-1, tyear]
+        else:
+            year_list = [tyear]
+
+    elif inyear == 'all':
         this_year = int(float(time.strftime("%Y", time.gmtime())))
         year_list = range(1999, this_year+1)
+
     else:
         year_list = [inyear]
 
-    [s_time, s_angle] = read_fits(sun_angle_file, ['time', 'sun_angle'])
+    [s_time, s_angle] = ecf.read_fits_col(sun_angle_file, ['time', 'sun_angle'])
 
     ifile  = house_keeping + msid_list
-    f      = open(ifile, 'r')
-    data   = [line.strip() for line in f.readlines()]
-    f.close()
+    data   = mcf.read_data_file(ifile)
 
     for ent in data:
         atemp = re.split('\s+', ent)
@@ -86,7 +91,7 @@ def create_msid_sun_angle_file(msid_list, inyear = ''):
         if mc is not None:
             continue
 
-        print "msid: " + msid
+        print("msid: " + msid)
 
         odir = data_dir + group.capitalize() + '/' + msid.capitalize()
         if not os.path.isdir(odir):
@@ -96,25 +101,24 @@ def create_msid_sun_angle_file(msid_list, inyear = ''):
         mfile = data_dir + group.capitalize() + '/' + msid + '_data.fits'
 
         if not os.path.isfile(mfile):
-            print "No data file found: " + str(mfile)
+            print("No data file found: " + str(mfile))
             continue
 
         try:
-            [m_time, m_val, m_min, m_max] = read_fits(mfile, ['time', msid, 'min', 'max'])
+            [m_time, m_val, m_min, m_max] = ecf.read_fits_col(mfile, ['time', msid, 'min', 'max'])
         except:
-            print "Could not read: " + str(mfile)
+            print("Could not read: " + str(mfile))
             continue
 
         for year in year_list:
 
-            print "Year: " + str(year)
+            print("Year: " + str(year))
 
             ofits = odir + '/' + msid + '_sun_angle_' + str(year) + '.fits'
             cols  = ['sun_angle', msid, 'min', 'max']
             cdata = match_the_data(s_time, s_angle, m_time, m_val, m_min, m_max, year)
 
-            create_fits_file(ofits, cols, cdata)
-
+            ecf.create_fits_file(ofits, cols, cdata)
 
 #-----------------------------------------------------------------------------------
 #-- match_the_data: extract sun angle - msid value data for a given year          --
@@ -180,96 +184,10 @@ def match_the_data(s_time, s_angle, m_time, m_val, m_min, m_max, year):
         if chk > 0:
             break
 
-
     angle = numpy.array(angle)
     mval  = numpy.array(mval)
 
     return [angle, mval, mmin, mmax]
-
-
-#-----------------------------------------------------------------------------------
-#-- read_fits: read fits file                                                     --
-#-----------------------------------------------------------------------------------
-
-def read_fits(fits, col_list):
-    """
-    read fits file
-    input:  fits        --- file name
-            col_list    --- a list of column names to be extracted 
-    output: out         --- a list of data arrays corresponding to the column list
-    """
-
-    f = pyfits.open(fits)
-    data = f[1].data
-    f.close()
-
-    out = []
-    for col in col_list:
-        out.append(data[col])
-
-    return out
-
-#-----------------------------------------------------------------------------------
-#-- update_fits_file: update fits file                                            --
-#-----------------------------------------------------------------------------------
-
-def update_fits_file(fits, cols, cdata):
-    """
-    update fits file
-    input:  fits--- fits file name
-    cols--- a list of column names
-    cdata   --- a list of lists of data values
-    output: updated fits file
-    """
-#
-#--- if the fits file exists, append the new data
-#
-    if os.path.isfile(fits):
-
-        f = pyfits.open(fits)
-        data  = f[1].data
-        f.close()
-     
-        udata= []
-        for k in range(0, len(cols)):
-            nlist   = list(data[cols[k]]) + list(cdata[k])
-            udata.append(nlist)
-    
-        mcf.rm_file(fits)
-#
-#--- if the fits file does not exist, create one
-#
-    else:
-        udata = cdata
-
-    create_fits_file(fits, cols, udata)
-
-
-#-----------------------------------------------------------------------------------
-#-- create_fits_file: create a new fits file for a given data set                 --
-#-----------------------------------------------------------------------------------
-
-def create_fits_file(fits, cols, cdata):
-    """
-    create a new fits file for a given data set
-    input:  fits--- fits file name
-    cols--- a list of column names
-    cdata   --- a list of lists of data values
-    output: newly created fits file "fits"
-    """
-    dlist = []
-    for k in range(0, len(cols)):
-        aent = numpy.array(cdata[k])
-        dcol = pyfits.Column(name=cols[k], format='F', array=aent)
-        dlist.append(dcol)
-     
-    dcols = pyfits.ColDefs(dlist)
-    tbhdu = pyfits.BinTableHDU.from_columns(dcols)
-    
-    mcf.rm_file(fits)
-    tbhdu.writeto(fits)
-
-
 
 #-----------------------------------------------------------------------------------
 
@@ -285,4 +203,5 @@ if __name__ == "__main__":
         create_msid_sun_angle_file(msid_list, year)
 
     else:
-        print "please provide <msid_list>. you can also specify the year"
+        print("please provide <msid_list>. you can also specify the year")
+            

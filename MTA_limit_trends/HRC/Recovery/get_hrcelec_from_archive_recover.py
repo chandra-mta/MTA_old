@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################################
 #                                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
 #                                                                                                   #
-#           last update: Jan 11, 2018                                                               #
+#           last update: May 20, 2019                                                               #
 #                                                                                                   #
 #####################################################################################################
 
@@ -26,34 +26,32 @@ import Chandra.Time
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import fits_operation           as mfits
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
-msid_list =['hvpsstat', 'mlswenbl', 'mlswstat', 'mtrcmndr', 'mtritmp', 'mtrselct', 'mtrstatr', 'n15cast', 'p15cast', 'p24cast']
-
+msid_list =['hvpsstat', 'mlswenbl', 'mlswstat', 'mtrcmndr', 'mtritmp', 'mtrselct',\
+            'mtrstatr', 'n15cast', 'p15cast', 'p24cast']
 
 mday1 = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 mday2 = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -69,17 +67,17 @@ def extract_data():
     chk  = 0
 
     #for year in range(1999, 2018):
-    for year in range(2017, 2018):
+    for year in range(2017, 2019):
         for month in range(1, 13):
-            if year == 1999 and month < 9:
+            if year == 2017 and month < 5:
                 continue
-            if year == 2017 and month < 12:
-                continue
+            if year == 2018 and month < 6:
+                break
 
-            if year == 2017 and month >= 1:             #---- short term start
+            if year == 2017 and month >= 5:             #---- short term start
                 chk = 1
 
-            print "Period: " + str(year) + ': ' + str(month)
+            print("Period: " + str(year) + ': ' + str(month))
 #
 #--- initialize 2D array
 #
@@ -92,7 +90,7 @@ def extract_data():
 #
 #--- check a leap year
 #
-            if tcnv.isLeapYear(year) == 1:
+            if mcf.is_leapyear(year):
                 lday = mday2[month-1]
             else:
                 lday = mday1[month-1]
@@ -134,31 +132,33 @@ def extract_data():
 #
                     if chk > 0:
                         ddata = get_stat_short(comb_fits, msid)
-                        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper',\
-                            'dcount', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
+                        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+                                'yupper', 'rlower', 'rupper',\
+                                'dcount', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
                         ofits = 'Results/' + msid + '_short_data.fits'
 
                         if os.path.isfile(ofits):
-                            update_fits_file(ofits, cols, ddata)
+                            ecf.update_fits_file(ofits, cols, ddata)
                         else:
-                            create_fits_file(ofits, cols, ddata)
+                            ecf.create_fits_file(ofits, cols, ddata)
 
 #
 #--- for a long term data, create once a month
 #
             for k in range(0, mlen):
                 msid = msid_list[k]
-                cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper',\
-                         'dcount', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
+                cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper',\
+                         'rlower', 'rupper', 'dcount', 'ylimlower', 'ylimupper',\
+                         'rlimlower', 'rlimupper']
     
                 cdata = darray[k]
                 ofits = 'Results/' + msid + '_data.fits'
 
                 if os.path.isfile(ofits):
-                    update_fits_file(ofits, cols, cdata)
+                    ecf.update_fits_file(ofits, cols, cdata)
                 else:
-                    create_fits_file(ofits, cols, cdata)
+                    ecf.create_fits_file(ofits, cols, cdata)
 
         cmd = 'rm -f comb_data.fits'
         os.system(cmd)
@@ -356,58 +356,6 @@ def get_stat_short(fits, msid):
 
     return asave
 
-#-------------------------------------------------------------------------------------------
-#-- update_fits_file: update fits file                                                    --
-#-------------------------------------------------------------------------------------------
-
-def update_fits_file(fits, cols, cdata):
-    """
-    update fits file
-    input:  fits--- fits file name
-    cols--- a list of column names
-    cdata   --- a list of lists of data values
-    output: updated fits file
-    """
-    
-    f = pyfits.open(fits)
-    data  = f[1].data
-    f.close()
-    
-    udata= []
-    for k in range(0, len(cols)):
-        nlist   = list(data[cols[k]]) + cdata[k]
-        udata.append(nlist)
-    
-    mcf.rm_file(fits)
-    create_fits_file(fits, cols, udata)
-
-#-------------------------------------------------------------------------------------------
-#-- create_fits_file: create a new fits file for a given data set                         --
-#-------------------------------------------------------------------------------------------
-
-def create_fits_file(fits, cols, cdata):
-    """
-    create a new fits file for a given data set
-    input:  fits--- fits file name
-    cols--- a list of column names
-    cdata   --- a list of lists of data values
-    output: newly created fits file "fits"
-    """
-    
-    #cdata = remove_duplicate(cdata)
-    
-    dlist = []
-    for k in range(0, len(cols)):
-        aent = numpy.array(cdata[k])
-        dcol = pyfits.Column(name=cols[k], format='E', array=aent)
-        dlist.append(dcol)
-    
-    dcols = pyfits.ColDefs(dlist)
-    tbhdu = pyfits.BinTableHDU.from_columns(dcols)
-    
-    mcf.rm_file(fits)
-    tbhdu.writeto(fits)
-
 
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
@@ -430,94 +378,13 @@ def extract_hrchk(start, stop):
     line = line + 'tstop='  + str(stop)  + '\n'
     line = line + 'go\n'
 
-    f    = open(zspace, 'w')
-    f.write(line)
-    f.close()
+    cdata = mcf.run_arc5gl_process(line)
 
-    cmd  = 'arc5gl -user isobe -script ' + zspace + ' >./zlist'
-    os.system(cmd)
-    cmd  = 'rm ' + zspace
-    os.system(cmd)
-
-    f    = open('./zlist', 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-
-    cmd  = 'rm -f  ./zlist'
-    os.system(cmd)
-
-    cdata = []
-    for ent in data:
-        mc = re.search('fits.gz', ent)
-        if mc is not None:
-            cdata.append(ent)
-
-    cmd = 'chmod 777 *fits.gz'
-    os.system(cmd)
+    if len(cdata) > 0:
+        cmd = 'chmod 777 *fits.gz'
+        os.system(cmd)
 
     return cdata
-
-#-----------------------------------------------------------------------------------
-#-- update_fits_file: update fits file                                            --
-#-----------------------------------------------------------------------------------
-
-def update_fits_file(fits, cols, cdata):
-    """
-    update fits file
-    input:  fits--- fits file name
-    cols--- a list of column names
-    cdata   --- a list of lists of data values
-    output: updated fits file
-    """
-#
-#--- if the fits file exists, append the new data
-#
-    if os.path.isfile(fits):
-
-        f = pyfits.open(fits)
-        data  = f[1].data
-        f.close()
-     
-        udata= []
-        for k in range(0, len(cols)):
-            nlist   = list(data[cols[k]]) + list(cdata[k])
-            udata.append(nlist)
-    
-        mcf.rm_file(fits)
-#
-#--- if the fits file does not exist, create one
-#
-    else:
-        udata = cdata
-
-    create_fits_file(fits, cols, udata)
-
-
-#-----------------------------------------------------------------------------------
-#-- create_fits_file: create a new fits file for a given data set                 --
-#-----------------------------------------------------------------------------------
-
-def create_fits_file(fits, cols, cdata):
-    """
-    create a new fits file for a given data set
-    input:  fits--- fits file name
-    cols--- a list of column names
-    cdata   --- a list of lists of data values
-    output: newly created fits file "fits"
-    """
-    dlist = []
-    for k in range(0, len(cols)):
-        aent = numpy.array(cdata[k])
-        dcol = pyfits.Column(name=cols[k], format='F', array=aent)
-        dlist.append(dcol)
-     
-    dcols = pyfits.ColDefs(dlist)
-    tbhdu = pyfits.BinTableHDU.from_columns(dcols)
-    
-    mcf.rm_file(fits)
-    tbhdu.writeto(fits)
-
-
 
 #-----------------------------------------------------------------------------------
 

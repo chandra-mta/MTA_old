@@ -1,10 +1,10 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Feb 15, 2018                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -18,20 +18,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -40,7 +39,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -48,13 +46,13 @@ import fits_operation           as mfo
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- read grad group name
 #
 gfile     = house_keeping + 'grad_list'
-grad_list = ecf.read_file_data(gfile)
+grad_list = mcf.read_data_file(gfile)
 
 mon_list1 = [1, 32, 60, 91, 121, 152, 192, 213, 244, 274, 305, 335]
 mon_list2 = [1, 32, 61, 92, 122, 153, 193, 214, 245, 275, 306, 336]
@@ -70,7 +68,7 @@ def update_sim_offset():
     """
     for year in range(1999, 2019):
         nyear = year 
-        if tcnv.isLeapYear(year) == 1:
+        if mcf.is_leapyear(year):
             mon_list = mon_list2
         else:
             mon_list = mon_list1
@@ -118,7 +116,7 @@ def update_sim_offset():
 def get_data(start, stop, year):
 
 
-    print str(start) + '<-->' + str(stop)
+    print(str(start) + '<-->' + str(stop))
 
     for msid in ['flexadif', 'flexbdif', 'flexcdif']:
 
@@ -144,7 +142,6 @@ def get_data(start, stop, year):
         if tlen1 == 0 or tlen2 == 0:
             continue
 
-
         if tlen1 > tlen2:
             diff = tlen1 - tlen2
             for k in range(0, diff):
@@ -162,7 +159,6 @@ def get_data(start, stop, year):
             update_fits_file(ofits, ocols, cdata)
         else:
             create_fits_file(ofits, ocols, cdata)
-
         
 #-------------------------------------------------------------------------------------------
 #-- update_fits_file: update fits file                                                    --
@@ -176,7 +172,6 @@ def update_fits_file(fits, cols, cdata):
             cdata   --- a list of lists of data values
     output: updated fits file
     """
-
     f     = pyfits.open(fits)
     data  = f[1].data
     f.close()
@@ -218,9 +213,8 @@ def create_fits_file(fits, cols, cdata):
     dcols = pyfits.ColDefs(dlist)
     tbhdu = pyfits.BinTableHDU.from_columns(dcols)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     tbhdu.writeto(fits)
-
 
 #-------------------------------------------------------------------------------------------
 

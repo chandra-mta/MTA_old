@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                                   #
-#               last update: Feb 27, 2018                                           #
+#               last update: May 23, 2019                                           #
 #                                                                                   #
 #####################################################################################
 
@@ -26,35 +26,34 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- envelope common functions
+import create_html_suppl        as chs
 #
 #---  get dictionaries of msid<-->unit and msid<-->description
 #
 [udict, ddict] = ecf.read_unit_list()
-
-
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time()*random.random())
 zspace = '/tmp/zspace' + str(rtail)
+#
 web_address = 'https://' + web_address
 
 #-----------------------------------------------------------------------------------
@@ -77,7 +76,7 @@ def create_top_html():
 #--- read descriptions of groups and create dictionaries etc
 #
     gfile = house_keeping + 'group_descriptions'
-    gdata = ecf.read_file_data(gfile)
+    gdata = mcf.read_data_file(gfile)
 
     g_list  = []
     gn_dict = {}
@@ -85,7 +84,6 @@ def create_top_html():
     gn_list = []
     g_disc  = []
     p_dict  = {}
-    
 
     for ent in gdata:
         mc  = re.search('#', ent)
@@ -142,17 +140,14 @@ def create_top_html():
 
     line = line + '</tr>\n'
 
-    jfile    = house_keeping + '/Templates/java_script_deposit'
-    f        = open(jfile, 'r')
-    j_script = f.read()
-    f.close()
+    j_script = chs.read_template('java_script_deposit')
 #
 #--- the template for the main part
 #
-    template = house_keeping + 'Templates/top_template'
-    f        = open(template, 'r')
-    page     = f.read()
-    top_note = '<p><b><em>This page provides trending and limit predictions for various Chandra subsystems.</em></b></p>'
+    page     = chs.read_template('top_template')
+
+    top_note = '<p><b><em>This page provides trending and limit predictions '
+    top_note = top_note + 'for various Chandra subsystems.</em></b></p>'
 
     page     = page.replace('#JAVASCRIPT#', j_script)
     page     = page.replace('#TITLE#', 'MTA MSID Trending')
@@ -183,21 +178,16 @@ def create_top_html():
 #
 #--- the template for the closing part
 #
-    template = house_keeping + 'Templates/html_close'
-    f        = open(template, 'r')
-    pclose   = f.read()
-
+    pclose   = chs.read_template('html_close')
     page     = page + pclose
 
     outfile  = web_dir + 'mta_trending_main.html'
-    fo       = open(outfile, 'w')
-    fo.write(page)
-    fo.close()
+    with open(outfile, 'w') as fo:
+        fo.write(page)
 #
 #---- update violation pages
 #
     find_current_violation()
-
 
 #---------------------------------------------------------------------------------------------------
 #-- find_future_violation: collect potential near future violation and create tables              --
@@ -220,7 +210,7 @@ def find_future_violation(p_dict):
 #
     cmd  = 'ls -d ' + web_dir + '/*/violations > ' + zspace
     os.system(cmd)
-    vlist = ecf.read_file_data(zspace, remove=1)
+    vlist = mcf.read_data_file(zspace, remove=1)
 
     line  = ''
     hline = ''
@@ -236,9 +226,9 @@ def find_future_violation(p_dict):
         cmd  = 'cat ' + vfile + ' |grep ' +  str(next_year) + " >> " + zspace
         os.system(cmd)
 
-        data = ecf.read_file_data(zspace, remove=1)
+        data = mcf.read_data_file(zspace, remove=1)
 #
-#--- print out the violation time in a file and also crate input to the top html page
+#--- print out the violation time in a file and also create input to the top html page
 #
         for ent in data:
             atemp = re.split('\s+', ent)
@@ -270,20 +260,23 @@ def find_future_violation(p_dict):
                 line = line + msid + '\t'   + group + '\t' + str(vtime) + '\n'
     
     
-            hline = hline + '<tr><th><a href="' + web_address + group.capitalize() + '/' + msid.capitalize() + '/'
+            hline = hline + '<tr><th><a href="' + web_address + group.capitalize() 
+            hline = hline + '/' + msid.capitalize() + '/'
             hline = hline + msid + '_mid_static_long_plot.html">' + msid + '</a></th>\n'
             hline = hline + '<td style="text-align:center">' 
             hline = hline + '<a href="' + web_address + group.capitalize() + '/' + group.lower()
+            hline = hline + '_mid_static_long_main.html">' 
+
             try:
-                hline = hline + '_mid_static_long_main.html">' +  p_dict[group.lower()]  + '</a></td>\n'
+                hline = hline +  p_dict[group.lower()]  + '</a></td>\n'
             except:
-                hline = hline + '_mid_static_long_main.html">' +  group.capitalize()  + '</a></td>\n'
+                hline = hline +  group.capitalize()     + '</a></td>\n'
+
             hline = hline + '<td style="text-align:center">' + str(vtime) + '</td</tr>\n'
     
     ofile = house_keeping + 'possible_violation'
-    fo1   = open(ofile,  'w')
-    fo1.write(line)
-    fo1.close()
+    with open(ofile,  'w') as fo1:
+        fo1.write(line)
 #
 #--- only when there are potential violation, we add the violation table
 #
@@ -292,12 +285,13 @@ def find_future_violation(p_dict):
     else:
         tline = '<h3>Potential Near Future Violations</h3>\n'
         tline = tline + '<table border=1 cellspacing=2>\n'
-        tline = tline + '<tr><th class="blue">MSID</th><th class="blue">Group</th><th class="blue">Time (year)</th></tr>\n'
+        tline = tline + '<tr><th class="blue">MSID</th><th class="blue">Group</th>'
+        tline = tline + '<th class="blue">Time (year)</th></tr>\n'
+
         hline = tline + hline + '</table>\n'
         hline = hline + '<div style="padding-bottom:20px;"></div>\n'
 
     return hline
-
 
 #---------------------------------------------------------------------------------------------------
 #-- find_current_violation: collect current violation and create tables                           --
@@ -308,7 +302,6 @@ def find_current_violation():
     collect current violation and create tables
     input:  none
     output: <web_dir>/<pos>_<color>_violation.html; pos: lower/upper, color: yellow/red
-            
     """
     ursave = ""
     lrsave = ""
@@ -321,7 +314,7 @@ def find_current_violation():
 #---  go through each group name to find violations
 #
     gfile = house_keeping + 'sub_html_list_all'
-    out   = ecf.read_file_data(gfile)
+    out   = mcf.read_data_file(gfile)
 
     wline = ''
     for ent in out:
@@ -332,17 +325,17 @@ def find_current_violation():
         if not os.path.isfile(vfile):
             continue
 
-        data = ecf.read_file_data(vfile)
+        data = mcf.read_data_file(vfile)
         if len(data) == 0:
             continue
 #
 #--- if there are violations, start making a table 
 #
         bline = '<tr><th colspan=2 class="blue" style=";"><a href="' 
-        bline = bline + web_address + group + '/' + group.lower() + '_mid_static_long_main.html">'
+        bline = bline + web_address + group + '/' + group.lower() 
+        bline = bline + '_mid_static_long_main.html">'
         bline = bline + group +  '</a></th></tr>\n'
         bline = bline + '<tr><th>MSID</th><th>Description</th></tr>\n'
-
 
         urline = ""
         lrline = ""
@@ -394,8 +387,6 @@ def find_current_violation():
     update_violation_page(lrsave, ursave, 'red')
     update_violation_page(lysave, uysave, 'yellow')
 
-
-
 #---------------------------------------------------------------------------------------------------
 #-- create_link_line: construct the table entry with a link to the main page                      --
 #---------------------------------------------------------------------------------------------------
@@ -427,34 +418,16 @@ def update_violation_page(line, line2, color):
             color   --- yellow or red
     output: <house_keeping>/<pos>_<color>_violation.html
     """
+    title   = color.capitalize() + ' Violation'
 
-    jscript = read_template('java_script_deposit')
-    style   = jscript = read_template('java_script_deposit')
+    head    = chs.read_template('html_head')
+    jscript = chs.read_template('java_script_deposit')
+    tstyle  = chs.read_template('two_col_style')
+    tail    = chs.read_template('html_close')
 
-    page  = web_dir +  color + '_violation.html'
-    title = color.capitalize() + ' Violation'
-
-    mcf.rm_file(page)
-    fo = open(page, 'w')
-
-    ifile = house_keeping + 'Templates/html_head'
-    f     = open(ifile, 'r')
-    head  = f.read()
-    f.close()
-    head  = head.replace('#MSID#', title)
-    head  = head.replace('#JAVASCRIPT#',jscript )
-
-    sfile = house_keeping + 'Templates/two_col_style'
-    f     = open(sfile, 'r')
-    tstyle= f.read()
-    f.close()
-    head  = head.replace('#STYLE#',tstyle)
-
-
-    ifile = house_keeping + 'Templates/html_close'
-    f     = open(ifile, 'r')
-    tail  = f.read()
-    f.close()
+    head   = head.replace('#MSID#', title)
+    head   = head.replace('#JAVASCRIPT#',jscript )
+    head   = head.replace('#STYLE#',tstyle)
 
     if color == 'yellow':
         ocolor= 'red'
@@ -465,9 +438,11 @@ def update_violation_page(line, line2, color):
 
     tline = head  + '<h2 style="background-color:' + color +';">' + title + '</h2>\n'
     tline = tline + '<div style="text-align:right;">\n'
-    tline = tline + '<a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.html">Back to Top</a>\n'
+    tline = tline + '<a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.html">'
+    tline = tline + 'Back to Top</a>\n'
     tline = tline + '<br />\n'
-    tline = tline + '<a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/' + ocolor + '_violation.html">' 
+    tline = tline + '<a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/' 
+    tline = tline + ocolor + '_violation.html">' 
     tline = tline + other + '</a>\n'
     tline = tline + '</div>\n'
     tline = tline + '<div class="row">\n'
@@ -485,34 +460,14 @@ def update_violation_page(line, line2, color):
     tline = tline + '</div>\n'
     tline = tline + '</div>\n'
     tline = tline + tail
-
-    fo.write(tline)
-    fo.close()
-#----------------------------------------------------------------------------------
-#-- read_template: read template                                                 --
-#----------------------------------------------------------------------------------
-
-def read_template(fname, repl=[]):
-    """
-    read template
-    input:  fname   --- template file name
-    repl--- a list of lists:[<tag to be replaced>, <replacing value>]
-    output: out --- template read
-    """
-    
-    infile = house_keeping + 'Templates/' + fname
-    f  = open(infile, 'r')
-    out= f.read()
 #
-#--- if substitue strings are given, replace them before return
+#--- print out the page
 #
-    if len(repl) > 0:
-        for rset in repl:
-            out = out.replace(rset[0], rset[1])
-    
-    return out
+    page  = web_dir +  color + '_violation.html'
+    mcf.rm_files(page)
 
-
+    with open(page, 'w') as fo:
+        fo.write(tline)
 
 #----------------------------------------------------------------------------------------
 

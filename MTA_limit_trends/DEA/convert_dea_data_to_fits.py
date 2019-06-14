@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 08, 2018                                               #
+#           last update: May 22, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -19,20 +19,19 @@ import numpy
 import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -41,15 +40,13 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
-import update_database_from_ska as udfs
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() *random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 dea_data_dir = '/data/mta/Script/MTA_limit_trends/Scripts/DEA/RDB/'
@@ -65,12 +62,11 @@ def process_dea_data(part):
             it also read from the deahk rdb files
     output: <data_dir>/deahk<#>_<period>_data.fits
     """
-
 #
 #--- dea temp
 #
     if part == '' or part == 'temp':
-        drange = range(1,14) + range(15,17)
+        drange = list(range(1,14)) + list(range(15,17))
         group  = 'Deahk_temp'
 
         cmd = 'rm -rf ' + data_dir + group + '/*.fits'
@@ -85,12 +81,11 @@ def process_dea_data(part):
         dfile  = dea_data_dir + 'deahk_temp_short.rdb'
         period = '_short'
         create_dea_fits_file(dfile, group, period, drange)
-
 #
 #--- dea elec
 #
     if part == '' or part == 'elec':
-        drange = range(17,21) + range(25,41) 
+        drange = list(range(17,21)) + list(range(25,41))
         group  = 'Deahk_elec'
 
         cmd = 'rm -rf ' + data_dir + group + '/*.fits'
@@ -124,7 +119,7 @@ def create_dea_fits_file(dfile, group, period, drange):
 #--- find today date in seconds from 1998.1.1
 #
     today = time.strftime("%Y:%j:00:00:00", time.gmtime())
-    today = tcnv.axTimeMTA(today)
+    today = Chandra.Time.DateTime(today).secs
 #
 #--- set name; they may not be countinuous
 #
@@ -147,9 +142,7 @@ def create_dea_fits_file(dfile, group, period, drange):
 #
 #--- read data
 #
-    f     = open(dfile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(dfile)
 #
 #--- how many columns in the data
 #
@@ -180,11 +173,12 @@ def create_dea_fits_file(dfile, group, period, drange):
     for k in range(0, ntot):
         msid = name_list[k]
 
-        print "MSID: " + msid
+        print("MSID: " + msid)
 
         fits = data_dir + group + '/' + msid + period + '_data.fits'
-        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper', 'dcount',\
-                         'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
+        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+                 'yupper', 'rlower', 'rupper', 'dcount',\
+                 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
         mstart = mstop
         mstop  = mstart + 5
@@ -244,7 +238,7 @@ def create_long_term_dea_data(dfile, group,  drange):
     efits = data_dir + group + '/' + name_list[0] + '_data.fits'
 
     if os.path.isfile(efits):
-        ltime = udfs.find_the_last_entry_time(efits)
+        ltime = ecf.find_the_last_entry_time(efits)
         try:
             ltime = find_starting_of_the_day(ltime) + 86400.0
             lchk  = 1
@@ -257,9 +251,7 @@ def create_long_term_dea_data(dfile, group,  drange):
 #
 #--- read data
 #
-    f     = open(dfile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(dfile)
 #
 #--- how many columns in the data
 #
@@ -330,11 +322,12 @@ def create_long_term_dea_data(dfile, group,  drange):
     for k in range(0, ntot):
         msid = name_list[k]
 
-        print 'MSID:  ' + msid
+        print('MSID:  ' + msid)
 
         fits = data_dir + group + '/' + msid  + '_data.fits'
-        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper', 'dcount',\
-                         'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
+        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+                 'yupper', 'rlower', 'rupper', 'dcount',\
+                 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
         mstart = mstop
         mstop  = mstart + 5
@@ -376,15 +369,12 @@ def find_starting_of_the_day(time):
     input:  time    --- time in seconds from 1998.1.1
     output: time    --- time in seconds from 1998.1.1 but the time is 00:00:00
     """
-
-    out = tcnv.axTimeMTA(time)
+    out   = Chandra.Time.DateTime(time).date
     atemp = re.split(':', out)
     dtime = atemp[0] + ':' + atemp[1] + ':00:00:00'
-
-    time  = tcnv.axTimeMTA(dtime)
+    time  = Chandra.Time.DateTime(dtime).secs
 
     return time
-
 
 #-------------------------------------------------------------------------------------------
 

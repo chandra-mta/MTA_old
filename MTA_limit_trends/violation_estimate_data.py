@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################################
 #                                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
 #                                                                                                   #
-#           last update: Jun 07, 2017                                                               #
+#           last update: May 17, 2019                                                               #
 #                                                                                                   #
 #####################################################################################################
 
@@ -25,29 +25,22 @@ from time import gmtime, strftime, localtime
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
-#
-#--- set a temporary file name
-#
-rtail  = int(time.time())
-zspace = '/tmp/zspace' + str(rtail)
 #
 #--- set location of the database
 #
@@ -106,7 +99,6 @@ def incert_data(msid, data):
                 rt_time --- red top violation time
     ouput:  updated sql database
     """
-
     cmd = 'INSERT INTO v_table VALUES ("' + msid + '", ' 
     cmd = cmd + str(data[0]) + ', '
     cmd = cmd + str(data[1]) + ', '
@@ -165,7 +157,6 @@ def delete_entry(msid):
     input:  msid    --- msid
     output: updated database
     """
-
     cmd = 'DELETE FROM v_table  WHERE msid="' + msid + '"'
 
     cursor  = db.cursor()
@@ -196,13 +187,13 @@ class TestFunctions(unittest.TestCase):
         incert_data(msid, data)
 
         out = read_v_estimate(msid)
-        print  msid + ' ' + str(out)
+        print( msid + ' ' + str(out))
 
         out[3] = 2021.12
         update_data(msid, out)
 
         out = read_v_estimate(msid)
-        print msid + ' ' +  str(out)
+        print(msid + ' ' +  str(out))
 
         delete_entry(msid)
 
@@ -211,7 +202,7 @@ class TestFunctions(unittest.TestCase):
         incert_data(msid, data)
 
         out = read_v_estimate(msid)
-        print  msid + ' ' + str(out)
+        print (msid + ' ' + str(out))
 
         delete_entry(msid)
 
@@ -223,7 +214,7 @@ if __name__ == "__main__":
         msid = sys.argv[1]
         msid.strip()
         out  = read_v_estimate(msid)
-        print str(out)
+        print(str(out))
     else:
         unittest.main()
 

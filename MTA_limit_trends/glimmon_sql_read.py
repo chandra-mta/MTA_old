@@ -1,15 +1,15 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#       glimmon_sql_read.py: extract limit information from glimmon database                        #
-#               ---- this is copied from envelope trending page                                     #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Mar 05, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#########################################################################################
+#                                                                                       #
+#       glimmon_sql_read.py: extract limit information from glimmon database            #
+#               ---- this is copied from envelope trending page                         #
+#                                                                                       #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
+#                                                                                       #
+#           last update: Jun 04, 2019                                                   #
+#                                                                                       #
+#########################################################################################
 
 import os
 import sys
@@ -21,36 +21,36 @@ import sqlite3
 import unittest
 import time
 from time import gmtime, strftime, localtime
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
+import envelope_common_function as ecf
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- set location of glimmon 
 #
-glimmon      = glim_dir + '/glimmondb.sqlite3'
+glimmon = glim_dir + '/glimmondb.sqlite3'
 #
 #--- speical msid database
 #
@@ -120,7 +120,6 @@ def read_glimmon_main(msid, tchk):
                         r_min   --- lower red limit
                         r_max   --- upper red limit
     """
-
 #
 #--- connect to sqlite database
 #
@@ -200,20 +199,19 @@ def unit_modification(val, tchk):
                                psia tchk = 3
     output: val         --- updated value
     """
-
+    tchk = int(float(tchk))
     if tchk == 1:
         val += 273.15               #--- C to K conversion
     elif tchk == 2:
-        val = f_to_k(val)       #--- F to K conversion
+        val = ecf.f_to_k(val)       #--- F to K conversion
     elif tchk == 3:
         val /= 0.145038             #--- kp to psia conversion
 #
 #--- round off the value to 2 dicimal points
 #
-    val = round_up(val)
+    val = ecf.round_up(val)
 
     return val
-
 
 #-----------------------------------------------------------------------------------
 #-- special_case_database: read special glimmon entry limit database and create list 
@@ -225,9 +223,8 @@ def special_case_database(msid):
     input:  msid        --- a msid
     output: l_list      --- a list of limits
     """
-
-    file = house_keeping + 'glimmon_special_limit'
-    data = read_file_data(file)
+    ifile = house_keeping + 'glimmon_special_limit'
+    data  = mcf.read_data_file(ifile)
 
     bstart = 48902399.0             #---- 1999:202:00:00:00
     mstop  = 3218831995.0           #---- 2100:001:00:00:00
@@ -268,69 +265,6 @@ def special_case_database(msid):
         
     return l_list
 
-#------------------------------------------------------------------------------------------------------
-#-- f_to_k: convert the temperature from F to K                                                      --
-#------------------------------------------------------------------------------------------------------
-
-def f_to_k(f_temp):
-    """
-    convert the temperature from F to K
-    input:  f_temp  --- temperature in F
-    output: k_temp  --- temperature in K
-    """
-
-    k_temp = (f_temp -32.0) * 0.55555 + 273.15
-
-    return k_temp
-
-#-----------------------------------------------------------------------------------
-#-- round_up: round out the value in two digit                                  ----
-#-----------------------------------------------------------------------------------
-
-def round_up(val):
-    """
-    round out the value in two digit
-    input:  val --- value
-    output: val --- rounded value
-    """
-    
-    try:
-        dist = int(math.log10(abs(val)))
-        if dist < -2:
-            val *= 10 ** abs(dist)
-    except:
-        dist = 0
-    
-    val = "%3.2f" % (round(val, 2))
-    val = float(val)
-    
-    if dist < -2:
-        val *= 10**(dist)
-    
-    return val
-
-#-----------------------------------------------------------------------------------------------
-#-- read_file_data: read the content of the file and return it                                --
-#-----------------------------------------------------------------------------------------------
-
-def read_file_data(infile, remove=0):
-    """
-    read the content of the file and return it
-    input:  infile  --- file name
-    remove  --- if 1, remove the input file after read it, default: 0
-    output: out --- output
-    """
-    
-    f   = open(infile, 'r')
-    out = [line.strip() for line in f.readlines()]
-    f.close()
-    
-    if remove == 1:
-        mcf.rm_file(infile)
-    
-    return out
-
-
 #-----------------------------------------------------------------------------------------
 #-- TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST    ---
 #-----------------------------------------------------------------------------------------
@@ -362,38 +296,38 @@ class TestFunctions(unittest.TestCase):
         out1 = read_glimmon(msid, tchk)
         msid = 'oobthr07'
         out2 = read_glimmon(msid, tchk)
-        print "HOPRAPR: "  + str(out1)
-        print "OOBTHR07: " + str(out2)
+        print("HOPRAPR: "  + str(out1))
+        print("OOBTHR07: " + str(out2))
 
         msid = 'ohrthr20'
         out2 = read_glimmon(msid, tchk)
-        print "OHRTHR20: " + str(out2)
+        print("OHRTHR20: " + str(out2))
 
         tchk = 2
         msid = '4prt1at'
         out2 = read_glimmon(msid, tchk)
-        print "4PRT1AT: " + str(out2)
+        print("4PRT1AT: " + str(out2))
 
         tchk = 0
         msid = 'eoeb1cic'
         out2 = read_glimmon(msid, 0)
-        print "EOEB1CIC: " + str(out2)
+        print("EOEB1CIC: " + str(out2))
 
         tchk = 0
         #msid = 'hkeboxtemp'
         msid = '5ehse300'
         out2 = read_glimmon(msid, 0)
-        print "HKEBOXTEMP: " + str(out2)
+        print("HKEBOXTEMP: " + str(out2))
 
         tchk = 0
         msid = '3faflaat'
         out2 = read_glimmon(msid, 0)
-        print "3faflaat: " + str(out2)
+        print("3faflaat: " + str(out2))
 
         tchk = 0
         msid = '3sflxast'
         out2 = read_glimmon(msid, 0)
-        print "3sflxast: " + str(out2)
+        print("3sflxast: " + str(out2))
 
 #------------------------------------------------------------
 
@@ -402,7 +336,7 @@ class TestFunctions(unittest.TestCase):
         
 
         for msid in sp_msid_list:
-            print "Secondary-- " +  msid + ': ' +  str(special_case_database(msid))
+            print("Secondary-- " +  msid + ': ' +  str(special_case_database(msid)))
 
 #-----------------------------------------------------------------------------------
 

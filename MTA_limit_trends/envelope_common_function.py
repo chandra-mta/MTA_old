@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################################
 #                                                                                                   #
@@ -7,7 +7,7 @@
 #                                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
 #                                                                                                   #
-#           last update: Jun 13, 2018                                                               #
+#           last update: May 30, 2019                                                               #
 #                                                                                                   #
 #####################################################################################################
 
@@ -23,10 +23,9 @@ import sqlite3
 import unittest
 import time
 import numpy
-from datetime import datetime
+import datetime
 from time import gmtime, strftime, localtime
 import Chandra.Time
-
 #
 #--- from ska
 #
@@ -36,22 +35,20 @@ ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/re
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import fits_operation           as mfits
 import glimmon_sql_read         as gsr  #---- glimmon database reading
@@ -59,7 +56,8 @@ import read_mta_limits_db       as rmld #---- mta databse reading
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time()*random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- need a special treatment for the following msids
@@ -74,27 +72,13 @@ NULL   = 'null'
 #
 m_list = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
 #
-#--- set base time at 1998.1.1
-#
-BTFMT    = '%m/%d/%y,%H:%M:%S'
-FMT2     = '%Y-%m-%d,%H:%M:%S'
-FMT3     = '%Y-%m-%dT%H:%M:%S'
-basetime = datetime.strptime('01/01/98,00:00:00', BTFMT)
-#
-#--- set epoch
-#
-Epoch    = time.localtime(0)
-Ebase_t  = time.mktime((1998, 1,  1, 0, 0, 0, 5, 1, 0))
-Domstart = time.mktime((1999, 7, 21, 0, 0, 0, 5, 1, 0)) - Ebase_t
-#
 #--- read mta limit data base as back up limit database
 #
 mta_db = rmld.read_mta_limits_db()
-#use_mta_db_list = ['1pin1at', '1pin1atc']
-ifile =  house_keeping + 'msid_cross_check_table'
-f     = open(ifile, 'r')
-data  = [line.strip() for line in f.readlines()]
-f.close()
+
+ifile  =  house_keeping + 'msid_cross_check_table'
+with open(ifile, 'r') as f:
+    data  = [line.strip() for line in f.readlines()]
 
 use_mta_db_list = []
 for ent in data:
@@ -112,11 +96,10 @@ def find_current_stime():
     input:  none
     output: sec1998 --- the current time in seconds from 1998.1.1
     """
-    
-    current = time.gmtime()
-    sec1998 = time.mktime(current) - Ebase_t
+    today = time.strftime('%Y:%j:%H:%M:%S', time.gmtime())
+    stime = Chandra.Time.DateTime(today).secs
 
-    return sec1998
+    return stime
 
 #------------------------------------------------------------------------------------------------------
 #-- covertfrom1998sec: convert second from 1998.1.1 to yyyy-mm-ddThh:mm:ss format                    --
@@ -128,10 +111,7 @@ def covertfrom1998sec(stime):
     input:  stime   --- second from 1998.1.1
     output: etime   --- time in yyyy-mm-ddThh:mm:ss
     """
-
-    etime = Ebase_t + stime
-    etime = time.localtime(etime)
-    etime = time.strftime(FMT3, etime)
+    etime = mcf.convert_date_format(stime, ifmt='chandra', ofmt='%Y-%m-%dT%H:%M:%S')
 
     return etime
 
@@ -145,20 +125,7 @@ def stime_to_frac_year(stime):
     input:  stime   --- seconds from 1998.1.1
             etime   --- time in fractinal year;, e.g., 2012.223
     """
-
-    etime = Ebase_t + stime
-    etime = time.localtime(etime)
-    etime = time.strftime( '%Y-%j', etime)
-    atemp = re.split('-', etime)
-    year  = float(atemp[0])
-    ydate = float(atemp[1])
-
-    if tcnv.isLeapYear(year):
-        base = 366
-    else:
-        base = 365
-        
-    etime = year + ydate / base
+    etime = mcf.chandratime_to_fraq_year(stime)
 
     return etime
 
@@ -172,8 +139,9 @@ def dom_to_stime(dom):
     input:  dom     --- dom (day of mission)
     output: stime   --- seconds from 1998.1.1
     """
-
-    stime = float(dom) * 86400 + Domstart
+    [year, ydate] = mcf.dom_to_ydate(dom)
+    etime         = str(year) + ':' + str(ydate)
+    stime         = mcf.convert_date_format(etime, ifmt='%Y:%j', ofmt='chandra')
 
     return stime
 
@@ -187,18 +155,9 @@ def current_time():
     input:  none
     output: fyear
     """
-
-    otime = time.gmtime()
-    year  = otime.tm_year
-    yday  = otime.tm_yday
-    hr    = otime.tm_hour
-
-    if tcnv.isLeapYear(year) == 1:
-        base = 366
-    else:
-        base = 365
-
-    fyear = year + (yday + hr/24.0) / base
+    otime = time.strftime('%Y:%j:%H:%M:%S', time.gmtime())
+    stime = Chandra.Time.DateTime(otime).secs
+    fyear = mcf.chandratime_to_fraq_year(stime)
 
     return fyear
 
@@ -212,7 +171,6 @@ def c_to_k(c_temp):
     input:  c_temp  --- temperature in C
     output: k_temp  --- temperature in K
     """
-
     k_temp = c_temp + 273.15
 
     return k_temp
@@ -227,85 +185,9 @@ def f_to_k(f_temp):
     input:  f_temp  --- temperature in F
     output: k_temp  --- temperature in K
     """
-
     k_temp = (f_temp -32.0) * 0.55555 + 273.15
 
     return k_temp
-
-#------------------------------------------------------------------------------------------------------
-#-- data_seeker: extract a fits file using data_seeker                                               --
-#------------------------------------------------------------------------------------------------------
-
-def data_seeker(start, stop, msid):
-    """
-    extract a fits file using data_seeker
-    input:  start   --- starting time in seconds from 1998.1.1
-            stop    --- stopping time in seconds from 1998.1.1
-            msid    --- msid of the data you want to extract
-    output: temp_out.fits   --- fits file extracted
-    """
-#
-#--- check a dummy 'test' file exists. it also needs param directory
-#
-    if not os.path.isfile('test'):
-        fo = open('./test', 'w')
-        fo.close()
-    
-    try:
-        clean_dir('param')
-    except:
-        cmd = 'mkdir ./param 2> /dev/null'
-        os.system(cmd)
-
-    mcf.rm_file('./temp_out.fits')
-#
-#--- name must starts with "_"
-#
-    mc  = re.search('deahk',  msid.lower())
-    mc2 = re.search('oobthr', msid.lower())
-#
-#--- deahk cases
-#
-    if mc is not None:
-        atemp = re.split('deahk', msid)
-        val   = float(atemp[1])
-        if val < 17:
-            name = 'rdb..deahk_temp.' + msid.upper() + '_avg'
-        else:
-            name = 'rdb..deahk_elec.' + msid.upper() + '_avg'
-#
-#--- oobthr cases
-#
-    elif mc2 is not None:
-        name = 'mtatel..obaheaters_avg._' + msid.lower() + '_avg'
-#
-#--- special cases (see the list at the top)
-#
-    elif msid.upper() in special_list:
-        name = msid.upper() + '_AVG'
-
-    else:
-        name = '_' + msid.lower() + '_avg'
-#
-#--- create dataseeker command
-#
-    cmd1 = '/usr/bin/env PERL5LIB="" '
-
-    cmd2 = ' source /home/mta/bin/reset_param; '
-    cmd2 = ' ' 
-    cmd2 = cmd2 + ' /home/ascds/DS.release/bin/dataseeker.pl '
-    cmd2 = cmd2 + ' infile=test  outfile=temp_out.fits  '
-    cmd2 = cmd2 + ' search_crit="columns=' + name
-    cmd2 = cmd2 + ' timestart=' + str(start)
-    cmd2 = cmd2 + ' timestop='  + str(stop) 
-    cmd2 = cmd2 + '" loginFile='+ house_keeping + 'loginfile '
-
-    cmd  = cmd1 + cmd2 
-    bash(cmd,  env=ascdsenv)
-
-    cmd  = 'rm /data/mta/dataseek* 2>/dev/null'
-    os.system(cmd)
-
 
 #-----------------------------------------------------------------------------------------------
 #-- clean_dir: empty out the directory content                                                --
@@ -317,7 +199,6 @@ def clean_dir(tdir):
     input:  tdir    --- a directory path
     output: tdir if it does not exist before
     """
-
     chk = 0
     if os.listdir(tdir):
         chk = 1
@@ -358,27 +239,27 @@ def read_fits_file(fits):
 
     return [cols, tbdata]
 
-#-----------------------------------------------------------------------------------------------
-#-- read_file_data: read the content of the file and return it                                --
-#-----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- read_fits_col: read  column data from a fits data for given columns          ---
+#-----------------------------------------------------------------------------------
 
-def read_file_data(infile, remove=0):
+def read_fits_col(fits, col_list):
     """
-    read the content of the file and return it
-    input:  infile  --- file name
-            remove  --- if 1, remove the input file after read it, default: 0
-    output: out     --- output
+    read  column data from a fits data for given columns
+    input:  fits    --- file name
+            col_list--- a list of column names to be extracted 
+    output: out     --- a list of data arrays corresponding to the column list
     """
-
-    f   = open(infile, 'r')
-    out = [line.strip() for line in f.readlines()]
+    f = pyfits.open(fits)
+    data = f[1].data
     f.close()
-
-    if remove == 1:
-        mcf.rm_file(infile)
-
+    
+    out = []
+    for col in col_list:
+        out.append(data[col])
+    
     return out
-
+    
 #-----------------------------------------------------------------------------------
 #-- round_up: round out the value in two digit                                  ----
 #-----------------------------------------------------------------------------------
@@ -389,7 +270,6 @@ def round_up(val):
     input:  val --- value
     output: val --- rounded value
     """
-
     try:
         dist = int(math.log10(abs(val)))
         if dist < -2:
@@ -419,7 +299,7 @@ def read_unit_list():
 #--- read the main unit file and description of msid
 #
     ulist = house_keeping + 'unit_list'
-    data  = read_file_data(ulist)
+    data  = mcf.read_data_file(ulist)
 
     udict = {}
     ddict = read_description_from_mta_list()
@@ -434,7 +314,7 @@ def read_unit_list():
 #--- read dataseeker unit list and replace if they are not same
 #
     ulist = house_keeping + 'msid_descriptions'
-    data  = read_file_data(ulist)
+    data  = mcf.read_data_file(ulist)
     for ent in data:
         if ent[0] == '#':
             continue
@@ -443,7 +323,12 @@ def read_unit_list():
             continue
 
         msid =atemp[0].lower()
-        if mcf.chkNumeric(atemp[2]) == False:
+        try:
+            test = float(atemp[2])
+            tchk = 0
+        except:
+            tchk = 1
+        if tchk == 1:
             if atemp[2] != '':
                 udict[msid] =  atemp[2]
         else:
@@ -456,13 +341,13 @@ def read_unit_list():
 #--- farther read supplemental lists
 #
     ulist = house_keeping + 'unit_supple'
-    data  = read_file_data(ulist)
+    data  = mcf.read_data_file(ulist)
     for ent in data:
         atemp = re.split('\s+', ent)
         udict[atemp[0]] = atemp[1]
 
     dlist = house_keeping + 'description_supple'
-    data  = read_file_data(dlist)
+    data  = mcf.read_data_file(dlist)
     for ent in data:
         atemp = re.split('\:\:', ent)
         msid  = atemp[0].strip()
@@ -481,9 +366,8 @@ def read_description_from_mta_list():
     input:  none but read from <house_keeping>/mta_limits.db
     output: mdict   --- a dictionary of msid<--->description
     """
-
     mfile =  mlim_dir  + 'op_limits.db'
-    data  = read_file_data(mfile)
+    data  = mcf.read_data_file(mfile)
 
     mdict = {}
     prev  = ''
@@ -526,7 +410,6 @@ def set_limit_list(msid):
     input:  msid--- msid
     output: l_list  --- a list of list of [<start time>, <stop time>, <yellow min>, <yellow max>, <red min>, <red max>]
     """
-    
     [udict, ddict]  = read_unit_list()
     tchk = 0
     try:
@@ -537,9 +420,16 @@ def set_limit_list(msid):
             tchk = 2
         elif unit.lower() == 'psia':
             tchk = 3
+        elif msid[-1].lower()  == 't':
+            tchk = 1
     except:
-        pass
-    
+        if msid[-1].lower()  == 't':
+            tchk = 1
+#
+#--- primary limit database is directly from glimmon database. however there are those
+#--- only aviailable in mta op_limit.db or prefer to use mta limits. if that is the
+#--- the case, use mta_db. 
+#
     if msid in use_mta_db_list:
         l_list = []
     else:
@@ -581,26 +471,6 @@ def set_limit_list(msid):
 
     return cleaned2
 
-
-#------------------------------------------------------------------------------------------------------
-#-- check_dataseeker_entry: check msid is listed in dataseeker database                             ---
-#------------------------------------------------------------------------------------------------------
-
-def check_dataseeker_entry(msid):
-    """
-    check msid is listed in dataseeker database
-    input: msid     --- msid
-    output: True/False
-    """
-
-    cmd = 'grep -i ' + msid + ' ' +  house_keeping +  'dataseeker_entry_list >' + zspace
-    os.system(cmd)
-    if os.stat(zspace).st_size == 0:
-        mcf.rm_file(zspace)
-        return False
-    else:
-        mcf.rm_file(zspace)
-        return True
 
 #------------------------------------------------------------------------------------------------------
 #-- modify_slope_dicimal: adjust the format of the slope and error print out                        ---
@@ -673,7 +543,6 @@ def get_limit(msid, tchk, mta_db, mta_cross):
     
     return glim
 
-
 #-------------------------------------------------------------------------------------------
 #-- read_mta_database: read the mta limit database--
 #-------------------------------------------------------------------------------------------
@@ -685,12 +554,9 @@ def read_mta_database():
     output: mta_db  --- dictionary of msid <--> a list of lists of limits
     the inner list is [start, stop, yl, yu, rl, ru]
     """
-    
     tmin = 0
     tmax = 3218831995
-    f= open('/data/mta4/MTA/data/op_limits/op_limits.db', 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file('/data/mta4/MTA/data/op_limits/op_limits.db')
     
     mta_db = {}
     prev   = ''
@@ -740,9 +606,7 @@ def read_cross_check_table():
     """
     
     ifile = house_keeping + 'msid_cross_check_table'
-    f = open(ifile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(ifile)
     
     mta_cross = {}
     for ent in data:
@@ -764,7 +628,6 @@ def update_fits_file(fits, cols, cdata, tcut=0):
             tcut    --- a time to cut the data; default: 0 --- no cut
     output: updated fits file
     """
-    
     f = pyfits.open(fits)
     data  = f[1].data
     f.close()
@@ -805,7 +668,6 @@ def create_fits_file(fits, cols, cdata):
             cdata   --- a list of lists of data values
     output: newly created fits file "fits"
     """
-    
     dlist = []
     for k in range(0, len(cols)):
         aent = numpy.array(cdata[k])
@@ -815,7 +677,7 @@ def create_fits_file(fits, cols, cdata):
     dcols = pyfits.ColDefs(dlist)
     tbhdu = pyfits.BinTableHDU.from_columns(dcols)
     
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     tbhdu.writeto(fits)
 
 #-------------------------------------------------------------------------------------------
@@ -835,7 +697,7 @@ def check_zip_possible(outdir):
     
         cmd   = 'ls ' + outdir + '*_' + str(year) + '.fits* > ' + zspace
         os.system(cmd)
-        data = ecf.read_file_data(zspace, remove=1)
+        data = mcf.read_data_file(zspace, remove=1)
      
         for ent in data:
             mc = re.search('.gz', ent)
@@ -863,7 +725,7 @@ def find_data_collecting_period(testdir, testf):
 #
     cmd  = 'ls ' + testdir + '/' + testf + ' > ' + zspace
     os.system(cmd)
-    data = read_file_data(zspace, remove=1)
+    data = mcf.read_data_file(zspace, remove=1)
     test = data[-1]
     
     if os.path.isfile(test):
@@ -937,10 +799,9 @@ def convert_unit_indicator(cunit):
     input: cunit--- degc, degf, or psia
     output: tchk--- 1, 2, 3 for above. all others will return 0
     """
-    
     try:
         cunit = cunit.lower()
-        if cunit == 'degc':
+        if cunit == 'degc':  
             tchk = 1
         elif cunit == 'degf':
             tchk = 2
@@ -952,25 +813,6 @@ def convert_unit_indicator(cunit):
         tchk = 0
     
     return tchk
-
-#-------------------------------------------------------------------------------------------
-#-- add_lead_zeros: add leading zeros to make a digit match the length                    --
-#-------------------------------------------------------------------------------------------
-
-def add_lead_zeros(val, dlen):
-    """
-    add leading zeros to make a digit match the length
-    input:  val     --- original digit in integer
-            dlen    --- the length required
-    output: cval    --- adjust digit in string
-    """
-    cval = str(val)
-    clen = len(cval)
-    diff = dlen - clen
-    for k in range(0, diff):
-        cval = '0' + dval
-
-    return cval
 
 #-------------------------------------------------------------------------------------------
 #-- get_basic_info_dict: extract basic information dict and lists                         --
@@ -1012,7 +854,6 @@ def find_the_last_entry_time(fits):
     input:  fits    --- fits file name
     output: ctime   --- the last logged time
     """
-
     f = pyfits.open(fits)
     data = f[1].data
     f.close()
@@ -1020,6 +861,46 @@ def find_the_last_entry_time(fits):
     ctime = numpy.max(data['time'])
 
     return ctime
+
+#-------------------------------------------------------------------------------------------
+#-- create_date_list_to_yestaday: find the last entry date and then make a list of dates up to yesterday
+#-------------------------------------------------------------------------------------------
+
+def create_date_list_to_yestaday(testfits, yesterday=''):
+    """
+    find the last entry date and then make a list of dates up to yesterday
+    input:  testfits    --- a fits file to be tested
+            yesterday   --- date of yesterday in the format of yyyymmdd
+    output: otime   --- a list of date in the format of yyyymmdd
+    """
+
+    try:
+        test = float(yesterday)
+        chk = 1
+    except:
+        chk = 0
+    
+    if chk == 0:
+        out = time.strftime('%Y:%j:00:00:00', time.gmtime())
+        yesterday = Chandra.Time.DateTime(out).secs - 86400.0
+#
+    ltime = find_the_last_entry_time(testfits)
+
+    out = mcf.convert_date_format(ltime, ifmt='chandra', ofmt='%Y:%j:00:00:00')
+    out = Chandra.Time.DateTime(out).secs
+
+    t_list = [out]
+    ntime = out + 86400.0
+    while ntime <=  yesterday:
+        t_list.append(ntime)
+        ntime += 87400.0
+
+    otime = []
+    for ent in t_list:
+        out = mcf.convert_date_format(ent, ifmt='chandra', ofmt='%Y%m%d')
+        otime.append(out)
+    
+    return otime
 
 #----------------------------------------------------------------------------------
 #-- check_time_format: return time in Chandra time                               --
@@ -1031,7 +912,6 @@ def check_time_format(intime):
     input:  intime  --- time in <yyyy>:<ddd>:<hh>:<mm>:<ss> or <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss> or chandra time
     output: time in chandra time (seconds from 1998.1.1)
     """
-
     mc1 = re.search('-', intime)
     mc2 = re.search(':', intime)
 #
@@ -1045,36 +925,11 @@ def check_time_format(intime):
     elif mc1 is not None:
         mc2 = re.search('T', intime)
         if mc2 is not None:
-            atemp = re.split('T', intime)
-            btemp = re.split('-', atemp[0])
-            year  = int(float(btemp[0]))
-            mon   = int(float(btemp[1]))
-            day   = int(float(btemp[2]))
-            ctemp = re.split(':', atemp[1])
-            hrs   = ctemp[0]
-            mins  = ctemp[1]
-            secs  = ctemp[2]
-    
+            stime = mcf.convert_date_format(intime, ifmt='%Y-%m-%d:%H:%M:%S', ofmt='chandra')
         else:
-            btemp = re.split('-', intime)
-            year  = int(float(btemp[0]))
-            mon   = int(float(btemp[1]))
-            day   = int(float(btemp[2]))
-            hrs   = '00'
-            mins  = '00'
-            secs  = '00'
+            stime = mcf.convert_date_format(intime, ifmt='%Y-%m-%d', ofmt='chandra')
     
-        yday = datetime.date(year, mon, day).timetuple().tm_yday
-     
-        cyday = str(yday)
-        if yday < 10:
-            cyday = '00' + cyday
-        elif yday < 100:
-            cyday = '0' + cyday
-     
-        ytime = btemp[0] + ':' + cyday + ':' + hrs + ':' + mins + ':' + secs
-     
-        return Chandra.Time.DateTime(ytime).secs
+        return stime
 #
 #--- time in <yyyy>:<ddd>:<hh>:<mm>:<ss>
 #
@@ -1093,8 +948,7 @@ def combine_fits(flist, outname):
             outname --- a outputfits file name
     output: outname --- a combined fits file
     """
-    
-    mcf.rm_file(outname)
+    mcf.rm_files(outname)
     cmd = 'mv ' + flist[0] + ' ' + outname
     os.system(cmd)
     
@@ -1122,7 +976,7 @@ def combine_fits(flist, outname):
 def create_use_mta_db_list():
 
     ifile =  house_keeping + 'msid_cross_check_table'
-    data  = read_file_data(ifile)
+    data  = mcf.read_data_file(ifile)
 
     use_mta_db_list = []
     for ent in data:
@@ -1131,8 +985,6 @@ def create_use_mta_db_list():
             use_mta_db_list.append(atemp[0])
 
     return use_mta_db_list
-
-    
 
 #-----------------------------------------------------------------------------------------
 #-- TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST TEST    ---
@@ -1147,7 +999,7 @@ class TestFunctions(unittest.TestCase):
     def test_find_current_stime(self):
 
         sec1998 = find_current_stime()
-        print "current time: " + str(sec1998)
+        print("current time: " + str(sec1998))
 
 
 #------------------------------------------------------------
@@ -1202,7 +1054,7 @@ class TestFunctions(unittest.TestCase):
         stime  = 549590396
         fyear  = stime_to_frac_year(stime)
 
-        print "I AM HERE: " + str(fyear) + '<--->2916,419'
+        print("I AM HERE: " + str(fyear) + '<--->2916,419')
 
 
 #------------------------------------------------------------
@@ -1229,6 +1081,15 @@ class TestFunctions(unittest.TestCase):
         out = set_limit_list(msid)
         self.assertEquals(out[0], [0, 119305230, 202.65, 223.15, 197.65, 312.65])
 
+
+        #msid = 'oobthr04'
+        #out = set_limit_list(msid)
+        #print("/tI AM HERE OOBTHR04: " + str(out))
+
+        msid = 'pm1thv1t'
+        out = set_limit_list(msid)
+        print("/tI AM HERE PM1THV1T: " + str(out))
+
 #------------------------------------------------------------
     
     def test_round_up(self):
@@ -1247,5 +1108,9 @@ class TestFunctions(unittest.TestCase):
 
 if __name__ == "__main__":
 
-    unittest.main()
+#    unittest.main()
+    msid = 'pm1thv1t'
+    out = set_limit_list(msid)
+    for ent in out:
+        print(str(ent))
 

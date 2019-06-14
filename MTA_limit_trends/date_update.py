@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #################################################################################
 #                                                                               #
@@ -6,7 +6,7 @@
 #                                                                               #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                               #
-#           last update: Feb 07, 2018                                           #
+#           last update: May 17, 2019                                           #
 #                                                                               #
 #################################################################################
 
@@ -25,15 +25,13 @@ pmon  = int(float(time.strftime(" %m", time.gmtime())))
 today =  mon[pmon-1] + time.strftime(" %d, %Y", time.gmtime())
 
 ifile = template_dir + 'html_close_template'
-f     = open(ifile, 'r')
-text  = f.read()
-f.close()
+with open(ifile, 'r') as f:
+    text  = f.read()
 
 text  = text.replace('#TODAY#', today)
 
 ofile = template_dir + 'html_close'
-fo    = open(ofile, 'w')
-fo.write(text)
-fo.close()
+with  open(ofile, 'w')as fo:
+    fo.write(text)
 
 

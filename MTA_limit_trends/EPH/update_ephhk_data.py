@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Jun 13, 2018                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -20,20 +20,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -42,7 +41,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -50,13 +48,13 @@ import fits_operation           as mfo
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mday_list  = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 mday_list2 = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
-test_fits = '/data/mta4/Deriv/MTA_msid_trend/Data/Ephhk/eiostatus_a_week_data.fits'
+test_fits  = data_dir + 'Ephhk/eiostatus_a_week_data.fits'
 
 #-------------------------------------------------------------------------------------------
 #-- update_ephhk_data: update eph hk related msid data                                    --
@@ -75,11 +73,11 @@ def update_ephhk_data():
 #
 #--- read mta database
 #
-    mta_db = read_mta_database()
+    mta_db = ecf.read_mta_database()
 #
 #--- read mta msid <---> sql msid conversion list
 #
-    mta_cross = read_cross_check_table()
+    mta_cross = ecf.read_cross_check_table()
 #
 #--- find the data period
 #
@@ -126,7 +124,7 @@ def update_ephhk_data():
         except:
             tchk  = 0
 
-        glim  = get_limit(msid, tchk, mta_db, mta_cross)
+        glim  = ecf.get_limit(msid, tchk, mta_db, mta_cross)
 #
 #--- update database
 #
@@ -143,7 +141,6 @@ def find_data_period():
     output: tstart  --- starting time in seconds from 1998.1.1
             tstop   --- stopping time in seconds from 1998.1.1
     """
-
     f      = pyfits.open(test_fits)
     data   = f[1].data
     f.close()
@@ -182,26 +179,7 @@ def extract_archive_data(tstart, tstop):
     line = line + 'tstop='    + str(tstop)  + '\n'
     line = line + 'go\n'
 
-    fo = open(zspace, 'w')
-    fo.write(line)
-    fo.close()
-
-    try:
-        cmd = ' /proj/sot/ska/bin/arc5gl  -user isobe -script ' + zspace + '> ztemp_out'
-        os.system(cmd)
-    except:
-        cmd = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace + '> ztemp_out'
-        os.system(cmd)
-
-    mcf.rm_file(zspace)
-#
-#--- find the names of the fits files of the day of the group
-#
-    try:
-        flist = ecf.read_file_data('ztemp_out', remove=1)
-        flist = flist[1:]
-    except:
-        flist = []
+    flist = mcf.run_arc5gl_process(line)
 
     if len(flist) > 0:
         combine_fits_files(flist)
@@ -209,7 +187,6 @@ def extract_archive_data(tstart, tstop):
     else:
         return False
 
-    
 #-------------------------------------------------------------------------------------------
 #-- combine_fits_files: combine data of fits files in the given fits list                 --
 #-------------------------------------------------------------------------------------------
@@ -220,7 +197,6 @@ def combine_fits_files(flist, outname='ztemp.fits'):
     input:  flist   --- a list of fits files
     output: outname --- a name of combined table data fits; defalut: ztemp.fits
     """
-
     flen = len(flist)
 
     if flen == 1:
@@ -251,7 +227,6 @@ def find_col_names(cols):
     input:  cols        --- a list of all column names
     output: col_list    --- a list of msids
     """
-
     col_list = []
     for k in range(1, len(cols)):
 #
@@ -282,119 +257,6 @@ def find_col_names(cols):
     return col_list
 
 #-------------------------------------------------------------------------------------------
-#-- get_limit: find the limit lists for the msid                                          --
-#-------------------------------------------------------------------------------------------
-
-def get_limit(msid, tchk, mta_db, mta_cross):
-    """
-    find the limit lists for the msid
-    input:  msid        --- msid
-            tchk        --- whether temp conversion needed 0: no/1: degc/2: degf/3: pcs
-            mta_db      --- a dictionary of mta msid <---> limist
-            mta_corss   --- mta msid and sql msid cross check table
-    output: glim        --- a list of lists of lmits. innter lists are:
-                            [start, stop, yl, yu, rl, ru]
-    """
-
-    try:
-        mchk = mta_cross[msid]
-    except:
-        glim = [[0,  3218831995, -9e6, 9e6, -9e6, 9e6]]
-        return glim
-
-    if mchk == 'mta':
-        try:
-            glim = mta_db[msid]
-        except:
-            glim = [[0,  3218831995, -9e6, 9e6, -9e6, 9e6]]
-
-    else:
-        try:
-            glim  = gsr.read_glimmon(mchk, tchk)
-        except:
-            glim = [[0,  3218831995, -9e6, 9e6, -9e6, 9e6]]
-
-    return glim
-
-
-#-------------------------------------------------------------------------------------------
-#-- read_mta_database: read the mta limit database                                        --
-#-------------------------------------------------------------------------------------------
-
-def read_mta_database():
-    """
-    read the mta limit database
-    input:  none, but read from /data/mta4/MTA/data/op_limits/op_limits.db
-    output: mta_db  --- dictionary of msid <--> a list of lists of limits
-                        the inner list is [start, stop, yl, yu, rl, ru]
-    """
-
-    tmin = 0
-    tmax = 3218831995
-    f    = open('/data/mta4/MTA/data/op_limits/op_limits.db', 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-
-    mta_db = {}
-    prev   = ''
-    save   = []
-    for ent in data:
-        if len(ent) == 0:
-            continue
-        if ent[0] == '#':
-            continue
-
-        atemp = re.split('\s+', ent)
-        msid  = atemp[0].lower()
-
-        try:
-            out  = mta_db[msid]
-            yl   = float(atemp[1])
-            yr   = float(atemp[2])
-            rl   = float(atemp[3])
-            ru   = float(atemp[4])
-            ts   = float(atemp[5])
-            olim = [ts, tmax, yl, yr, rl, ru]
-            out[-1][1] = ts
-            out.append(olim)
-            mta_db[msid] = out
-        except:
-            yl   = float(atemp[1])
-            yr   = float(atemp[2])
-            rl   = float(atemp[3])
-            ru   = float(atemp[4])
-            ts   = float(atemp[5])
-            olim = [ts, tmax, yl, yr, rl, ru]
-            out  = [olim]
-            mta_db[msid] = out
-
-    return mta_db
-
-#-------------------------------------------------------------------------------------------
-#-- read_cross_check_table: read the mta msid and sql database msid cross table          ---
-#-------------------------------------------------------------------------------------------
-
-def read_cross_check_table():
-    """
-    read the mta msid and sql database msid cross table
-    input: none but read from <house_keeping>/msid_cross_check_table
-    output: mta_cross   --- a dictionary of mta msid and sql database msid
-                        note: if there is no correspondece, it will return "mta"
-    """
-
-    ifile = house_keeping + 'msid_cross_check_table'
-    f     = open(ifile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
-
-    mta_cross = {}
-    for ent in data:
-        atemp = re.split('\s+', ent)
-        mta_cross[atemp[0]] = atemp[1]
-
-    return mta_cross
-
-#-------------------------------------------------------------------------------------------
 #-- update_database: update/create fits data files of msid                                --
 #-------------------------------------------------------------------------------------------
 
@@ -408,7 +270,8 @@ def update_database(msid, group, dtime, data,  glim, pstart=0, pstop=0, step=360
     output: <msid>_data.fits, <msid>_short_data.fits
     """
 
-    cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper', 'dcount',\
+    cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+             'yupper', 'rlower', 'rupper', 'dcount',\
              'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
     out_dir = data_dir + group.capitalize() + '/'
@@ -445,26 +308,25 @@ def update_database(msid, group, dtime, data,  glim, pstart=0, pstop=0, step=360
 #
 #--- add to the data to the long term fits file
 #
-        update_fits_file(fits,  cols, long_p)
+        ecf.update_fits_file(fits,  cols, long_p)
 #
 #--- remove the older data from the short term fits file, then append the new data
 #
         if achk > mago:
             try:
                 remove_old_data(fits2, cols, mago)
-                update_fits_file(fits2, cols, short_p)
+                ecf.update_fits_file(fits2, cols, short_p)
             except:
-                create_fits_file(fits2, cols, short_p)
-
+                ecf.create_fits_file(fits2, cols, short_p)
+#
 #--- remove the older data from the week long data fits file, then append the new data
 #
         if achk > mago2:
             try:
                 remove_old_data(fits3, cols, mago2)
-                update_fits_file(fits3, cols, week_p)
+                ecf.update_fits_file(fits3, cols, week_p)
             except:
-                create_fits_file(fits3, cols, week_p)
-
+                ecf.create_fits_file(fits3, cols, week_p)
 #
 #--- if the fits files do not exist, create new ones ----------------------
 #
@@ -479,14 +341,14 @@ def update_database(msid, group, dtime, data,  glim, pstart=0, pstop=0, step=360
 #--- one day step; a long term data
 #
         [week_p, short_p, long_p, achk] = process_day_data(msid, dtime, data, glim, step=0)
-        create_fits_file(fits, cols, long_p)
+        ecf.create_fits_file(fits, cols, long_p)
 #
 #--- short term data
 #
         mago    = stop - 31536000.0                              #--- a year ago
         if achk > mago:
             short_d =  cut_the_data(short_p, mago)
-            create_fits_file(fits2, cols, short_d)
+            ecf.create_fits_file(fits2, cols, short_d)
 #
 #
 #--- week long data
@@ -494,7 +356,7 @@ def update_database(msid, group, dtime, data,  glim, pstart=0, pstop=0, step=360
         mago   = stop - 604800.0
         if achk > mago:
             week_d =  cut_the_data(week_p, mago)
-            create_fits_file(fits3, cols, week_d)
+            ecf.create_fits_file(fits3, cols, week_d)
 
 #-------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------
@@ -515,8 +377,6 @@ def cut_the_data(data, cut):
         save.append(data[k][pos:])
     
     return save
-
-
 
 #-------------------------------------------------------------------------------------------
 #-- process_day_data: extract data from the archive and compute the stats           ---
@@ -630,7 +490,6 @@ def process_day_data(msid, dtime, data, glim, step = 3600.0):
     wsave = []
     vsave = []
     ysave = []
-
 #
 #--- extract data from archive
 #
@@ -683,7 +542,6 @@ def process_day_data(msid, dtime, data, glim, step = 3600.0):
 #
 #--- 1 hour interval
 #
-
         if dtime[k] < send1:
             chk1 = 0
         else:
@@ -696,7 +554,6 @@ def process_day_data(msid, dtime, data, glim, step = 3600.0):
             stime = dtime[spos1 + int(0.5 * (k-spos1))]
             vlimits = find_violation_range(glim, stime)
             [yl, yu, rl, ru, tot] = find_violation_rate(rdata, vlimits)
-
                 
             btime.append(stime)
             bdata.append(avg)
@@ -717,7 +574,6 @@ def process_day_data(msid, dtime, data, glim, step = 3600.0):
 #
 #--- 1 day interval
 #
-
         if dtime[k] < send0:
             chk0 = 0
         else:
@@ -731,7 +587,6 @@ def process_day_data(msid, dtime, data, glim, step = 3600.0):
             vlimits = find_violation_range(glim, stime)
             [yl, yu, rl, ru, tot] = find_violation_rate(rdata, vlimits)
 
-                
             ftime.append(stime)
             fdata.append(avg)
             fmed.append(med)
@@ -849,103 +704,6 @@ def process_day_data(msid, dtime, data, glim, step = 3600.0):
 
     return [week_p, short_p, long_p, wtime[0]]
 
-
-#-------------------------------------------------------------------------------------------
-#-- update_fits_file: update fits file                                                    --
-#-------------------------------------------------------------------------------------------
-
-def update_fits_file(fits, cols, cdata):
-    """
-    update fits file
-    input:  fits    --- fits file name
-            cols    --- a list of column names
-            cdata   --- a list of lists of data values
-    output: updated fits file
-    """
-
-    f     = pyfits.open(fits)
-    data  = f[1].data
-    f.close()
-
-    udata= []
-    for k in range(0, len(cols)):
-        nlist   = list(data[cols[k]]) + cdata[k]
-        udata.append(nlist)
-
-    mcf.rm_file(fits)
-    create_fits_file(fits, cols, udata)
-
-#-------------------------------------------------------------------------------------------
-#-- create_fits_file: create a new fits file for a given data set                         --
-#-------------------------------------------------------------------------------------------
-
-def create_fits_file(fits, cols, cdata):
-    """
-    create a new fits file for a given data set
-    input:  fits    --- fits file name
-            cols    --- a list of column names
-            cdata   --- a list of lists of data values
-    output: newly created fits file "fits"
-    """
-    
-    #cdata = remove_duplicate(cdata)
-
-    dlist = []
-    for k in range(0, len(cols)):
-        aent = numpy.array(cdata[k])
-        dcol = pyfits.Column(name=cols[k], format='E', array=aent)
-        dlist.append(dcol)
-
-    dcols = pyfits.ColDefs(dlist)
-    tbhdu = pyfits.BinTableHDU.from_columns(dcols)
-
-    mcf.rm_file(fits)
-    tbhdu.writeto(fits)
-
-#-------------------------------------------------------------------------------------------
-#-- remove_duplicate: remove duplicated entry by time (the first entry)                   --
-#-------------------------------------------------------------------------------------------
-
-def remove_duplicate(cdata):
-    """
-    remove duplicated entry by time (the first entry)
-    input:  cdata   --- a list of lists; the first entry must be time stamp
-    output: ndat    --- a cealn list of lists
-    """
-    clen  = len(cdata)          #--- the numbers of the lists in the list
-    dlen  = len(cdata[0])       #--- the numbers of elements in each list
-    tdict = {}
-    tlist = []
-#
-#--- make a dictionary as time as a key
-#
-    for k in range(0, dlen):
-        tdat = []
-        for m in range(0, clen):
-            tdat.append(cdata[m][k])
-
-        tdict[cdata[0][k]] = tdat
-        tlist.append(cdata[0][k])
-#
-#--- select the uniqe time stamps
-#
-    tset  = set(tlist)
-    tlist = list(tset)
-    tlist.sort()
-#
-#--- create a uniqu data set
-#
-    ndata = []
-    for m in range(0, clen):
-        ndata.append([])
-
-    for ent in tlist:
-        out = tdict[ent]
-        for  m in range(0, clen):
-            ndata[m].append(out[m])
-
-    return ndata
-
 #-------------------------------------------------------------------------------------------
 #-- remove_old_data: remove the data older the cut time                                   --
 #-------------------------------------------------------------------------------------------
@@ -958,7 +716,6 @@ def remove_old_data(fits, cols, cut):
             cut     --- cut time in seconds from 1998.1.1
     output: updated fits file
     """
-
     f     = pyfits.open(fits)
     data  = f[1].data
     f.close()
@@ -978,8 +735,8 @@ def remove_old_data(fits, cols, cut):
     for k in range(0, len(cols)):
         udata.append(list(data[cols[k]][pos:]))
 
-    mcf.rm_file(fits)
-    create_fits_file(fits, cols, udata)
+    mcf.rm_files(fits)
+    ecf.create_fits_file(fits, cols, udata)
 
 
 #-------------------------------------------------------------------------------------------
@@ -993,7 +750,6 @@ def find_violation_range(glim, time):
             time    --- time of the violation check
     output: vlimit  --- a four element list of [yl, yu, rl, ru]
     """
-
     vlimit = [-9.0e9, -9.0e9, 9.0e9, 9.0e9]
 
     for lim_set in glim:
@@ -1054,7 +810,6 @@ def find_num_of_elements(carray, lim, side=0):
     if abs(lim) > 1e6:
         return 0
 
-
     try:
         if side == 0:
             out = numpy.where(carray < lim)
@@ -1080,7 +835,6 @@ def convert_unit_indicator(cunit):
     input: cunit    --- degc, degf, or psia
     output: tchk    --- 1, 2, 3 for above. all others will return 0
     """
-    
     try:
         cunit = cunit.lower()
         if cunit == 'degc':

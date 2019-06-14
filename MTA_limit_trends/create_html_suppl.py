@@ -1,21 +1,19 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-###########################################################################################################
-#                                                                                                         #
-#       create_html_suppl.py:   collecitons of functions to create html pages                             #
-#                                                                                                         #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                     #
-#                                                                                                         #
-#           last update: Jun 14, 2018                                                                     #
-#                                                                                                         #
-###########################################################################################################
+#######################################################################################
+#                                                                                     #
+#       create_html_suppl.py:   collecitons of functions to create html pages         #
+#                                                                                     #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                 #
+#                                                                                     #
+#           last update: May 28, 2019                                                 #
+#                                                                                     #
+#######################################################################################
 
 import sys
 import os
 import string
 import re
-import getpass
-import fnmatch
 import numpy
 import getopt
 import os.path
@@ -33,53 +31,42 @@ from mpld3 import plugins, utils
 #
 import matplotlib as mpl
 
+if __name__ == '__main__':
+
+    mpl.use('Agg')
+
 from pylab import *
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as lines
-
-
-if __name__ == '__main__':
-
-    mpl.use('Agg')
 #
 #--- read argv
 #
 try:
     option, remainder = getopt.getopt(sys.argv[1:],'t',['test'])
 except getopt.GetoptError as err:
-     print str(err)
+     print(str(err))
      sys.exit(2)
 
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import violation_estimate_data  as ved  #---- save violation estimated times in sqlite database v_table
 import find_moving_average      as fma  #---- moving average 
 import find_moving_average_bk   as fmab #---- moving average (backword fitting version)
-#import glimmon_sql_read         as gsr  #---- glimmon database reading
-#import robust_linear            as rfit #---- robust fit rountine
-#import create_derivative_plots  as cdp  #---- create derivative plot
-#
-#--- set a temporary file name
-#
-rtail  = int(time.time())
-zspace = '/tmp/zspace' + str(rtail)
 #
 #--- other settings
 #
@@ -88,7 +75,7 @@ na     = 'na'
 #--- read category data
 #
 cfile         = house_keeping + 'sub_html_list_all'
-category_list = ecf.read_file_data(cfile)
+category_list = mcf.read_data_file(cfile)
 #
 #--- set several values used in the plots
 #
@@ -109,7 +96,7 @@ css = """
 #---  a list of groups excluded from interactive page creation
 #
 efile = house_keeping + 'exclude_from_interactive'
-exclude_from_interactive = ecf.read_file_data(efile)
+exclude_from_interactive = mcf.read_data_file(efile)
 #
 #--- the top web page address
 #
@@ -118,7 +105,7 @@ web_address = 'https://' + web_address
 #--- alias dictionary
 #
 afile  = house_keeping + 'msid_alias'
-data   = ecf.read_file_data(afile)
+data   = mcf.read_data_file(afile)
 alias  = {}
 alias2 = {}
 for ent in data:
@@ -129,21 +116,18 @@ for ent in data:
 #--- a list of thoese with sub groups
 #
 sub_list_file  = house_keeping + 'sub_group_list'
-sub_group_list = ecf.read_file_data(sub_list_file)
+sub_group_list = mcf.read_data_file(sub_list_file)
 
-#
-#
-#
-#--------------------------------------------------------------------------------------------------------
-#-- create_trend_plots: create interactive trend plot                                                 ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+#-- create_trend_plots: create interactive trend plot                         ---
+#--------------------------------------------------------------------------------
 
-def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname, ptype):
+def create_trend_plots(msid, group, pdata, byear,  unit, ltype, mtype,  outname, ptype):
     """
     create static and interactive trend plot
     input:  msid    --- msid
             group   --- the gruop name to which msid belogs
-            odata   --- a list of arrays of data; see read_data for details
+            pdata   --- a list of arrays of data; see read_data for details
             year    --- a base year for the short term plot
             unit    --- unit of msid
             ltype   --- 'short' or 'long'           --- period length indicator
@@ -152,7 +136,8 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
             ptype   --- inter or static
     output: pout    --- plot in html format
             <web_dir>/Future/<msid>_<loc>   --- plots in html format saved in the directory 
-                                                if it may violate the limit in future loc: low or top
+                                                if it may violate the limit in future loc: 
+                                                    low or top
     """
 #
 #--- special treatment for temp unit "F"
@@ -160,33 +145,24 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
     if unit == 'F':
         unit = 'K'
 
-    if not (len(odata) > 0 and len(odata[0]) > 0):
-        print msid + ': empty data file'
+    if not (len(pdata) > 0 and len(pdata[0]) > 0):
+        print(msid + ': empty data file')
         return na
 
-    if len(odata[0]) < 10:
+    if len(pdata[0]) < 10:
         return False
 #
 #--- get a data position of mtype data in pdata 
 #
     pos    = select_data_position(mtype)
 #
-#--- cut out 2 out of 3 data points from one year plot and full range plot
-#
-    if ltype in ('one', 'long'):
-        pdata = []
-        for k in range(0, len(odata)):
-            temp = odata[k][0::3]
-            pdata.append(temp)
-    else:
-        pdata = odata
-#
 #--- compute predictive trends
 #
-    [tlim, tmax, cnt_a, cnt_b, cnt_d,  min_a, min_b, min_d,  max_a, max_b, max_d, xcent, y_avg,  y_min, y_max] \
+    [tlim, tmax, cnt_a, cnt_b, cnt_d,  min_a, min_b, min_d,\
+     max_a, max_b, max_d, xcent, y_avg,  y_min, y_max] \
                         = predict_trend(pdata[0], pdata[pos], ltype, mtype)
 #
-#--- compute the senter moving average; much finer step than the predict trends
+#--- compute the center moving average; much finer step than the predict trends
 #
     if ltype in ('five', 'long'):
         pstep = set_period(ltype) / 5.0
@@ -195,7 +171,7 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
     else:
         pstep = set_period(ltype)
 
-    [cx, cy]         = get_moving_average_fit(pdata[0], pdata[pos], pstep)
+    [cx, cy]  = get_moving_average_fit(pdata[0], pdata[pos], pstep)
 #
 #--- set plotting ranges
 #
@@ -216,8 +192,9 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
 #--- set warning area range lists
 #
 
-    [time_save, rb1_save, rb2_save, yb1_save, yb2_save, yt1_save, yt2_save, rt1_save, rt2_save]\
-                                                = set_warning_area(pdata, xmin, xmax, ymin, ymax)
+    [time_save, rb1_save, rb2_save, yb1_save,\
+     yb2_save, yt1_save, yt2_save, rt1_save, rt2_save]\
+                  = set_warning_area(pdata, xmin, xmax, ymin, ymax)
 #
 #--- create violation notification; record only when the long term trending find the violations
 #
@@ -227,7 +204,8 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
         vupdate = 0
 
     [wline, wline2, pchk_l, pchk_u, gchk] =\
-         violation_notification(msid, group, pdata, xmax, ltype, min_a,  min_b, max_a, max_b, tmax, vupdate)
+         violation_notification(msid, group, pdata, xmax,\
+            ltype, min_a,  min_b, max_a, max_b, tmax, vupdate)
 #
 #--- open and set plotting surface  ------------
 #
@@ -304,7 +282,7 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
         pbegin1    = wa3 + wb3 * tlim
         pend1      = wa3 + wb3 * xmax
   
-        if xchk > 3:
+        if (xchk > 3) and (ltype in ['five', 'long']):
             ax.plot([tlim, xmax], [pbegin1, pend1], color='green', lw=4, linestyle='dashed')
     
             ax.plot([tlim, xmax], [pbegin2, pend2], color='green', lw=4, linestyle='dashed')
@@ -346,7 +324,8 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
                     schk = 1
 
     elif gchk < 0:
-        plt.text(xpos, ypos, 'More than the last 2 years of data are missing (no violation check)', color='red')
+        ptext = 'More than the last 2 years of data are missing (no violation check)'
+        plt.text(xpos, ypos, ptext, color='red')
         schk = 1
 #
 #--- slope text
@@ -360,7 +339,8 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
     else:
         spos = ypos
 #
-#--- if there are not enough data, the slope will be zero. if that is the case, don't put the slope on the plot
+#--- if there are not enough data, the slope will be zero. if that is the case, 
+#--- don't put the slope on the plot
 #
     if wb3 != 0:
         if wb3 < 0.001 or wb3 > 100:
@@ -373,7 +353,8 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
 #
     pindex = pdata[17].astype(int)      #--- pdata is all float; convert into integer
 
-    points  = ax.scatter(pdata[0], pdata[pos], color=numpy.array(color_table)[pindex], alpha=0.5, marker='o', s=20 ,lw=0)
+    points  = ax.scatter(pdata[0], pdata[pos], color=numpy.array(color_table)[pindex],\
+                         alpha=0.5, marker='o', s=20 ,lw=0)
     points2 = points
 #
 #--- create a png file
@@ -398,7 +379,8 @@ def create_trend_plots(msid, group, odata, byear,  unit, ltype, mtype,  outname,
 #
 #--- link the popup page to the plot
 #
-        plugins.connect(fig, mpld3.plugins.PointHTMLTooltip(points2, labels, css=css, voffset=20, hoffset=-50)) 
+        plugins.connect(fig, mpld3.plugins.PointHTMLTooltip(points2, labels,\
+                        css=css, voffset=20, hoffset=-50)) 
 #
 #--- convert the plot into html format
 #
@@ -579,7 +561,9 @@ def violation_notification(msid, group,  pdata, xmax, ltype,  min_a,  min_b, max
         pchk_u = 0
         gchk   = 0
     else:
-        [wline, wline2, pchk_l, pchk_u] = create_violation_notification(msid, group, pdata, min_a, min_b, max_a, max_b, tmax, vupdate)
+        [wline, wline2, pchk_l, pchk_u]\
+            = create_violation_notification(msid, group, pdata,\
+                        min_a, min_b, max_a, max_b, tmax, vupdate)
         gchk  = 1
 
     return [wline, wline2, pchk_l, pchk_u, gchk]
@@ -599,7 +583,7 @@ def set_axes_label(msid, unit, ltype, byear):
             ylabel  --- y axis label
     """
 
-    if ltype == 'long':
+    if ltype in ['five', 'long']:
         xlabel = 'Time (year)'
     else:
         xlabel = 'Time (yday of ' + str(int(byear)) + ')'
@@ -632,9 +616,8 @@ def save_plot_html(msid, fig, ltype, mtype, tail):
 
     oname = web_dir + 'Future/' + msid + '_'  + ltype + '_' + mtype + '_' + tail
 
-    fo    = open(oname, 'w')
-    fo.write(sout)
-    fo.close()
+    with open(oname, 'w') as fo:
+        fo.write(sout)
 
 #----------------------------------------------------------------------------------
 #-- create_violation_notification: check violation and create notification       --
@@ -651,7 +634,8 @@ def create_violation_notification(msid, group,  pdata, min_a, min_b, max_a, max_
             max_a   --- intercept value of the upper envelope prediction
             max_b   --- slope value of the upper envelope prediction
             tmax    --- prediction ending point in time
-            vupdate --- indicator of whether to update violation database in <house_keeping>; 1: update
+            vupdate --- indicator of whether to update violation database 
+                        in <house_keeping>; 1: update
     output: line    --- lower violation description (can be empty)
             line2   --- upper violation description (can be empty0
             pchk_l  --- indicator of whether there is lower violation (if 1)
@@ -689,7 +673,8 @@ def create_violation_notification(msid, group,  pdata, min_a, min_b, max_a, max_
                     yl_time = -1.0
      
                 elif (vtime2 > 0) and (vtime2 < tmax + 5):
-                    line   = 'The data may violate the lower yellow limit at Year: ' + str(ecf.round_up(vtime2))
+                    line   = 'The data may violate the lower yellow limit at Year: ' 
+                    line   = line + str(ecf.round_up(vtime2))
                     yl_time = vtime2
                     pchk_l  = 1
 #
@@ -719,7 +704,8 @@ def create_violation_notification(msid, group,  pdata, min_a, min_b, max_a, max_
                             line = 'The data are already in Yellow Upper Violation'
                             yt_time = -1.0
                         else:
-                            line   = 'The data may violate the upper yellow limit at Year: ' + str(ecf.round_up(vtime2))
+                            line   = 'The data may violate the upper yellow limit at Year: ' 
+                            line   = line + str(ecf.round_up(vtime2))
                             line2  = ''
                             yt_time = vtime2
                             pchk_u  = 1
@@ -728,7 +714,8 @@ def create_violation_notification(msid, group,  pdata, min_a, min_b, max_a, max_
                             line2 = 'The data are already in Yellow Upper Violation'
                             yt_time = -1.0
                         else:
-                            line2  = 'The data may violate the upper yellow limit  at Year: ' + str(ecf.round_up(vtime2))
+                            line2  = 'The data may violate the upper yellow limit  at Year: ' 
+                            line2  = line2 + str(ecf.round_up(vtime2))
                             yt_time = vtime2
                             pchk_u  = 1
 #
@@ -841,18 +828,14 @@ def compute_yday(ltime):
     """
 
     year = int(ltime)
-    if tcnv.isLeapYear(year) == 1:
+    if mcf.is_leapyear(year):
         base = 366
     else:
         base = 365
 
     yday = int((ltime - year) * base)
     lday = str(yday)
-
-    if yday < 10:
-        lday = '00' + lday
-    elif yday < 100:
-        lday = '0'  + lday
+    lday = mcf.add_leading_zero(lday, dlen=3)
 
     ptime = str(year) + '-' + lday
 
@@ -976,10 +959,10 @@ def three_array_add(a1, a2, a3):
     return slist
 
 #----------------------------------------------------------------------------------
-#-- read_data: read the data of msid                                            ---
+#-- read_msid_data_full: read the data of msid                                       ---
 #----------------------------------------------------------------------------------
 
-def read_data(dfile, msid,  ltype, ptype='static'):
+def read_msid_data_full(dfile, msid,  ltype, ptype='static'):
     """
     read the data of msid
     input:  dfile   --- data file name
@@ -1037,54 +1020,71 @@ def read_data(dfile, msid,  ltype, ptype='static'):
     if len(data) == 0:
         return na
 
-    temp   = list(data['time'])
-    xtime  = []
-    cindex = []
-    byear  = 1999
-    for k in range(0, len(temp)):
-        ent = temp[k]
-        if ent < cut:
-            cindex.append(k)
+    if cut > 0:
+        mask = data['time'] > cut
+        data = data[mask]
+
+    dtime  = data['time']
+
+    dnum   = data['dcount']
+    avg    = data[msid]
+    med    = data['med']
+    std    = data['std']
+    dmin   = data['min']
+    dmax   = data['max']
+    ylow   = data['ylower']
+    ytop   = data['yupper']
+    rlow   = data['rlower']
+    rtop   = data['rupper']
+    yl_lim = data['ylimlower']
+    yu_lim = data['ylimupper']
+    rl_lim = data['rlimlower']
+    ru_lim = data['rlimupper']
+
+    if ltype == 'week':
+        skp = 3
+    elif ltype in ['short', 'one']:
+        skp =  10
+    else:
+        skp = 5
+
+    if skp > 1:
+        dtime  = dtime[0::skp]
+        dnum   = dnum[0::skp]
+        avg    = avg[0::skp]
+        med    = med[0::skp]
+        std    = std[0::skp]
+        dmin   = dmin[0::skp]
+        dmax   = dmax[0::skp]
+        ylow   = ylow[0::skp]
+        ytop   = ytop[0::skp]
+        rlow   = rlow[0::skp]
+        rtop   = rtop[0::skp]
+        yl_lim = yl_lim[0::skp]
+        yu_lim = yu_lim[0::skp]
+        rl_lim = rl_lim[0::skp]
+        ru_lim = ru_lim[0::skp]
+#
+    byear = 1999
+    xtime = []
+    for k in range(0, len(dtime)):
+        if ltype in ['week', 'short', 'one']:
+            yday = mcf.chandratime_to_yday(dtime[k])
+            year = int(float(mcf.convert_date_format(dtime[k], ifmt='chandra', ofmt='%Y')))
+            if k == 0:
+                byear = year
+            else:
+                if year > byear:
+                    if mcf.is_leapyear(year):
+                        base = 366
+                    else:
+                        base = 365
+                    yday += base 
+
+            xtime.append(yday)
         else:
-            ks = k
-            break
-
-    for k in range(ks, len(temp)):
-            try:
-                [ytime, year, base]  = convert_stime_into_year(temp[k])
-                if ltype in ('week', 'short'):
-                    if xtime == []:
-                        byear = year
-         
-                    ytime -= byear
-                    ytime *= base
-     
-                xtime.append(ytime)
-            except:
-                cindex.append(k)
-#
-#--- occasionally there is no data after cutting off at the cut date
-#--- if that is the case, return "empty" data
-#
-    if len(cindex) == len(temp):
-        return [[0], [0]]
-
-    xtime  = numpy.array(xtime).astype(float)
-
-    dnum   = numpy.delete(data['dcount'], cindex)
-    avg    = numpy.delete(data[msid], cindex)
-    med    = numpy.delete(data['med'], cindex)
-    std    = numpy.delete(data['std'], cindex)
-    dmin   = numpy.delete(data['min'], cindex)
-    dmax   = numpy.delete(data['max'], cindex)
-    ylow   = numpy.delete(data['ylower'], cindex)
-    ytop   = numpy.delete(data['yupper'], cindex)
-    rlow   = numpy.delete(data['rlower'], cindex)
-    rtop   = numpy.delete(data['rupper'], cindex)
-    yl_lim = numpy.delete(data['ylimlower'], cindex)
-    yu_lim = numpy.delete(data['ylimupper'], cindex)
-    rl_lim = numpy.delete(data['rlimlower'], cindex)
-    ru_lim = numpy.delete(data['rlimupper'], cindex)
+            fyear = mcf.chandratime_to_fraq_year(dtime[k])
+            xtime.append(fyear)
 
     start  = []
     stop   = []
@@ -1189,7 +1189,7 @@ def convert_stime_into_year(stime):
     mins = float(date.min)
     secs = float(date.sec)
 
-    if tcnv.isLeapYear(year) == 1:
+    if mcf.is_leapyear(year):
         base = 366
     else:
         base = 365
@@ -1254,29 +1254,37 @@ def set_x_plot_range(x, ltype):
 #-- set_y_plot_range: find plotting y range                                     ---
 #----------------------------------------------------------------------------------
 
-def set_y_plot_range(x, y, ltype):
+def set_y_plot_range(x, y=[], ltype=''):
     """
     find plotting y range
-    input:  x       --- a list of x data
-            y       --- a list of y data
+    input:  x       --- a list of y if only one array is given; otherwise a list of x
+            y       --- a list of y data if it is given
             ltype   --- week, short, one, five, long
     output: [ymin, ymax, ypos]
     """
+    if y != []:
 #
 #--- remove all dummy values and the values outside of the range
 #
-    bound  = max(x) - set_x_bound(ltype)
-
-    udata = []
-    for k in range(0, len(x)):
-        if x[k] < bound:
-            continue
-
-        elif y[k] in [-999, -998,-99, 99, 998, 999]:
-            continue
-
-        else:
-            udata.append(y[k])
+        bound  = max(x) - set_x_bound(ltype)
+    
+        udata = []
+        for k in range(0, len(x)):
+            if x[k] < bound:
+                continue
+    
+            elif y[k] in [-999, -998,-99, 99, 998, 999]:
+                continue
+    
+            else:
+                udata.append(y[k])
+    else:
+        udata = []
+        for k in range(0, len(x)):
+            if x[k] in [-999, -998,-99, 99, 998, 999]:
+                continue
+            else:
+                udata.append(x[k])
 #
 #--- remove possible extreme outlayers from both ends before getting min and max
 #
@@ -1419,7 +1427,6 @@ def predict_trend(xtime, yset, ltype, mtype):
         [min_a, min_b, min_d] = get_int_slope(xbot, ybot, [xmb[-2], xmb[-1]], [ymb[-2], ymb[-1]], period)
     except:
         [min_a, min_b, min_d] = [0,0,0]
-    #[cnt_a, cnt_b, cnt_d] = get_int_slope(x,    y,    [x[-2],   x[-1]],   [y[-2],   y[-1]],   3 * period, two=0)
     try:
         [cnt_a, cnt_b, cnt_d] = get_int_slope(x,    y,    [x[-2],   x[-1]],   [y[-2],   y[-1]],   period, two=0)
     except:
@@ -1956,11 +1963,9 @@ def check_dir_exist(tdir):
     input:  tdir    --- directory name
     output: tdir    --- created directory
     """
-
     if not os.path.isdir(tdir):
         cmd = 'mkdir ' + tdir
         os.system(cmd)
-
 
 #----------------------------------------------------------------------------------
 #-- read_template: read template                                                 --
@@ -1973,10 +1978,9 @@ def read_template(fname, repl=[]):
             repl    --- a list of lists:[<tag to be replaced>, <replacing value>]
     output: out     --- template read
     """
-
     infile = house_keeping + 'Templates/' + fname
-    f      = open(infile, 'r')
-    out    = f.read()
+    with  open(infile, 'r') as f:
+        out    = f.read()
 #
 #--- if substitue strings are given, replace them before return
 #
@@ -2007,8 +2011,6 @@ def set_req(argv):
 
     return r_dict
         
-
-
 #----------------------------------------------------------------------------------
 #-- create_limit_table: create a limit table for msid                            --
 #----------------------------------------------------------------------------------
@@ -2068,8 +2070,8 @@ def create_limit_table(msid, group,  unit,  xmin, xmax):
         if astart == astop:
             continue
 
-        astart  = '%4.2f' % (round(astart,2))
-        astop   = '%4.2f' % (round(astop, 2))
+        astart  = float('%4.2f' % (round(astart,2)))
+        astop   = float('%4.2f' % (round(astop, 2)))
 
         if k == 0:
             if astart > xmin:
@@ -2100,6 +2102,5 @@ def create_limit_table(msid, group,  unit,  xmin, xmax):
     check_dir_exist(o_dir)
 
     file_name = o_dir + msid + '_limit_table.html'
-    fo   = open(file_name, 'w')
-    fo.write(line)
-    fo.close()
+    with  open(file_name, 'w') as fo:
+        fo.write(line)

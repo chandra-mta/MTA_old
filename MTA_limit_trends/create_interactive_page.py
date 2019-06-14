@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 14, 2018                                               #
+#           last update: May 23, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -19,35 +19,18 @@ import numpy
 import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
-
-
-#
-#--- interactive plotting module
-#
-import mpld3
-from mpld3 import plugins, utils
-#
-#--- pylab plotting routine related modules
-#
-import matplotlib as mpl
-
-if __name__ == '__main__':
-
-    mpl.use('Agg')
-
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with  open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -56,23 +39,10 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv #---- contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- contains other functions commonly used in MTA scripts
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import update_database_suppl    as uds  #---- supplemental functions to get data
 import create_html_suppl        as chs  #---- supplemental functions to crate html page
-#import glimmon_sql_read         as gsr  #---- glimmon database reading
-#import violation_estimate_data  as ved  #---- save violation estimated times in sqlite database v_table
-#import find_moving_average      as fma  #---- moving average 
-#import find_moving_average_bk   as fmab #---- moving average (backword fitting version)
-#import robust_linear            as rfit #---- robust fit rountine
-#import create_derivative_plots  as cdp  #---- create derivative plot
-#
-#
-#--- set a temporary file name
-#
-rtail  = int(time.time())
-zspace = '/tmp/zspace' + str(rtail)
 #
 #--- other settings
 #
@@ -81,7 +51,7 @@ na     = 'na'
 #--- read category data
 #
 cfile         = house_keeping + 'sub_html_list_all'
-category_list = ecf.read_file_data(cfile)
+category_list = mcf.read_data_file(cfile)
 #
 #--- set several values used in the plots
 #
@@ -196,7 +166,8 @@ def create_inter_fits(msid, gdata):
     output: <data_dir>/Interactive/<msid>+inter_data.fits
     """
 
-    cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper', 'dcount',\
+    cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+             'yupper', 'rlower', 'rupper', 'dcount',\
              'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
     out_dir = data_dir + 'Interactive/'
@@ -212,13 +183,9 @@ def create_inter_fits(msid, gdata):
 
     return ofits
 
-#--------------------------------------------------------------------------------------------------------
-#-- plotting starts here                                                                               --
-#--------------------------------------------------------------------------------------------------------
-
-#--------------------------------------------------------------------------------------------------------
-#-- create_html_page: create indivisual html pages for all msids in database                           --
-#--------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+#-- create_html_page: create indivisual html pages for all msids in database           --
+#----------------------------------------------------------------------------------------
 
 def create_html_page(msid, fits_data, bin_size):
     """
@@ -232,19 +199,21 @@ def create_html_page(msid, fits_data, bin_size):
         unit    = ''
         descrip = ''
 #
-#--- pdata is  two dim array of data (see read_data for details). flist is sub category of each data set
+#--- pdata is two dim array of data (see read_data for details). flist is sub category 
+#--- of each data set
 #
     if fits_data == 'na':
         pout  = '<h1 style="padding-top:40px;padding-bottom:40px;">NO DATA FOUND</h1>\n'
 
     else:
-        [pdata, byear] = chs.read_data(fits_data, msid, ltype='week', ptype='inter')
+        [pdata, byear] = chs.read_msid_data_full(fits_data, msid, ltype='week', ptype='inter')
 #
 #--- create the plot
 #
         plotname = web_dir + 'Interactive/' + msid + '_inter_avg.png'
     
-        pout  = chs.create_trend_plots(msid, group, pdata, byear, unit, 'week', 'mid', plotname, 'inter')
+        pout  = chs.create_trend_plots(msid, group, pdata, byear, unit, 'week',\
+                                       'mid', plotname, 'inter')
 #
 #--- create html page
 #
@@ -253,14 +222,14 @@ def create_html_page(msid, fits_data, bin_size):
 
     create_plot_html_page(msid, group, ltype, mtype,  descrip, pout, bin_size)
 
-#--------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------
 
 def find_group_name(msid):
 
     fname = house_keeping + 'msid_list_all'
-    data  = ecf.read_file_data(fname)
+    data  = mcf.read_data_file(fname)
 
     group = ''
     for ent in data:
@@ -270,8 +239,6 @@ def find_group_name(msid):
             break
 
     return group
-
-
 
 #----------------------------------------------------------------------------------
 #-- create_plot_html_page: create a html page to display the trend plot          --
@@ -316,12 +283,14 @@ def create_plot_html_page(msid, group, ltype, mtype, descrip, pout, bin_size):
     if bin_size == 0.0:
         out = out + '<h2>' + msid + ' <span style="font-size:90%;">(Full Resolution)</span></h2>'
     else:
-        out = out + '<h2>' + msid + ' <span style="font-size:90%;">(Bin Size: ' +str(bin_size) +' sec)</span></h2>'
+        out = out + '<h2>' + msid + ' <span style="font-size:90%;">(Bin Size: ' 
+        out = out + str(bin_size) +' sec)</span></h2>'
 #
 #--- popup limit table link
 #
     out = out + '<div style="paddng-top:10px"><h3>'
-    out = out + 'Open <a href="javascript:popitup(\'' + file_name + '\')" style="text-align:right">Limit Table</a>.'
+    out = out + 'Open <a href="javascript:popitup(\'' + file_name + '\')" '
+    out = out + 'style="text-align:right">Limit Table</a>.'
     out = out + '</h3>\n'
     out = out + '</div>\n'
 #
@@ -341,8 +310,8 @@ def create_plot_html_page(msid, group, ltype, mtype, descrip, pout, bin_size):
 
     out = out + '<div style="padding-bottom:10px;font-size:90%;">\n';
     out = out + '<h3>Change the Interactive Plot Parameters ('
-    out = out + '<a href="javascript:popitup(\'' + int_note + '\')" style="text-align:right">Usage Note</a>'
-    out = out + ')</h3>\n'
+    out = out + '<a href="javascript:popitup(\'' + int_note + '\')" '
+    out = out + 'style="text-align:right">Usage Note</a>)</h3>\n'
     out = out + '<form method="post" action=' + phpfile + '>\n'
     out = out + '<b>Starting Time:</b> <input type="text" name="tstart"  size=20>\n'
     out = out + '<b>Stopping Time:</b> <input type="text" name="tstop"  size=20>\n'
@@ -352,21 +321,13 @@ def create_plot_html_page(msid, group, ltype, mtype, descrip, pout, bin_size):
     out = out + '<input type="hidden" name="mtype" value="' + mtype + '">\n'
     out = out + '<input type="hidden" name="msid"  value="' + msid  + '">\n'
     out = out + '<input type="hidden" name="group" value="' + group + '">\n'
-    out = out + '</br><span style="text-align:right;"><input type=submit name="submit" value="Submit"></span>\n'
+    out = out + '</br><span style="text-align:right;"><input type=submit '
+    out = out + 'name="submit" value="Submit"></span>\n'
     out = out + '<br />\n'
     out = out + '</form>\n'
     out = out + '</div>\n'
 
-
     out = out + chs.read_template('interact_descript')
-
-#
-#--- add the derivative plot
-#
-###    dplotname = web_dir + 'Interactive/' + msid + '_inters_avg_dev.png'
-###
-###    out = out + '<h3>Derivative Plot</h3>\n'
-###    out = out + '<img src="' + dplotname + '" width=80%>'
 #
 #--- close html page
 #
@@ -374,23 +335,14 @@ def create_plot_html_page(msid, group, ltype, mtype, descrip, pout, bin_size):
 #
 #--- write out the html data
 #
-    mcf.rm_file(hname)
-    fo = open(hname, 'w')
-    fo.write(out)
-    fo.close()
+    mcf.rm_files(hname)
+    with open(hname, 'w') as fo:
+        fo.write(out)
 
     cmd = 'chmod 777 ' + hname
     os.system(cmd)
 
-
-
-#--------------------------------------------------------------------------------------------------------
-
-from pylab import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-import matplotlib.lines as lines
-
+#------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
 
@@ -413,5 +365,5 @@ if __name__ == "__main__":
         create_interactive_page(msid, group, tstart, tstop, step)
     
     else:
-        print "Usage: create_interactive_page.py <msid> <group> <start> <stop> <bin size> "
+        print("Usage: create_interactive_page.py <msid> <group> <start> <stop> <bin size> ")
 

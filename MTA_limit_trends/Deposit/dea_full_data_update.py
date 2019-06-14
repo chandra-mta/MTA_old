@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 21, 2018                                               #
+#           last update: May 29, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -20,20 +20,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -42,7 +41,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -51,14 +49,13 @@ import update_database_suppl    as uds
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mon_list1 = [1, 32, 60, 91, 121, 152, 192, 213, 244, 274, 305, 335]
 mon_list2 = [1, 32, 61, 92, 122, 153, 193, 214, 245, 275, 306, 336]
 
 out_dir = './Outdir/'
-
 
 #-------------------------------------------------------------------------------------------
 #-- dea_full_data_update: update deahk search database                                    --
@@ -70,19 +67,18 @@ def dea_full_data_update(chk):
     input:  chk --- whether to request full data update: chk == 1:yes
     output: <deposit_dir>/Deahk/<group>/<msid>_full_data_<year>fits
     """
-
     tyear = int(float(time.strftime("%Y", time.gmtime())))
 
     cmd   = 'ls ' + data_dir + 'Deahk_*/*_week_data.fits > ' + zspace
     os.system(cmd)
-    data  = ecf.read_file_data(zspace, remove=1)
+    data  = mcf.read_data_file(zspace, remove=1)
     
     for ent in data:
         atemp = re.split('\/', ent)
         group = atemp[-2]
         btemp = re.split('_', atemp[-1])
         msid  = btemp[0]
-        print "MSID: " + str(msid) + ' in ' + group
+        print("MSID: " + str(msid) + ' in ' + group)
         
         [cols, tbdata] = ecf.read_fits_file(ent)
 
@@ -96,7 +92,9 @@ def dea_full_data_update(chk):
 #
 #--- normal daily data update
 #
-            ofits = deposit_dir + 'Deahk_save/' + group + '/' + msid + '_full_data_' + str(tyear) + '.fits'
+            ofits = deposit_dir + 'Deahk_save/' + group + '/' + msid 
+            ofits = ofits + '_full_data_' + str(tyear) + '.fits'
+
             if os.path.isfile(ofits):
                 ltime = ecf.find_the_last_entry_time(ofits)
                 ctime = str(tyear+1) + ':001:00:00:00'
@@ -105,14 +103,17 @@ def dea_full_data_update(chk):
 #--- if the data is over the year boundray, fill up the last year and create a new one for the new year
 #
             else:
-                ofits = deposit_dir + 'Deahk_save/' + group + '/' + msid + '_full_data_' + str(tyear-1) + '.fits'
-                nfits = deposit_dir + 'Deahk_save/' + group + '/' + msid + '_full_data_' + str(tyear) + '.fits'
+                ofits = deposit_dir + 'Deahk_save/' + group + '/' + msid 
+                ofits = ofits + '_full_data_' + str(tyear-1) + '.fits'
+                nfits = deposit_dir + 'Deahk_save/' + group + '/' + msid 
+                nfits = nfits + '_full_data_' + str(tyear) + '.fits'
                 try:
                     ltime = ecf.find_the_last_entry_time(ofits)
                 except:
                     continue
 
                 ctime = str(tyear) + ':001:00:00:00'
+                ctime = Chandra.Time.Datatime(ctime).secs
                 nchk  = 1
 
             select = [(dtime > ltime) & (dtime < ctime)]

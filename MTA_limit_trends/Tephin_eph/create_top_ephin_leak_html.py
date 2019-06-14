@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                                   #
-#               last update: Feb 02, 2018                                           #
+#               last update: May 21, 2019                                           #
 #                                                                                   #
 #####################################################################################
 
@@ -26,7 +26,7 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
+with open(path, 'r') as f:
 data = [line.strip() for line in f.readlines()]
 f.close()
 
@@ -34,20 +34,18 @@ for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
-
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 web_address = 'https://' + web_address
@@ -79,11 +77,8 @@ def create_top_html():
         ms_list = re.split(':',  rout)
         ms_dict[atemp[0]] = ms_list
     """
-
     gfile = house_keeping + 'group_descriptions_eph_tephin'
-    f     = open(gfile, 'r')
-    gdata = [line.strip() for line in f.readlines()]
-    f.close()
+    gdata = mcf.read_data_file(gfile)
 
     g_list  = []
     gn_dict = {}
@@ -91,7 +86,6 @@ def create_top_html():
     gn_list = []
     g_disc  = []
     
-
     for ent in gdata:
         mc  = re.search('#', ent)
         if mc is not None:
@@ -109,11 +103,9 @@ def create_top_html():
             gn_list.append(atemp[0])
             g_disc.append(atemp[1])
 
-
     mlist = ('mid', 'min', 'max')
     mname = ('Avg', 'Min', 'Max')
-
-
+    line  = ''
     for gval in g_list:
         group_list  = gn_dict[gval]
         discip_list = gd_dict[gval]
@@ -138,14 +130,8 @@ def create_top_html():
 
     line = line + '</tr>\n'
 
-    jfile    = house_keeping + '/Templates/java_script_deposit'
-    f        = open(jfile, 'r')
-    j_script = f.read()
-    f.close()
-
-    template = house_keeping + 'Templates/top_header'
-    f        = open(template, 'r')
-    page     = f.read()
+    j_script = chs.read_template('java_script_deposit')
+    page     = chs.read_template('top_header')
 
     page     = page.replace('#JAVASCRIPT#', j_script)
     page     = page.replace('#TITLE#', 'EPHIN Rates/Leakage Current vs. Temperature  Trend')
@@ -171,20 +157,13 @@ def create_top_html():
 
     page     = page.replace('<!-- EXTRA -->', etext)
 
-    template = house_keeping + 'Templates/html_close'
-    f        = open(template, 'r')
-    end_line = f.read()
+    end_line = chs.read_template('html_close')
 
     page     = page + end_line
 
-
-
-    #outfile  = web_dir + 'test.html'
     outfile  = web_dir + 'mta_trending_eph_tephin_main.html'
-    fo       = open(outfile, 'w')
-    fo.write(page)
-    fo.close()
-
+    with  open(outfile, 'w') as fo:
+        fo.write(page)
 
 #----------------------------------------------------------------------------------------
 

@@ -1,12 +1,12 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Feb 02, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#############################################################################
+#                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
+#                                                                           #
+#           last update: May 20, 2019                                       #
+#                                                                           #
+#############################################################################
 
 import os
 import sys
@@ -21,39 +21,23 @@ import numpy
 import astropy.io.fits  as pyfits
 import Chandra.Time
 #
-#--- interactive plotting module
-#
-import mpld3
-from mpld3 import plugins, utils
-#
-#--- pylab plotting routine related modules
-#
-import matplotlib as mpl
-
-if __name__ == '__main__':
-
-    mpl.use('Agg')
-
-#
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import find_moving_average      as fma  #---- moving average 
@@ -62,9 +46,8 @@ import find_moving_average_bk   as fmab #---- moving average (backword fitting v
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
-
 
 #-----------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------------
@@ -72,12 +55,10 @@ zspace = '/tmp/zspace' + str(rtail)
 
 def find_range(msid_list):
 
-    mfile= house_keeping  + msid_list
-    f    = open(mfile, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    mfile = house_keeping  + msid_list
+    data  = mcf.read_data_file(mfile)
 
-    fo   = open('out', 'w')
+    sline = ''
     for ent in data:
         atemp = re.split('\s+', ent)
         msid  = atemp[0]
@@ -114,7 +95,6 @@ def find_range(msid_list):
             selc  = [(vals > blim) & (vals < tlim)]
     
             svals = vals[selc]
-            #print "I AM HERE: " + str(len(svals)) + '<-->' + str(len(vals)) + '<-->' + str(blim) + '<-->' + str(tlim)
             if len(svals) > 0:
                 vmin  = min(svals)
                 vmax  = max(svals)
@@ -143,11 +123,12 @@ def find_range(msid_list):
         else:
             line  = msid + '\t' + tgroup + '\t' + '%2.4f' % (round(vmin, 4)) + '\t'
             line  = line + '%2.4f' % (round(vmax, 4)) + '\t0.011\n'
+
+        sline = sline + line
     
+    with open('out', 'w') as fo:
         fo.write(line)
-
     fo.close()
-
 
 #--------------------------------------------------------------------------------------
 

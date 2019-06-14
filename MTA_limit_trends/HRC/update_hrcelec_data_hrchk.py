@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#           update_hrcelec_data_hrchk.py: update hrcelec data from archive data                     #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Mar 14, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#####################################################################################
+#                                                                                   #
+#           update_hrcelec_data_hrchk.py: update hrcelec data from archive data     #
+#                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                   #
+#           last update: May 29, 2019                                               #
+#                                                                                   #
+#####################################################################################
 
 import os
 import sys
@@ -25,22 +25,20 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import update_database_suppl    as uds
@@ -52,7 +50,8 @@ zspace = '/tmp/zspace' + str(rtail)
 
 dpath  = data_dir + '/Hrcelec/'
 
-msid_list =['hvpsstat', 'mlswenbl', 'mlswstat', 'mtrcmndr', 'mtritmp', 'mtrselct', 'mtrstatr', 'n15cast', 'p15cast', 'p24cast','scidpren']
+msid_list =['hvpsstat', 'mlswenbl', 'mlswstat', 'mtrcmndr', 'mtritmp', 'mtrselct',\
+            'mtrstatr', 'n15cast', 'p15cast', 'p24cast','scidpren']
 
 #-----------------------------------------------------------------------------------
 #-- update_hrcelec_data_hrchk: update hrcelec data from archive data              --
@@ -77,8 +76,19 @@ def update_hrcelec_data_hrchk():
 #
 #--- set te data extraction date to the next date from the the last data extracted date
 #
-    [start, stop] = find_starting_date()
-    print "Period: " + start + '<-->' + stop
+    t_list = find_starting_date()
+    for start in t_list:
+        out = Chandra.Time.DateTime(start).date
+        print("Processing: " + str(out))
+
+        stop  = start + 86400.0
+        extract_hrcelec_data(start, stop, mago1, mago2, mlen)
+
+#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+
+def extract_hrcelec_data(start, stop, mago1, mago2, mlen):
 #
 #--- extract hrchk fits files
 #
@@ -93,8 +103,9 @@ def update_hrcelec_data_hrchk():
 #
     for k in range(0, mlen):
         msid  = msid_list[k]
-        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper',\
-            'dcount', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
+        cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+                 'yupper', 'rlower', 'rupper', 'dcount', 'ylimlower',\
+                 'ylimupper', 'rlimlower', 'rlimupper']
 #
 #--- long term data  (one day interval)
 #
@@ -140,7 +151,7 @@ def update_hrcelec_data_hrchk():
         except:
             pass
 
-    mcf.rm_file('comb_data.fits')
+    mcf.rm_files('comb_data.fits')
 
 #-----------------------------------------------------------------------------------
 #-- find_starting_date: set starting and stopping time from the last entry of a fits file 
@@ -153,45 +164,22 @@ def find_starting_date():
     output: start   --- starting time <yyyy>-<mm>-<dd>T00:00:00
             stop    --- stoping time  <yyyy>-<mm>-<dd>T23:59:59
     """
-
     test    = dpath + 'hvpsstat_data.fits'
-    ltime   = ecf.find_the_last_entry_time(test)
-#
-#--- convert time from sec from 1998.1.1 to year and ydate
-#
-    out     = Chandra.Time.DateTime(ltime).date
-    atemp   = re.split(':', out)
-    year    = int(float(atemp[0]))
-    yday    = int(float(atemp[1]))
+    ltime   = ecf.find_the_last_entry_time(test) + 86400.0
+    ltime   = mcf.convert_date_format(ltime, ifmt='chandra', ofmt='%Y:%j:00:00:00')
+    ltime   = Chandra.Time.DateTime(ltime).secs
 
-    yday   += 1
-#
-#--- check whether the date crosses the year end
-#
-    if tcnv.isLeapYear(year) == 1:
-        if yday > 366:
-            yday  = 1
-            year += 1
-    else:
-        if yday > 365:
-            yday  = 1
-            year += 1
-#
-#--- convert to month and mday
-#
-    [mon, day] = tcnv.changeYdateToMonDate(year, yday)
+    today   = time.strftime('%Y:%j:00:00:00', time.gmtime())
+    stime   = Chandra.Time.DateTime(today).secs - 86400.0
+    t_list  = [ltime]
+    while ltime < stime:
+        ltime += 86400.0
+        if ltime > stime:
+            break
+        else:
+            t_list.append(ltime)
 
-    lmon = str(mon)
-    if mon < 10:
-        lmon = '0' + lmon
-    lday = str(day)
-    if day < 10:
-        lday = '0' + lday
-
-    start = str(year) + '-' + lmon + '-' + lday + 'T00:00:00'
-    stop  = str(year) + '-' + lmon + '-' + lday + 'T23:59:59'
-
-    return [start, stop]
+    return t_list
 
 #-----------------------------------------------------------------------------------
 #-- get_stat: find statistics of the fits data                                    --
@@ -217,17 +205,15 @@ def get_stat(fits, msid):
             yulim   --- upper yellow limit value
             rllim   --- lower red limit value
             rulim   --- upper red limit value
-
     """
-
     hdulist = pyfits.open(fits)
     tbdata  = hdulist[1].data
     dtime   = tbdata.field('time')
     data    = tbdata.field(msid)
     hdulist.close()
 
-    ftime   = dtime.mean()
-    fdata   = data.mean()
+    ftime   = numpy.mean(dtime)
+    fdata   = numpy.mean(data)
     fmed    = numpy.median(data)
     fstd    = data.std()
     fmin    = data.min()
@@ -236,7 +222,8 @@ def get_stat(fits, msid):
 #
 #--- return each value as a list
 #
-    return [[ftime], [fdata], [fmed], [fstd], [fmin], [fmax], [0.0], [0.0], [0.0], [0.0],  [dlen], [-999], [999], [-999], [999]]
+    return [[ftime], [fdata], [fmed], [fstd], [fmin], [fmax],\
+            [0.0], [0.0], [0.0], [0.0],  [dlen], [-999], [999], [-999], [999]]
 
 #-----------------------------------------------------------------------------------
 #-- get_stat_interval: find statistics of the fits data and interval              --
@@ -286,13 +273,13 @@ def get_stat_interval(fits, msid, interval):
             ddsave = numpy.array(ddsave)
 
             try:
-                val = dtsave.mean()
+                val = numpy.mean(dtsave)
                 asave[0].append(val)
             except:
                 continue
 
             try:
-                val = ddsave.mean()
+                val = numpy.mean(ddsave)
             except:
                 val = 0
             asave[1].append(val)
@@ -348,7 +335,7 @@ def get_stat_interval(fits, msid, interval):
 #
     if diff < interval and len(dtsave) > 10:
         try:
-            val = dtsave.mean()
+            val = numpy.mean(dtsave)
             asave[0].append(val)
             chk = 1
         except:
@@ -356,7 +343,7 @@ def get_stat_interval(fits, msid, interval):
 
         if chk > 0:
             try:
-                val = ddsave.mean()
+                val = numpy.mean(ddsave)
             except:
                 val = 0
             asave[1].append(val)
@@ -401,7 +388,6 @@ def get_stat_interval(fits, msid, interval):
             asave[13].append(-999)
             asave[14].append(999)
 
-
     return asave
 
 #-----------------------------------------------------------------------------------
@@ -415,7 +401,6 @@ def extract_hrchk(start, stop):
             stop    --- stopping time in yyyy-mm-ddThh:mm:ss
     output: data    --- a list of fits files extracted
     """
-
     line = 'operation=retrieve\n'
     line = line + 'dataset=flight\n'
     line = line + 'detector=hrc\n'
@@ -425,33 +410,13 @@ def extract_hrchk(start, stop):
     line = line + 'tstop='  + str(stop)  + '\n'
     line = line + 'go\n'
 
-    f    = open(zspace, 'w')
-    f.write(line)
-    f.close()
+    cdata = mcf.run_arc5gl_process(line)
 
-    cmd  = 'arc5gl -user isobe -script ' + zspace + ' >./zlist'
-    os.system(cmd)
-    cmd  = 'rm ' + zspace
-    os.system(cmd)
-
-    f    = open('./zlist', 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-
-    cmd  = 'rm -f  ./zlist'
-    os.system(cmd)
-
-    cdata = []
-    for ent in data:
-        mc = re.search('fits.gz', ent)
-        if mc is not None:
-            cdata.append(ent)
-
-    cmd = 'chmod 777 *fits.gz'
-    os.system(cmd)
+    if len(cdata) > 0:
+        cmd = 'chmod 777 *fits.gz'
+        os.system(cmd)
 
     return cdata
-
 
 #-----------------------------------------------------------------------------------
 

@@ -48,14 +48,14 @@ font-family:Georgia, "Times New Roman", Times, serif">
 
 /* run python script to crate the interactive page */
 
-    exec("PYTHONPATH=/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages  /proj/sot/ska/bin/python   /data/mta/Script/MTA_limit_trends/Scripts/create_interactive_page.py $msid $group $tstart $tstop $binsize ");
+    exec("setenv PYTHONPATH '/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/' /data/mta/Script/Python3.6/envs/ska3/bin/python   /data/mta/Script/MTA_limit_trends/Scripts3.6/create_interactive_page.py $msid $group $tstart $tstop $binsize ");
 
 /* check wether the page actually created */
 
     if(file_exists($out) == 1){
 
     echo '<h2>Interactive Trending Page Is Created!</h2>';
-    $wpage = 'http://cxc.cfa.harvard.edu/mta/www/MSID_Trends/Interactive/'.$msid.'_inter_avg.html';
+    $wpage = 'http://cxc.cfa.harvard.edu/mta/www/MSID_Trends_test/Interactive/'.$msid.'_inter_avg.html';
 
     echo '<h3>Please Open: ';
     echo '<a href=" '.$wpage.'" target=blank>'.$msid.'</a> (the page will open on a new tab).</h3>';
@@ -114,9 +114,9 @@ font-family:Georgia, "Times New Roman", Times, serif">
 
 /* change the permission so that non-"http" user can delete the file */
 
-    exec('chmod 777 /data/mta4/www/MSID_Trends/Interactive/*html ');
+    exec('chmod 777 /data/mta4/www/MSID_Trends_test/Interactive/*html ');
 
-    $back_page = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends/';
+    $back_page = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends_test/';
     $umsid = ucfirst($msid);
     $back_page = $back_page.$group.'/'.$umsid.'/'.$msid.'_'.$mtype.'_static_'.$ltype.'_plot.html';
     echo  '<p style="padding-top:30px;"><a href="'.$back_page.'"><b>Return to '.$msid.' page.</b></a></p>';

@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,14 +6,13 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Nov 13, 2017                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
 import os
 import sys
 import re
-
 
 dea_dir = '/data/mta/Script/MTA_limit_trends/Scripts/DEA/'
 
@@ -23,9 +22,9 @@ ofile   = dea_dir + 'today_dump_files'
 #
 #--- read the list of the data already processed
 #
-f       = open(infile, 'r')
-plist   = [line.strip() for line in f.readlines()]
-f.close()
+
+with open(infile, 'r') as f:
+    plist   = [line.strip() for line in f.readlines()]
 #
 #--- find the last entry
 #
@@ -39,25 +38,24 @@ os.system(cmd)
 cmd = 'ls -rt /dsops/GOT/input/*Dump_EM*.gz > ' + infile
 os.system(cmd)
 
-f       = open(infile, 'r')
-data    = [line.strip() for line in f.readlines()]
-f.close()
+with open(infile, 'r') as f:
+    data    = [line.strip() for line in f.readlines()]
 
-fo      = open(ofile, 'w')
 #
 #---- find the data which are not processed yet and print out
 #
 chk   = 0
+line  = ''
 for ent in data:
     if chk == 0:
         if ent == last_entry:
             chk = 1
             continue
     else:
-        line = ent + '\n'
-        fo.write(line)
+        line = line +  ent + '\n'
 
-fo.close()
+with open(ofile, 'w') as fo:
+    fo.write(line)
 
 
 

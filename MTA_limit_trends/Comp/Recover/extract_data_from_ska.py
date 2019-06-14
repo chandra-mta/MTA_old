@@ -1,10 +1,10 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Oct 27, 2017                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -17,35 +17,18 @@ import numpy
 import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
-
-
-#
-#--- interactive plotting module
-#
-import mpld3
-from mpld3 import plugins, utils
-#
-#--- pylab plotting routine related modules
-#
-import matplotlib as mpl
-
-if __name__ == '__main__':
-
-    mpl.use('Agg')
-
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -54,7 +37,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv #---- contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- contains other functions commonly used in MTA scripts
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import glimmon_sql_read         as gsr  #---- glimmon database reading
@@ -67,7 +49,8 @@ import create_derivative_plots  as cdp  #---- create derivative plot
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 data_dir = './Outdir/'
@@ -86,7 +69,7 @@ def run_script(msid_list, start, stop, step):
     for ent in data:
         atemp = re.split('\s+', ent)
         msid  = atemp[0]
-        print "MSID: " + msid
+        print("MSID: " + msid)
         group = atemp[1]
         create_interactive_page(msid, group,  start, stop, step)
 
@@ -491,7 +474,7 @@ def update_fits_file(fits, cols, cdata):
         nlist   = list(data[cols[k]]) + cdata[k]
         udata.append(nlist)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     create_fits_file(fits, cols, udata)
 
 #-------------------------------------------------------------------------------------------
@@ -518,7 +501,7 @@ def create_fits_file(fits, cols, cdata):
     dcols = pyfits.ColDefs(dlist)
     tbhdu = pyfits.BinTableHDU.from_columns(dcols)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     tbhdu.writeto(fits)
 
 #-------------------------------------------------------------------------------------------
@@ -597,7 +580,7 @@ def remove_old_data(fits, cols, cut):
     for k in range(0, len(cols)):
         udata.append(list(data[cols[k]][pos:]))
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     create_fits_file(fits, cols, udata)
 
 

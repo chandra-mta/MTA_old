@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Jun 15, 2018                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -19,20 +19,19 @@ import numpy
 import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
-
+import random
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -41,14 +40,13 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 sp_limt_case_c = ['3faralat','3rctubpt','3tsmxcet', '3tsmxspt', '3tsmydpt', '3tspyfet',\
@@ -73,17 +71,16 @@ def update_msid_data(msid_list):
 #
 #--- read mta database
 #
-    mta_db = read_mta_database()
-
+    mta_db = ecf.read_mta_database()
 #
 #--- read mta msid <---> sql msid conversion list
 #
-    mta_cross = read_cross_check_table()
+    mta_cross = ecf.read_cross_check_table()
 #
 #--- read msid list
 #
     mfile = house_keeping + msid_list
-    data  = ecf.read_file_data(mfile)
+    data  = mcf.read_data_file(mfile)
 
     for ent in data:
 #
@@ -111,16 +108,16 @@ def update_msid_data(msid_list):
         ####glim  = gsr.read_glimmon(msid, tchk)
         if msid in sp_limt_case_c:
             tchk = 1
-        ###print "I AM HERE TCHK : " + str(tchk) + "<--->" + str(udict[msid])
-        glim  = get_limit(msid, tchk, mta_db, mta_cross)
-        ###print "I AM HERE GLIM: " + str(glim)
+        ###(print "I AM HERE TCHK : " + str(tchk) + "<--->" + str(udict[msid]))
+        glim  = ecf.get_limit(msid, tchk, mta_db, mta_cross)
+        ###(print "I AM HERE GLIM: " + str(glim))
         ###exit(1)
 #
 #--- update database
 #
 #        try:
 #            out = fetch.MSID(msid, '2017:001:00:00:00', '2017:002')
-#            print "MSID: " + msid
+#            print("MSID: " + msid)
 #        except:
 #            out = get_mta_fits_data(msid, '2017:001:00:00:00', '2017:002')
 #            if out == False:
@@ -143,130 +140,8 @@ def update_msid_data(msid_list):
     line = line + "Started: " + start_time + '\n'
     line = line + "Ended: " + end_time + '\n'
 
-    print line
+    print(line)
 
-
-#-------------------------------------------------------------------------------------------
-#-- get_limit: find the limit lists for the msid                                          --
-#-------------------------------------------------------------------------------------------
-
-def get_limit(msid, tchk, mta_db, mta_cross):
-    """
-    find the limit lists for the msid
-    input:  msid        --- msid
-            tchk        --- whether temp conversion needed 0: no/1: degc/2: degf/3: pcs
-            mta_db      --- a dictionary of mta msid <---> limist
-            mta_corss   --- mta msid and sql msid cross check table
-    output: glim        --- a list of lists of lmits. innter lists are:
-                            [start, stop, yl, yu, rl, ru]
-    """
-
-    try:
-        mchk = mta_cross[msid]
-    except:
-        mchk = 0
-
-    if mchk == 'mta':
-        try:
-            glim = mta_db[msid]
-        except:
-            glim = [[0,  3218831995, -9e6, 9e6, -9e6, 9e6]]
-
-    else:
-        try:
-            out  = gsr.read_glimmon(mchk, tchk)
-            test = str(mchk[-2] + mchk[-1])
-            if test.lower() == 'tc':
-                glim = []
-                for ent in out:
-                    for k in range(2,6):
-                        ent[k] -= 273.15
-                glim.append(ent)
-            else:
-                glim = out
-
-        except:
-            glim = [[0,  3218831995, -9e6, 9e6, -9e6, 9e6]]
-
-    return glim
-
-
-#-------------------------------------------------------------------------------------------
-#-- read_mta_database: read the mta limit database                                        --
-#-------------------------------------------------------------------------------------------
-
-def read_mta_database():
-    """
-    read the mta limit database
-    input:  none, but read from /data/mta4/MTA/data/op_limits/op_limits.db
-    output: mta_db  --- dictionary of msid <--> a list of lists of limits
-                        the inner list is [start, stop, yl, yu, rl, ru]
-    """
-
-    tmin = 0
-    tmax = 3218831995
-    f    = open('/data/mta4/MTA/data/op_limits/op_limits.db', 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-
-    mta_db = {}
-    prev   = ''
-    save   = []
-    for ent in data:
-        if len(ent) == 0:
-            continue
-        if ent[0] == '#':
-            continue
-
-        atemp = re.split('\s+', ent)
-        msid  = atemp[0].lower()
-
-        try:
-            out  = mta_db[msid]
-            yl   = float(atemp[1])
-            yr   = float(atemp[2])
-            rl   = float(atemp[3])
-            ru   = float(atemp[4])
-            ts   = float(atemp[5])
-            olim = [ts, tmax, yl, yr, rl, ru]
-            out[-1][1] = ts
-            out.append(olim)
-            mta_db[msid] = out
-        except:
-            yl   = float(atemp[1])
-            yr   = float(atemp[2])
-            rl   = float(atemp[3])
-            ru   = float(atemp[4])
-            ts   = float(atemp[5])
-            olim = [ts, tmax, yl, yr, rl, ru]
-            out  = [olim]
-            mta_db[msid] = out
-
-    return mta_db
-
-#-------------------------------------------------------------------------------------------
-#-- read_cross_check_table: read the mta msid and sql database msid cross table          ---
-#-------------------------------------------------------------------------------------------
-
-def read_cross_check_table():
-    """
-    read the mta msid and sql database msid cross table
-    input: none but read from <house_keeping>/msid_cross_check_table
-    output: mta_cross   --- a dictionary of mta msid and sql database msid
-                        note: if there is no correspondece, it will return "mta"
-    """
-
-    ifile = house_keeping + 'msid_cross_check_table'
-    f     = open(ifile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
-
-    mta_cross = {}
-    for ent in data:
-        atemp = re.split('\s+', ent)
-        mta_cross[atemp[0]] = atemp[1]
-
-    return mta_cross
 
 #-------------------------------------------------------------------------------------------
 #-- update_database: update/create fits data files of msid                                --
@@ -281,13 +156,13 @@ def update_database(msid, group, glim, pstart=0, pstop=0, step=3600.0):
             step    --- time interval of the short time data set:default 3600.0
     output: <msid>_data.fits, <msid>_short_data.fits
     """
-
     test = str(msid[-2] + msid[-1]).lower()
     if test == 'tc':
         tmsid = msid[:-1]
     else:
         tmsid = msid
-    cols  = ['time', tmsid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper', 'dcount',\
+    cols  = ['time', tmsid, 'med', 'std', 'min', 'max', 'ylower', 'yupper',\
+              'rlower', 'rupper', 'dcount',\
              'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
     stday = time.strftime("%Y:%j:00:00:00", time.gmtime())
@@ -303,12 +178,11 @@ def update_database(msid, group, glim, pstart=0, pstop=0, step=3600.0):
         os.system(cmd)
 
     fits2 = out_dir + tmsid + '_short_data.fits'
-    print "FITS: " + str(fits2)
+    print("FITS: " + str(fits2))
 
     [week_p, short_p, long_p] = get_data_from_archive(msid, pstart, pstop, glim, step=pstep)
 #
-    create_fits_file(fits2, cols, short_p)
-
+    ecf.create_fits_file(fits2, cols, short_p)
 
 #-------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------
@@ -641,102 +515,6 @@ def get_data_from_archive(msid, start, stop, glim, step = 3600.0):
 
 
 #-------------------------------------------------------------------------------------------
-#-- update_fits_file: update fits file                                                    --
-#-------------------------------------------------------------------------------------------
-
-def update_fits_file(fits, cols, cdata):
-    """
-    update fits file
-    input:  fits    --- fits file name
-            cols    --- a list of column names
-            cdata   --- a list of lists of data values
-    output: updated fits file
-    """
-
-    f     = pyfits.open(fits)
-    data  = f[1].data
-    f.close()
-
-    udata= []
-    for k in range(0, len(cols)):
-        nlist   = list(data[cols[k]]) + cdata[k]
-        udata.append(nlist)
-
-    mcf.rm_file(fits)
-    create_fits_file(fits, cols, udata)
-
-#-------------------------------------------------------------------------------------------
-#-- create_fits_file: create a new fits file for a given data set                         --
-#-------------------------------------------------------------------------------------------
-
-def create_fits_file(fits, cols, cdata):
-    """
-    create a new fits file for a given data set
-    input:  fits    --- fits file name
-            cols    --- a list of column names
-            cdata   --- a list of lists of data values
-    output: newly created fits file "fits"
-    """
-    
-    #cdata = remove_duplicate(cdata)
-
-    dlist = []
-    for k in range(0, len(cols)):
-        aent = numpy.array(cdata[k])
-        dcol = pyfits.Column(name=cols[k], format='E', array=aent)
-        dlist.append(dcol)
-
-    dcols = pyfits.ColDefs(dlist)
-    tbhdu = pyfits.BinTableHDU.from_columns(dcols)
-
-    mcf.rm_file(fits)
-    tbhdu.writeto(fits)
-
-#-------------------------------------------------------------------------------------------
-#-- remove_duplicate: remove duplicated entry by time (the first entry)                   --
-#-------------------------------------------------------------------------------------------
-
-def remove_duplicate(cdata):
-    """
-    remove duplicated entry by time (the first entry)
-    input:  cdata   --- a list of lists; the first entry must be time stamp
-    output: ndat    --- a cealn list of lists
-    """
-    clen  = len(cdata)          #--- the numbers of the lists in the list
-    dlen  = len(cdata[0])       #--- the numbers of elements in each list
-    tdict = {}
-    tlist = []
-#
-#--- make a dictionary as time as a key
-#
-    for k in range(0, dlen):
-        tdat = []
-        for m in range(0, clen):
-            tdat.append(cdata[m][k])
-
-        tdict[cdata[0][k]] = tdat
-        tlist.append(cdata[0][k])
-#
-#--- select the uniqe time stamps
-#
-    tset  = set(tlist)
-    tlist = list(tset)
-    tlist.sort()
-#
-#--- create a uniqu data set
-#
-    ndata = []
-    for m in range(0, clen):
-        ndata.append([])
-
-    for ent in tlist:
-        out = tdict[ent]
-        for  m in range(0, clen):
-            ndata[m].append(out[m])
-
-    return ndata
-
-#-------------------------------------------------------------------------------------------
 #-- remove_old_data: remove the data older the cut time                                   --
 #-------------------------------------------------------------------------------------------
 
@@ -768,8 +546,8 @@ def remove_old_data(fits, cols, cut):
     for k in range(0, len(cols)):
         udata.append(list(data[cols[k]][pos:]))
 
-    mcf.rm_file(fits)
-    create_fits_file(fits, cols, udata)
+    mcf.rm_files(fits)
+    ecf.create_fits_file(fits, cols, udata)
 
 
 #-------------------------------------------------------------------------------------------
@@ -939,7 +717,7 @@ def get_mta_fits_data(msid, start, stop):
             msid = test
 
 
-        out  = ecf.read_file_data(zspace, remove=1)
+        out  = mcf.read_data_file(zspace, remove=1)
         fits = out[0]
 
         if not os.path.isfile(fits):
@@ -985,5 +763,5 @@ if __name__ == "__main__":
             msid_list.strip()
             update_msid_data(msid_list=msid_list)
     else:
-        print "rerun_short.py <msid_list>"
+        print("rerun_short.py <msid_list>")
 

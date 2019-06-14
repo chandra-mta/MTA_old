@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                                   #
-#               last update: Nov 09, 2017                                           #
+#               last update: May 20, 2019                                           #
 #                                                                                   #
 #####################################################################################
 
@@ -26,28 +26,25 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
-
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 web_address = 'https://' + web_address
@@ -81,16 +78,13 @@ def create_top_html():
     """
 
     gfile = house_keeping + 'group_descriptions_sun_angle'
-    f     = open(gfile, 'r')
-    gdata = [line.strip() for line in f.readlines()]
-    f.close()
+    gdata = mcf.read_data_file(gfile)
 
     g_list  = []
     gn_dict = {}
     gd_dict = {}
     gn_list = []
     g_disc  = []
-    
 
     for ent in gdata:
         mc  = re.search('#', ent)
@@ -98,6 +92,7 @@ def create_top_html():
             ent = ent.replace('#', '')
             g_list.append(ent)
             gname = ent
+
         elif ent == "":
             gn_dict[gname] = gn_list
             gd_dict[gname] = g_disc
@@ -109,10 +104,8 @@ def create_top_html():
             gn_list.append(atemp[0])
             g_disc.append(atemp[1])
 
-
     mlist = ('mid', 'min', 'max')
     mname = ('Avg', 'Min', 'Max')
-
 
     for gval in g_list:
         group_list  = gn_dict[gval]
@@ -139,13 +132,12 @@ def create_top_html():
     line = line + '</tr>\n'
 
     jfile    = house_keeping + '/Templates/java_script_deposit'
-    f        = open(jfile, 'r')
-    j_script = f.read()
-    f.close()
+    with  open(jfile, 'r') as f:
+        j_script = f.read()
 
     template = house_keeping + 'Templates/top_header'
-    f        = open(template, 'r')
-    page     = f.read()
+    with  open(template, 'r') as f:
+        page     = f.read()
 
     page     = page.replace('#JAVASCRIPT#', j_script)
     page     = page.replace('#TITLE#', 'Sun Angle-MSID Trend')
@@ -168,18 +160,14 @@ def create_top_html():
     page  = page.replace('<!-- EXTRA -->', atext)
 
     efile = house_keeping + 'Templates/html_close'
-    f        = open(efile, 'r')
-    end_line = f.read()
-    f.close()
+    with  open(efile, 'r') as f:
+        end_line = f.read()
 
     page  = page + end_line
 
-    #outfile  = web_dir + 'test.html'
     outfile  = web_dir + 'mta_trending_sun_angle_main.html'
-    fo       = open(outfile, 'w')
-    fo.write(page)
-    fo.close()
-
+    with  open(outfile, 'w') as fo:
+        fo.write(page)
 
 #----------------------------------------------------------------------------------------
 

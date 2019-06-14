@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#           create_derivative_plots.py: create derivative plots                                             #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           last update: Mar 16, 2018                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#################################################################################
+#                                                                               #
+#           create_derivative_plots.py: create derivative plots                 #
+#                                                                               #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                           #
+#                                                                               #
+#           last update: May 28, 2019                                           #
+#                                                                               #
+#################################################################################
 
 import sys
 import os
@@ -35,38 +35,42 @@ import matplotlib as mpl
 if __name__ == '__main__':
 
     mpl.use('Agg')
+
+from pylab import *
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
+import matplotlib.lines as lines
 #
 #--- read argv
 #
 try:
     option, remainder = getopt.getopt(sys.argv[1:],'t',['test'])
 except getopt.GetoptError as err:
-     print str(err)
+     print(str(err))
      sys.exit(2)
 
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mtac #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import create_html_suppl        as chs  
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- other settings
@@ -75,15 +79,16 @@ na     = 'na'
 
 [udict, ddict] = ecf.read_unit_list()
 
-#--------------------------------------------------------------------------------------------------------
-#-- create_derivative_plots: create derivative plots for all msid listed in msid_list                  --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- create_derivative_plots: create derivative plots for all msid listed in msid_list      --
+#--------------------------------------------------------------------------------------------
 
 def create_derivative_plots(mfile='', inter =''):
     """
     create derivative plots for all msid listed in msid_list
     input:  mfile   --- a list of msids. if not provided, use full msid_list 
-            inter   --- indicator of "week" plots or "short" and "long" plots; default: "" --- short and long.
+            inter   --- indicator of "week" plots or "short" and "long" plots; 
+                        default: "" --- short and long.
     output: <web_dir>/<group>/<msid>/Plots/msid_*_dev.png
             <web_dir>/<group>/<msid>/Plots/msid_*_dev_fit_results'
     """
@@ -97,7 +102,7 @@ def create_derivative_plots(mfile='', inter =''):
         if not os.path.isfile(mfile):
             mfile = house_keeping + 'msid_list'
 
-    data  = ecf.read_file_data(mfile)
+    data  = mcf.read_data_file(mfile)
 
     for out in data:
         try:
@@ -107,9 +112,9 @@ def create_derivative_plots(mfile='', inter =''):
             msid  = atemp[0]
             group = atemp[1]
 
-        print "Processing: " +  msid 
+        print("Processing: " +  msid )
 #
-#--- checking only crate week plot 
+#--- checking only create week plot 
 #
         if inter == "":
             l_list =  ('short', 'long')
@@ -122,11 +127,11 @@ def create_derivative_plots(mfile='', inter =''):
         ofile = web_dir + group + '/' + msid.capitalize() + '/Plots/' + msid + '_dev_fit_results'
         if not os.path.isfile(ofile):
             continue
-
-        fo    = open(ofile, 'w')
 #
-#--- there are three different types of data sets; week: week long, short: year long, long: entire period
+#--- there are three different types of data sets; 
+#---        week: week long, short: year long, long: entire period
 #
+        sline = ''
         for ltype in l_list:
             dfile = data_dir + group.capitalize() + '/' + msid + '_data.fits'
 #
@@ -148,7 +153,7 @@ def create_derivative_plots(mfile='', inter =''):
                 flist = ['five', 'long']
 
             try:
-                [pdata, byear]  = read_data(dfile, msid,  ltype)
+                [pdata, byear]  = read_msid_data(dfile, msid,  ltype)
             except:
                 continue
 
@@ -157,14 +162,15 @@ def create_derivative_plots(mfile='', inter =''):
     
                     out = plot_deviatives(pdata, byear, msid, group, otype, mtype)
     
-                    line = ltype + ':' + mtype + ':' + out[0] + ':' + out[1] + ':' + out[2] + ':' + out[3] + '\n'
-                    fo.write(line)
+                    sline = sline + ltype + ':' + mtype + ':' + out[0] + ':' + out[1] 
+                    sline = sline + ':' + out[2] + ':' + out[3] + '\n'
 
-        fo.close()
+        with open(ofile, 'w') as fo:
+            fo.write(sline)
 
-#--------------------------------------------------------------------------------------------------------
-#-- plot_deviatives: create derivative plots for given msid                                            --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- plot_deviatives: create derivative plots for given msid                                --
+#--------------------------------------------------------------------------------------------
 
 def plot_deviatives(pdata, byear, msid, group, ltype, mtype):
     """
@@ -181,6 +187,7 @@ def plot_deviatives(pdata, byear, msid, group, ltype, mtype):
 #
 #--- three different data position by mid, min, and max
 #
+    plen     = len(pdata)
     pos      = find_pos(mtype)
 
     outname  = web_dir + group.capitalize() + '/' + msid.capitalize() 
@@ -190,27 +197,27 @@ def plot_deviatives(pdata, byear, msid, group, ltype, mtype):
 #
     if ltype in ('five', 'long'):
         step = 20
-        xt  = pdata[0]
-        yt  = pdata[pos]
+        xt   = pdata[0]
+        yt   = pdata[pos]
+
         if ltype == 'five':
             [xt, yt] =  cut_the_data(xt, yt, 5.0)       #---- five year interval
 
     elif ltype  in('short', 'one'):
-        step = 700
-        xt  = pdata[0]
-        yt  = pdata[pos]
+        step = 50
+        xt   = pdata[0]
+        yt   = pdata[pos]
         if ltype == 'short':
             [xt, yt] =  cut_the_data(xt, yt,  90.0)     #---- three month interval
 
     else:                                               #--- week long data
         try:
-            step = 700
+            step = 20 
             xt   = pdata[0]
             yt   = pdata[pos]
         except:
             cmd = 'cp  ' + house_keeping + 'no_data.png ' + outname
             return ['0', '0', '0', outname]
-
 #
 #--- find dy/dx along the time line
 #
@@ -236,9 +243,9 @@ def plot_deviatives(pdata, byear, msid, group, ltype, mtype):
 
     return [a, b, d, outname]
 
-#--------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 
 def remove_out_layers(x, y):
 
@@ -275,9 +282,9 @@ def remove_out_layers(x, y):
 
     return [nx, ny]
 
-#--------------------------------------------------------------------------------------------------------
-#-- find_pos: set data position depending of the data type                                             --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- find_pos: set data position depending of the data type                                 --
+#--------------------------------------------------------------------------------------------
 
 def find_pos(mtype):
     """
@@ -296,9 +303,9 @@ def find_pos(mtype):
 
     return pos
  
-#--------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
 
 def cut_the_data(x, y, period):
 
@@ -309,9 +316,9 @@ def cut_the_data(x, y, period):
 
     return [xd, yd]
 
-#--------------------------------------------------------------------------------------------------------
-#-- find_deriv: compute the derivative per year                                                        --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- find_deriv: compute the derivative per year                                            --
+#--------------------------------------------------------------------------------------------
 
 def find_deriv(x, y, ltype, step=200):
     """
@@ -325,7 +332,6 @@ def find_deriv(x, y, ltype, step=200):
             yd      --- a list of dx/dy; of slope of the fitting
             ad      --- a list of intercept of the fitting
     """
-
     hstep = int(0.5 * step)
     dlen  = len(x)
 #
@@ -335,20 +341,28 @@ def find_deriv(x, y, ltype, step=200):
         xt = list(x / 365.0)
     else:
         xt = x
-
-    xd    = []
-    yd    = []
-    ad    = []
+#
+#--- sort the data with time
+#
+    xt  = numpy.array(xt)
+    y   = numpy.array(y)
+    ind = numpy.argsort(xt)
+    xt  = xt[ind]
+    y   = y[ind]
 #
 #--- moving average but compute slope instead of average
 #
+    xd    = []
+    yd    = []
+    ad    = []
+
     for k in range(hstep, dlen - hstep):
         ks = k - hstep
         ke = k + hstep
         xs = xt[ks:ke]
         ys = y[ks:ke]
 
-        xp = x[ke] -x[ks]
+        xp = 0.5*(x[ke] + x[ks])
         [a, b, d] = chs.least_sq(xs, ys)
 #
 #--- rare occasion, fits fail, skip the ponit
@@ -357,24 +371,27 @@ def find_deriv(x, y, ltype, step=200):
             continue
         else:
             xd.append(x[k])
+            ###xd.append(xp)
             yd.append(b)
             ad.append(a)
 
     xd = numpy.array(xd)
     xd = xd.astype(float)
+    xd = xd[0::2]
 
     yd = numpy.array(yd)
     yd = yd.astype(float)
+    yd = yd[0::2]
 
     ad = numpy.array(ad)
     ad = ad.astype(float)
+    ad = ad[0::2]
 
     return [xd, yd, ad]
 
-
-#--------------------------------------------------------------------------------------------------------
-#-- check_directories: check the existances of directories. if not, create them                       ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- check_directories: check the existances of directories. if not, create them           ---
+#--------------------------------------------------------------------------------------------
 
 def check_directories(msid, group):
     """
@@ -394,9 +411,9 @@ def check_directories(msid, group):
 
     return p_dir
 
-#--------------------------------------------------------------------------------------------------------
-#-- create_scatter_plot: create interactive trend plot                                                 ---
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------
+#-- create_scatter_plot: create interactive trend plot                                     ---
+#--------------------------------------------------------------------------------------------
 
 def create_scatter_plot(msid, xo, xb, yb,  ltype, mtype,  byear, a, b, d,  outname = ''):
     """
@@ -459,7 +476,6 @@ def create_scatter_plot(msid, xo, xb, yb,  ltype, mtype,  byear, a, b, d,  outna
 #
     fig.set_size_inches(10.0, 5.0)
     fig.tight_layout()
-
 #
 #---- trending plots
 #
@@ -503,7 +519,6 @@ def set_axes_label(msid, ltype, byear):
     output: xlabel  --- x axis label
             ylabel  --- y axis label
     """
-
     try:
         unit = udict[msid]
     except:
@@ -524,12 +539,11 @@ def set_axes_label(msid, ltype, byear):
 
     return [xlabel, ylabel]
 
-
 #----------------------------------------------------------------------------------
-#-- read_data: read the data of msid                                            ---
+#-- read_msid_data: read the data of msid                                       ---
 #----------------------------------------------------------------------------------
 
-def read_data(dfile, msid,  ltype):
+def read_msid_data(dfile, msid,  ltype):
     """
     read the data of msid
     input:  dfile   --- data file name
@@ -556,23 +570,7 @@ def read_data(dfile, msid,  ltype):
     xtime  = []
     byear  = 1999
     for ent in temp:
-        date = Chandra.Time.DateTime(ent)
-        year = float(date.year)
-        yday = float(date.yday)
-        hrs  = float(date.hour)
-        mins = float(date.min)
-        secs = float(date.sec)
-        if tcnv.isLeapYear(year) == 1:
-            base = 366
-        else:
-            base = 365
-        ytime = year + (yday + hrs / 24.0 + mins / 1440.0 + secs / 86400.0) / base
-        if ltype in ('week', 'short'):
-            if xtime == []:
-                byear = year
-    
-            ytime -= byear
-            ytime *= base
+        ytime = mcf.chandratime_to_fraq_year(float(ent))
     
         xtime.append(ytime)
 
@@ -584,7 +582,6 @@ def read_data(dfile, msid,  ltype):
     std    = data['std']
     dmin   = data['min']
     dmax   = data['max']
-
 #
 #--- if the avg is totally flat, the plot wil bust; so change tiny bit at the last entry
 #
@@ -601,13 +598,7 @@ def read_data(dfile, msid,  ltype):
 
     return [pdata, byear]
 
-
-#--------------------------------------------------------------------------------------------------------
-
-from pylab import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-import matplotlib.lines as lines
+#-------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 

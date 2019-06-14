@@ -14,8 +14,8 @@
 #--- set a couple of directory paths
 #
 $input_dir  = '/dsops/GOT/input/';
-$script_dir = '/data/mta/Script/MTA_limit_trends/Scripts/DEA/';
-$repository = '/data/mta/Script/MTA_limit_trends/Scripts/DEA/RDB/';
+$script_dir = '/data/mta/Script/MTA_limit_trends/Scripts3.6/DEA/';
+$repository = '/data/mta/Script/MTA_limit_trends/Scripts3.6/DEA/RDB/';
 #
 #--- set environmental setting
 #
@@ -31,7 +31,7 @@ $ENV{"ACISTOOLSDIR"}="/data/mta/Script/MTA_limit_trends/Scripts/DEA/";   #---- u
 #
 #--- read today's dump list
 #
-open(FH, "/data/mta/Script/MTA_limit_trends/Scripts/DEA/today_dump_files");
+open(FH, "/data/mta/Script/MTA_limit_trends/Scripts3.6/DEA/today_dump_files");
 
 while(<FH>) {
   chomp $_;

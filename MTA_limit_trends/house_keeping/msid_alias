@@ -1,9 +1,9 @@
-3faflaat         flexatemp
-3sflxast         flexatset
-3faflbat         flexbtemp
-3sflxbst         flexbtset
-3faflcat         flexctemp
-3sflxcst         flexctset
-3fapsat          psutemp
-3faseaat         boxtemp
-3mrmmxmv         pwmlevel
+3faflaat         flexatemp      Simtemp
+3sflxast         flexatset      Simtemp
+3faflbat         flexbtemp      Simtemp
+3sflxbst         flexbtset      Simtemp
+3faflcat         flexctemp      Simtemp
+3sflxcst         flexctset      Simtemp
+3fapsat          psutemp        Simtemp
+3faseaat         boxtemp        Simtemp
+3mrmmxmv         pwmlevel       Simactu

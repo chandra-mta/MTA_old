@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################
-#                                                                                                       #
-#           create_otg_time_list.py: create otg time start stop time list files                         #
-#                                                                                                       #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                   #
-#                                                                                                       #
-#           last update: Jan 25, 2018                                                                   #
-#                                                                                                       #
-#########################################################################################################
+#####################################################################################
+#                                                                                   #
+#           create_otg_time_list.py: create otg time start stop time list files     #
+#                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                   #
+#           last update: May 28, 2019                                               #
+#                                                                                   #
+#####################################################################################
 
 import sys
 import os
@@ -22,29 +22,27 @@ import os.path
 import time
 import astropy.io.fits  as pyfits
 import Chandra.Time
-
+import random
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- other settings
@@ -55,9 +53,9 @@ otg = '/data/mta_www/mta_otg/OTG_filtered.rdb'
 
 cname_list = ['retr_hetg', 'retr_letg', 'insr_hetg', 'insr_letg', 'grat_active', 'grat_inactive']
 
-#--------------------------------------------------------------------------------------------------------
-#-- create_otg_time_list: create otg time start stop time list files                                  ---
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- create_otg_time_list: create otg time start stop time list files              ---
+#------------------------------------------------------------------------------------
 
 def create_otg_time_list():
     """
@@ -65,22 +63,21 @@ def create_otg_time_list():
     input:  none
     output: in <house_keeping>, 'retr_hetg', 'retr_letg', 'insr_hetg', 'insr_letg', 'inactive'
     """
-
     otg_data = otg_separate()
 
     for k in range(0, 6):
-        ofile = house_keeping + cname_list[k]
-        fo    = open(ofile, 'w')
+        line = ''
         [start, stop] =  otg_data[k]
         for m in range(0, len(start)):
-            line = str(start[m]) + '\t' + str(stop[m]) + '\n'
+            line = line + str(start[m]) + '\t' + str(stop[m]) + '\n'
+
+        ofile = house_keeping + cname_list[k]
+        with open(ofile, 'w') as fo:
             fo.write(line)
 
-        fo.close()
-
-#--------------------------------------------------------------------------------------------------------
-#-- otg_separate: create lists of lists of starting and stopping times of each category                --
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- otg_separate: create lists of lists of starting and stopping times of each category   
+#------------------------------------------------------------------------------------
 
 def otg_separate():
     """
@@ -89,10 +86,7 @@ def otg_separate():
     output: a list of lists of [[starting time]. [stopping time]] of each category
             see cname_list for the order of the category
     """
-
-    f    = open(otg, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(otg)
 
     retr_hetg_b = []
     retr_hetg_e = []
@@ -175,9 +169,9 @@ def otg_separate():
     return [[retr_hetg_b, retr_hetg_e], [retr_letg_b, retr_letg_e], [insr_hetg_b, insr_hetg_e],\
             [insr_letg_b, insr_letg_e], [active_b, active_e], [inactive_b, inactive_e]]
 
-#--------------------------------------------------------------------------------------------------------
-#-- time_conversion: convert time format from <yyyyddd.ddd> to second from 1998.1.1                    --
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- time_conversion: convert time format from <yyyyddd.ddd> to second from 1998.1.1--
+#------------------------------------------------------------------------------------
 
 def time_conversion(atime):
     """
@@ -197,20 +191,15 @@ def time_conversion(atime):
     val  = 60 * (val - hh)
     mm   = int(val)
     ss   = 60 * (val - mm)
+    ss   = int(ss)
 
-    lhh  = str(hh)
-    if hh < 10:
-        lhh = '0' + lhh
-    lmm  = str(mm)
-    if mm < 10:
-        lmm = '0' + lmm
-    lss  = str(ss)
-    if ss < 10:
-        lss = '0' + lss
+    lhh  = mcf.add_leading_zero(hh)
+    lmm  = mcf.add_leading_zero(mm)
+    lss  = mcf.add_leading_zero(ss)
 
     time = year + ':' + yday + ':' + lhh + ':' + lmm + ':' + lss
 
-    time = tcnv.axTimeMTA(time)
+    time = Chandra.Time.DateTime(time).secs
 
     return time
 
@@ -224,7 +213,6 @@ def find_the_last_entry_time(fits):
     input:  fits    --- fits file name
     output: ctime   --- the last logged time
     """
-
     f = pyfits.open(fits)
     data = f[1].data
     f.close()
@@ -233,7 +221,7 @@ def find_the_last_entry_time(fits):
 
     return ctime
 
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
 

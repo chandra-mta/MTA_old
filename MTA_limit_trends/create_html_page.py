@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-###########################################################################################################
-#                                                                                                         #
-#       create_html_page.py: create indivisual html pages for all msids in database                       #
-#                                                                                                         #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                     #
-#                                                                                                         #
-#           last update: Jun 14, 2018                                                                     #
-#                                                                                                         #
-###########################################################################################################
+#######################################################################################
+#                                                                                     #
+#       create_html_page.py: create indivisual html pages for all msids in database   #
+#                                                                                     #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                 #
+#                                                                                     #
+#           last update: May 29, 2019                                                 #
+#                                                                                     #
+#######################################################################################
 
 import sys
 import os
@@ -18,15 +18,6 @@ import numpy
 import getopt
 import os.path
 import time
-#import getpass
-#import fnmatch
-#import astropy.io.fits  as pyfits
-#import Chandra.Time
-#
-#--- interactive plotting module
-#
-import mpld3
-from mpld3 import plugins, utils
 #
 #--- pylab plotting routine related modules
 #
@@ -35,44 +26,44 @@ import matplotlib as mpl
 if __name__ == '__main__':
 
     mpl.use('Agg')
+
+from pylab import *
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
+import matplotlib.lines as lines
+
 #
 #--- read argv
 #
 try:
     option, remainder = getopt.getopt(sys.argv[1:],'t',['test'])
 except getopt.GetoptError as err:
-     print str(err)
+     print(str(err))
      sys.exit(2)
 
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import create_derivative_plots  as cdp  #---- create derivative plot
 import create_html_suppl        as chs  #---- supplemental functions to crate html page
-#import glimmon_sql_read         as gsr  #---- glimmon database reading
-#import violation_estimate_data  as ved  #---- save violation estimated times in sqlite database v_table
-#import find_moving_average      as fma  #---- moving average 
-#import find_moving_average_bk   as fmab #---- moving average (backword fitting version)
-#import robust_linear            as rfit #---- robust fit rountine
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- other settings
@@ -82,7 +73,7 @@ na     = 'na'
 #--- read category data
 #
 cfile         = house_keeping + 'sub_html_list_all'
-category_list = ecf.read_file_data(cfile)
+category_list = mcf.read_data_file(cfile)
 #
 #--- set several values used in the plots
 #
@@ -103,7 +94,7 @@ css = """
 #---  a list of groups excluded from interactive page creation
 #
 efile = house_keeping + 'exclude_from_interactive'
-exclude_from_interactive = ecf.read_file_data(efile)
+exclude_from_interactive = mcf.read_data_file(efile)
 #
 #--- the top web page address
 #
@@ -112,7 +103,7 @@ web_address = 'https://' + web_address
 #--- alias dictionary
 #
 afile  = house_keeping + 'msid_alias'
-data   = ecf.read_file_data(afile)
+data   = mcf.read_data_file(afile)
 alias  = {}
 alias2 = {}
 for ent in data:
@@ -123,17 +114,18 @@ for ent in data:
 #--- a list of thoese with sub groups
 #
 sub_list_file  = house_keeping + 'sub_group_list'
-sub_group_list = ecf.read_file_data(sub_list_file)
+sub_group_list = mcf.read_data_file(sub_list_file)
 
-#--------------------------------------------------------------------------------------------------------
-#-- create_html_page: create indivisual html pages for all msids in database                           --
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- create_html_page: create indivisual html pages for all msids in database       --
+#------------------------------------------------------------------------------------
 
 def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
     """
     create indivisual html pages for all msids in database
     input:  qtype       --- whether to create interactive link; default:inter--- yes
-            msid_list   --- a name of msid_list to be run. if "", <house_keeping>/msid_list is used
+            msid_list   --- a name of msid_list to be run. if "", 
+                            <house_keeping>/msid_list is used
             ds          --- data set name. if 'all', ['week', 'short', 'long'] is used.
             ms          --- category name. if 'all', ['mid', 'min', max'] is used.
     output: <web_dir>/<msid>_plot.html etc
@@ -142,11 +134,11 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
 #--- check whether interactive page is requested
 #
     if qtype == 'inter':
-        print "Create Both Interactive/Static Versions"
+        print("Create Both Interactive/Static Versions")
         ptype = 'inter'
 
     else:
-        print "Create Static Version Only"
+        print("Create Static Version Only")
         ptype = 'static'
 #
 #--- set which data set to run
@@ -163,7 +155,7 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
     else:
         cat_sets = [ms]
 
-    print 'Data sets: '  + str(data_sets) + ' : ' + 'Categoray: ' + str(cat_sets)
+    print('Data sets: '  + str(data_sets) + ' : ' + 'Categoray: ' + str(cat_sets))
 #
 #--- clean out future estimate direcotry
 #
@@ -180,7 +172,7 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
         if not os.path.isfile(mfile):
             mfile = house_keeping + 'msid_list'
 
-    data  = ecf.read_file_data(mfile)
+    data  = mcf.read_data_file(mfile)
 
     msid_list  = []
     group_list = []
@@ -234,24 +226,19 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
             pass
 
         group = group_list[k]
-
 #
 #--- check whether the output directries exist; p_dir is the directory to save png files
 #
         #[p_dir, p_dir2]  = check_directories(msid2, group)
         [p_dir, p_dir2]  = check_directories(msid, group)
 
-        print 'Processing: ' + msid + ' of ' + group
+        print('Processing: ' + msid + ' of ' + group)
 #
 #--- open a file to save last period slope
 #
-        #ofile = web_dir + group + '/' + msid.capitalize() + '/Plots/' + msid2 + '_fit_results'
         ofile = web_dir + group + '/' + msid.capitalize() + '/Plots/' + msid + '_fit_results'
-        #fd    = open(ofile, 'w')
 
-        #dfile = web_dir + group + '/' + msid.capitalize() + '/Plots/' + msid2 + '_dev_fit_results'
         dfile = web_dir + group + '/' + msid.capitalize() + '/Plots/' + msid + '_dev_fit_results'
-        #fd2   = open(dfile, 'w')
 #
 #--- try to find the unit of the msid
 #
@@ -267,12 +254,13 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
         pchk = 0
         for ltype in data_sets:
 #
-#--- pdata is  two dim array of data (see read_data for details). flist is sub category of each data set
+#--- pdata is  two dim array of data (see read_msid_data_full for details). 
+#--- flist is sub category of each data set
 #
             try:
                 [pdata, byear, flist] = select_data_set(msid, group, ltype)
             except:
-                print "No data for: " + msid + ' of ' + group + '(' + ltype + ')'
+                print("No data for: " + msid + ' of ' + group + '(' + ltype + ')')
                 continue
 
             for otype in flist:
@@ -293,15 +281,13 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
 #
 #--- create the plot
 #
-                    xxx = 999
-                    if xxx == 999:
-                    #try:
-                        [pout, xxout]   = chs.create_trend_plots(msid, group, pdata, byear, unit, otype, mtype, plotname, ptype)
+                    try:
+                        [pout, xxout]   = chs.create_trend_plots(msid, group, pdata, byear,\
+                                               unit, otype, mtype, plotname, ptype)
                         pchk = 1
 
-                    else:
-                    #except:
-                        print "plot was not created"
+                    except:
+                        print("plot was not created")
                         cmd = 'cp ' + house_keeping + 'no_data.png ' + plotname
                         os.system(cmd)
                         pchk = 0
@@ -309,10 +295,8 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
 #--- create the derivative plot
 #
                     if pchk == 1:
-                        #if xxx == 999:
                         try:
                             out  = cdp.plot_deviatives(pdata, byear, msid, group, otype, mtype)
-                        #else:
                         except:
                             devplot = plotname.replace('.png', '_dev.png')
                             cmd     = 'cp ' + house_keeping + 'no_data.png ' + devplot
@@ -324,17 +308,19 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
                         os.system(cmd)
                         out  = ['0', '0', '0', '0']
 
-                    line = otype + ':' + mtype + ':' + out[0] + ':' + out[1] + ':' + out[2] + ':' + out[3] + '\n'
+                    line = otype + ':' + mtype + ':' + out[0] + ':' + out[1] 
+                    line = line  + ':' + out[2] + ':' + out[3] + '\n'
 
-                    #fd2.write(line)
                     update_fit_result_file(otype, mtype, dfile, line)
 #
 #--- create html page; g_dict contains a list of msids of that group
-#
-                    if ptype == 'inter':
-                        create_plot_html_page(msid, g_dict[group], group, descrip, pout, '', otype, mtype, ptype)
 
-                    create_plot_html_page(msid, g_dict[group], group, descrip, '', plotname2, otype, mtype, ptype)
+                    if ptype == 'inter':
+                        create_plot_html_page(msid, g_dict[group], group, descrip,\
+                                              pout, '', otype, mtype, ptype)
+
+                    create_plot_html_page(msid, g_dict[group], group, descrip, '',\
+                                          plotname2, otype, mtype, ptype)
 #
 #--- compute the slope for a given period (see compute_dy_dx for the period)
 #
@@ -344,19 +330,17 @@ def create_html_page(qtype='static', msid_list='', ds='all', ms='all'):
                     except:
                         [a, b, d, avg, std] = ['0.0', '0.0', '0.0', '0.0', '0.0']
 
-                    outname = web_dir + group + '/' + msid.capitalize() + '/' + msid + '_' + mtype 
-                    outname = outname + '_static_' + otype + '_plot.html'
+                    outname = web_dir + group + '/' + msid.capitalize() + '/' + msid + '_' 
+                    outname = outname + mtype + '_static_' + otype + '_plot.html'
 
-                    line = otype + ':' + mtype + ':' + a + ':' + b + ':' + d + ':' + avg + ':' + std + ':' + outname + '\n'
-                    #fd.write(line)
+                    line = otype + ':' + mtype + ':' + a + ':' + b + ':' + d + ':' 
+                    line = line  + avg + ':' + std + ':' + outname + '\n'
+                    
                     update_fit_result_file(otype, mtype, ofile, line)
 
-        #fd.close()
-        #fd2.close()
-
-#--------------------------------------------------------------------------------------------------------
-#-- update_fit_result_file: update fitting line result file for the give type                          --
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- update_fit_result_file: update fitting line result file for the give type      --
+#------------------------------------------------------------------------------------
 
 def update_fit_result_file(otype, mtype, rfile, result):
     """
@@ -371,7 +355,7 @@ def update_fit_result_file(otype, mtype, rfile, result):
 #--- read the saved results
 #
     try:
-        out  = ecf.read_file_data(rfile)    
+        out  = mcf.read_data_file(rfile)    
         out  = list(set(out))
     except:
         out  = []
@@ -402,19 +386,18 @@ def update_fit_result_file(otype, mtype, rfile, result):
 #
 #--- update the file
 #
-    fo = open(rfile, 'w')
+    sline = ''
     for ent in save:
         if ent == '':
             continue
-        fo.write(ent)
-        fo.write('\n')
+        sline = sline + str(ent) + '\n'
 
-    fo.close()
+    with open(rfile, 'w') as fo:
+        fo.write(sline)
 
-
-#--------------------------------------------------------------------------------------------------------
-#-- select_data_set: read data and set sub-category                                                    --
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- select_data_set: read data and set sub-category                                --
+#------------------------------------------------------------------------------------
 
 def select_data_set(msid, group, ltype):
     """
@@ -446,26 +429,23 @@ def select_data_set(msid, group, ltype):
     else:
         flist = [str('five'), str('long')]
 
-    xxx = 999
-    #if xxx == 999:
     try:
-        [pdata, byear]  = chs.read_data(dfile, msid,  ltype)
+        [pdata, byear]  = chs.read_msid_data_full(dfile, msid,  ltype)
         try:
             if pdata == [0]:
                 pdata = []
                 byear = 1999
         except:
             pass
-    #else:
     except:
         pdata = []
         byear = 1999
 
     return [pdata, byear, flist]
 
-#--------------------------------------------------------------------------------------------------------
-#-- check_directories: check the existances of directories. if not, create them                       ---
-#--------------------------------------------------------------------------------------------------------
+#------------------------------------------------------------------------------------
+#-- check_directories: check the existances of directories. if not, create them   ---
+#------------------------------------------------------------------------------------
 
 def check_directories(msid, group):
     """
@@ -502,7 +482,8 @@ def create_plot_html_page(msid, msid_list, group, descrip, pout, plotname, ltype
             group       --- group name to which msid belongs
             descrip     --- description of the msid
             pout        --- plot in html format' it is <blank> if this is a static version
-            plotname    --- the name of the png file; it is <blank> if this is an interacitve version
+            plotname    --- the name of the png file; it is <blank> 
+                            if this is an interacitve version
             ltype       --- data type, week, short, one, five, or long
             mtype       --- data type, mid, min, max
     output: plot <web_dir>/<msid>_plot.html
@@ -545,7 +526,8 @@ def create_plot_html_page(msid, msid_list, group, descrip, pout, plotname, ltype
 
     out = out + '</a><br />\n'
     out = out + '<b><a href="javascript:popitup(\'' + web_address 
-    out = out + '/how_to_create_plots.html\')" style="text-align:right">How the Plots Are Created</a></b><br />\n'
+    out = out + '/how_to_create_plots.html\')" style="text-align:right">'
+    out = out + 'How the Plots Are Created</a></b><br />\n'
 #
 #--- prev and next msid
 #
@@ -560,7 +542,8 @@ def create_plot_html_page(msid, msid_list, group, descrip, pout, plotname, ltype
 #--- popup limit table link
 #
     out = out + '<div style="paddng-top:10px"><h3>'
-    out = out + 'Open <a href="javascript:popitup(\'' + file_name + '\')" style="text-align:right">Limit Table</a>.'
+    out = out + 'Open <a href="javascript:popitup(\'' + file_name + '\')" '
+    out = out + 'style="text-align:right">Limit Table</a>.'
     out = out + '</h3>\n'
     out = out + '</div>\n'
 #
@@ -579,15 +562,11 @@ def create_plot_html_page(msid, msid_list, group, descrip, pout, plotname, ltype
             out = out + '</div>'
 
         out = out + chs.read_template('interact_descript')
-
 #
 #--- static page case
 #
     else:
         out = out + '<img src="' + plotname + '" width=80%>'
-
-
-
 
     phpfile  = web_address + "Interactive/msid_data_interactive.php"
     int_note = web_address + 'interactive_note.html'
@@ -597,25 +576,25 @@ def create_plot_html_page(msid, msid_list, group, descrip, pout, plotname, ltype
         out = out + '<h3>This Data Set Cannot Produce an Interactive Plot</h3>\n'
     else:
         out = out + '<h3>Create an Interactive Plot ('
-        out = out + '<a href="javascript:popitup(\'' + int_note + '\')" style="text-align:right">Usage Note</a>'
+        out = out + '<a href="javascript:popitup(\'' + int_note + '\')" '
+        out = out + 'style="text-align:right">Usage Note</a>'
         out = out + ')</h3>\n'
         out = out + '<form method="post" action=' + phpfile + '>\n'
         out = out + '<b>Starting Time:</b> <input type="text" name="tstart"  size=20>\n'
         out = out + '<b>Stopping Time:</b> <input type="text" name="tstop"  size=20>\n'
-        out = out + '<b>Bin Size:</b>      <input type="text" name="binsize"  value=300.0 size=10>\n '
+        out = out + '<b>Bin Size:</b>      <input type="text" name="binsize"  '
+        out = out + 'value=300.0 size=10>\n '
 
         out = out + '<input type="hidden" name="ltype" value="' + ltype + '">\n'
         out = out + '<input type="hidden" name="mtype" value="' + mtype + '">\n'
         out = out + '<input type="hidden" name="msid"  value="' + msid  + '">\n'
         out = out + '<input type="hidden" name="group" value="' + group + '">\n'
     
-        out = out + '</br><span style="text-align:right;"><input type=submit name="submit" value="Submit"></span>\n'
+        out = out + '</br><span style="text-align:right;"><input type=submit '
+        out = out + 'name="submit" value="Submit"></span>\n'
         out = out + '<br />\n'
         out = out + '</form>\n'
     out = out + '</div>\n'
-
-
-
 #
 #--- add the derivative plot
 #
@@ -624,7 +603,6 @@ def create_plot_html_page(msid, msid_list, group, descrip, pout, plotname, ltype
 
     out = out + '<h3>Derivative Plot</h3>\n'
     out = out + '<img src="' + dplotname + '" width=80%>'
-
 #
 #--- add the link to other plots in a table format
 #
@@ -639,9 +617,8 @@ def create_plot_html_page(msid, msid_list, group, descrip, pout, plotname, ltype
 #
 #--- write out the html data
 #
-    fo = open(hname, 'w')
-    fo.write(out)
-    fo.close()
+    with open(hname, 'w') as fo:
+        fo.write(out)
 
 #----------------------------------------------------------------------------------
 #-- set_link_htmls: create the main html name and other link back html names     --
@@ -660,7 +637,6 @@ def set_link_htmls(group, msid, ltype, mtype, ptype):
             other   --- counter part of hname (static/interactive)
             other_list  --- a list of other html page links
     """
-
     if ptype == 'inter':
         insert1 = '_inter'
         insert2 = '_static'
@@ -765,7 +741,6 @@ def make_msid_link(msid, msid_list, group,  ltype, mtype, ptype):
             ptype       --- static, inter
     output: line        --- links in html format
     """
-
     ltot = len(msid_list)
     if ltot == 0:
         return ''
@@ -827,7 +802,6 @@ def make_msid_link(msid, msid_list, group,  ltype, mtype, ptype):
 
     return line
 
-
 #----------------------------------------------------------------------------------
 #-- create_period_link: create a table to list links to  different period length plots 
 #----------------------------------------------------------------------------------
@@ -838,8 +812,6 @@ def create_period_link(other_list):
     input:  ohter_list  --- a list of path to the other html page
     output: out         --- html code of the table
     """
-
-
     #out = '<h3 style="padding-top:10px;">Other Period Length Plots</h3>\n'
     out = ''
     out = out + '<table border=1 cellspacing=2>\n'
@@ -865,11 +837,12 @@ def create_period_link(other_list):
             name = 'Full Range'
 
         if chk == 1:
-            out = out + '<td style="text-align:center;width:20%;white-space:nowrap;"><a href="' 
-            out = out + elink + '">' + name + '</a></td>\n'
+            out = out + '<td style="text-align:center;width:20%;white-space:nowrap;">'
+            out = out + '<a href="' + elink + '">' + name + '</a></td>\n'
         else:
 
-            out = out + '<td style="text-align:center;width:20%;"><b style="color:green;white-space:nowrap;">' 
+            out = out + '<td style="text-align:center;width:20%;">'
+            out = out + '<b style="color:green;white-space:nowrap;">' 
             out = out + name + '</b></td>\n'
 
     out = out + '</tr>\n'
@@ -903,8 +876,9 @@ def get_group_names(msid, group, ltype, mtype, ptype):
     k     = 0
     if len(group) > 0:
         cname = group.capitalize()
-        gname = '<a href="' + web_address + group.capitalize() + '/'  + group.lower() + '_' + mtype 
-        gname = gname + '_' + ptype + '_' + ltype + '_main.html">' + group.upper() + '</a>'
+        gname = '<a href="' + web_address + group.capitalize() + '/'  
+        gname = gname + group.lower() + '_' + mtype + '_' + ptype 
+        gname = gname + '_' + ltype   + '_main.html">' + group.upper() + '</a>'
 
         line = '<table border=1 cellpadding=3>\n'
         for ent in group_list:
@@ -930,7 +904,8 @@ def get_group_names(msid, group, ltype, mtype, ptype):
                 line = line + '<b style="color:green;">' + msid + '</b></td>\n'
             else:
                 line = line + '<a href="' + web_address  + cname + '/' 
-                line = line + ment.capitalize() +  '/' + pname + '">' + ctemp[0] + '</a></td>\n'
+                line = line + ment.capitalize() +  '/' + pname + '">' 
+                line = line + ctemp[0] + '</a></td>\n'
 #
 #--- 10 entries per row
 #
@@ -961,9 +936,8 @@ def get_group_names(msid, group, ltype, mtype, ptype):
 
     return [line, gname]
 
-
 #----------------------------------------------------------------------------------
-#-- find_groun_name: return a list of msids which belongs to the group with the given msid
+#-- find_group_name: return a list of msids which belongs to the group with the given msid
 #----------------------------------------------------------------------------------
 
 def find_group_names(msid):
@@ -973,7 +947,6 @@ def find_group_names(msid):
     output: group_id    --- a group name
             group_list  --- a list of msids belong to the group
     """
-
     group_id    = 'na'
     group_list = []
     try:
@@ -1000,14 +973,7 @@ def find_group_names(msid):
 
     return [group_id, group_list]
 
-
-
-#--------------------------------------------------------------------------------------------------------
-
-from pylab import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-import matplotlib.lines as lines
+#------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
@@ -1015,12 +981,13 @@ if __name__ == '__main__':
         mc = re.search('=', sys.argv[1])
 
         if mc is None:
-            print "create_html_page(qtype=<inter/static> msid_list=<list name> ds=<week/short/long/all> ms=<mid/min/max/all>"
+            line = "create_html_page(qtype=<inter/static> msid_list=<list name> "
+            line = line + "ds=<week/short/long/all> ms=<mid/min/max/all>"
+            print(line)
             exit(1)
         else:
             out = chs.set_req(sys.argv)
-            create_html_page(qtype=out['qtype'], msid_list=out['msid_list'], ds=out['ds'], ms=out['ms'])
+            create_html_page(qtype=out['qtype'], msid_list=out['msid_list'],\
+                             ds=out['ds'], ms=out['ms'])
     else:
         create_html_page(1)
-
-

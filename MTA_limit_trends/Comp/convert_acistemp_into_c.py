@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                                   #
-#               last update: Oct 30, 2017                                           #
+#               last update: May 20, 2019                                           #
 #                                                                                   #
 #####################################################################################
 
@@ -16,7 +16,6 @@ import re
 import string
 import random
 import math
-import sqlite3
 import unittest
 import time
 import numpy
@@ -46,7 +45,8 @@ import mta_common_functions     as mcf  #---- mta common functions
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 bcols   = ['med', 'min', 'max', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
@@ -65,8 +65,7 @@ def convert_acistemp_into_c():
     outdir = data_dir + '/Compaciscent/'
     cmd = 'ls ' + data_dir + '/Acistemp/*fits* > ' + zspace
     os.system(cmd)
-    fits_list = mcf.readFile(zspace)
-    mcf.rm_file(zspace)
+    fits_list = mcf.read_data_file(zspace, remove=1)
 
 
     for fits in fits_list:
@@ -86,7 +85,7 @@ def convert_acistemp_into_c():
         flist[1].data = fdata
 
         outfile = outdir + fname
-        mcf.rm_file(outfile)
+        mcf.rm_files(outfile)
         flist.writeto(outfile)
 
 

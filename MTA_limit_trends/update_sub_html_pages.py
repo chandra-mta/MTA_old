@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################
-#                                                                                                       #
-#           update_sub_html_pages.py: creates html pages for different categories of msids              #
-#                                                                                                       #
-#               author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                       #
-#               last update: Feb 14, 2018                                                               #
-#                                                                                                       #
-#########################################################################################################
+#########################################################################################
+#                                                                                       #
+#   update_sub_html_pages.py: creates html pages for different categories of msids      #
+#                                                                                       #
+#               author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                       #
+#               last update: May 21, 2019                                               #
+#                                                                                       #
+#########################################################################################
 
 import os
 import sys
@@ -24,38 +24,31 @@ from time import gmtime, strftime, localtime
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var   = atemp[1].strip()
     line  = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import violation_estimate_data  as ved  #---- save violation estimated times in sqlite database v_table
-#
-#--- set a temporary file name
-#
-rtail  = int(time.time())
-zspace = '/tmp/zspace' + str(rtail)
+import create_html_suppl        as chs  #---- collecitons of functions to create html pages
 
 web_adress = 'https://' + web_address
 #
 #--- a list of thoese with sub groups
 #
 sub_list_file  = house_keeping + 'sub_group_list'
-sub_group_list = ecf.read_file_data(sub_list_file)
-
+sub_group_list = mcf.read_data_file(sub_list_file)
 
 #----------------------------------------------------------------------------------
 #-- create_sub_html: creates html pages for different categories of msids        --
@@ -80,7 +73,7 @@ def create_sub_html(inter=''):
     [udict, ddict] = ecf.read_unit_list()
 
     lfile = house_keeping + 'sub_html_list_all'
-    data  = ecf.read_file_data(lfile)
+    data  = mcf.read_data_file(lfile)
 #
 #--- create indivisual html pages under each category
 #
@@ -111,7 +104,6 @@ def create_sub_html(inter=''):
                         continue
                     create_html(catg, msids, ytime, udict, ddict, ltype, mtype, ptype)
 
-
 #----------------------------------------------------------------------------------
 #-- create_html: create a html page for category <catg>                         ---
 #----------------------------------------------------------------------------------
@@ -133,23 +125,16 @@ def create_html(catg, h_list, ytime, udict, ddict, ltype, mtype, ptype):
 #--- create links to other pages
 #
 
-    line = '<!DOCTYPE html>\n<html>\n<head>\n\t<title>Envelope Trending  Plots: ' + catg.upper() + '</title>\n'
-    line = line + '</head>\n<body style="width:95%;margin-left:10px; margin-right;10px;background-color:#FAEBD7;'
+    line = '<!DOCTYPE html>\n<html>\n<head>\n\t<title>Envelope Trending  Plots: ' 
+    line = line + catg.upper() + '</title>\n'
+    line = line + '</head>\n<body style="width:95%;margin-left:10px; margin-right;'
+    line = line + '10px;background-color:#FAEBD7;'
     line = line + 'font-family:Georgia, "Times New Roman", Times, serif">\n\n'
 
     line = line + '<div style="float:right;padding-right:50px;font-size:120%">\n'
-    #line = line + '<a href="' + web_dir + 'mta_trending_main.html" '
     line = line + '<a href="../mta_trending_main.html" '
-    line = line + 'style="float:right;padding-right:50px;font-size:80%"><b>Back to Top</b></a><br />\n'
-
-#        other = create_out_name(catg, ltype, mtype, 'inter')
-#        olab  = 'Open Interactive'
-#    else:
-#        other = create_out_name(catg, ltype, mtype, 'static')
-#        olab  = 'Open Static'
-#
-#    line = line + '<a href="'  + other
-#    line = line + '" style="float:right;padding-right:50px;font-size:80%"><b>' + olab + '</b></a><br />\n'
+    line = line + 'style="float:right;padding-right:50px;font-size:80%">'
+    line = line + '<b>Back to Top</b></a><br />\n'
 
     line = line + '</div>\n'
 
@@ -185,15 +170,18 @@ def create_html(catg, h_list, ytime, udict, ddict, ltype, mtype, ptype):
     line = line + create_link_names(catg, ltype, mtype, ptype)
 
     line = line + '<p style="margin-left:35px; margin-right:35px;">'
-    line = line + '<em><b>Delta/Yr</b></em> below is a slope of the liear fitting over the data of the period. '
-    line = line + '<em><b>Delta/Yr/Yr</b></em> is a slope of the liner fitting over the devivative data '
-    line = line + 'of the period. <em><b>Slope</b></em> listed on a linked plot is the slope computed on '
-    line = line + 'the last few periods of the  data to show the direction of the trend, and different '
-    line = line + 'from that of Delta/Yr.</p>'
+    line = line + '<em><b>Delta/Yr</b></em> below is a slope of the liear fitting '
+    line = line + 'over the data of the period. '
+    line = line + '<em><b>Delta/Yr/Yr</b></em> is a slope of the liner fitting '
+    line = line + 'over the devivative data of the period. <em><b>Slope</b></em> '
+    line = line + 'listed on a linked plot is the slope computed on '
+    line = line + 'the last few periods of the  data to show the direction of the trend, '
+    line = line + 'and different from that of Delta/Yr.</p>'
     line = line + '<div style="padding-bottom:30px;"></div>'
 
     line = line + '<div style="text-align:center">\n\n'
-    line = line + '<table border=1 cellspacing=2 style="margin-left:auto;margin-right:auto;text-align:center;">\n'
+    line = line + '<table border=1 cellspacing=2 style="margin-left:auto;margin-right:auto;'
+    line = line + 'text-align:center;">\n'
     line = line + '<th>MSID</th><th>Mean</th><th>RMS</th><th>Delta/Yr</th><th>Delta/Yr/Yr</th>'
     line = line + '<th>Unit</th><th>Description</th><th>Limit Violation</th>\n'
 #
@@ -217,7 +205,8 @@ def create_html(catg, h_list, ytime, udict, ddict, ltype, mtype, ptype):
         if cfile == False:
             continue
 #
-#--- hrc has 4 different entries (all, hrc i, hrc s, and off cases) but share the same unit and descriptions
+#--- hrc has 4 different entries (all, hrc i, hrc s, and off cases) 
+#--- but share the same unit and descriptions
 #
         msidp = msid.replace('_i', '')
         msidp = msidp.replace('_s', '')
@@ -266,7 +255,8 @@ def create_html(catg, h_list, ytime, udict, ddict, ltype, mtype, ptype):
             line = line + '<tr>\n<th>' + msid +'</a></th>'
             line = line + '<td>' + avg + '</td><td>' + std + '</td><td>' + fline + '</td>'
             line = line + '<td>' + dline + '</td><td>' + unit +'</td><td>' + discp + '</td>'
-            line = line + '<th style="font-size:90%;color:#B22222;padding-left:10px;padding-right:10px">No Data</th>\n</tr>\n'
+            line = line + '<th style="font-size:90%;color:#B22222;padding-left:10px;'
+            line = line + 'padding-right:10px">No Data</th>\n</tr>\n'
         else:
             xfile = cfile.replace('www\/','')
             ctemp = re.split('\/', cfile)
@@ -274,40 +264,39 @@ def create_html(catg, h_list, ytime, udict, ddict, ltype, mtype, ptype):
             line = line + '<tr>\n<th><a href="'+ xfile  +  '">' + msid +'</a></th>'
             line = line + '<td>' + avg + '</td><td>' + std + '</td><td>' + fline + '</td>'
             line = line + '<td>' + dline + '</td><td>' + unit +'</td><td>' + discp + '</td>'
-            line = line + '<th style="font-size:90%;color:' + color + ';padding-left:10px;padding-right:10px">' + vnote + '</th>\n</tr>\n'
+            line = line + '<th style="font-size:90%;color:' + color + ';padding-left:10px;'
+            line = line + 'padding-right:10px">' + vnote + '</th>\n</tr>\n'
 
     line = line + '</table>\n'
 
     line = line + '</div>\n'
 
-    bfile = house_keeping + 'Templates/html_close'
-    f     = open(bfile, 'r')
-    fout  = f.read()
-    f.close()
+    fout = chs.read_template('html_close')
+    
     line = line +  fout
 #
 #--- category html has the tail of "_main.html"
 #
     try:
         name = create_out_name(catg, ltype, mtype, ptype)
-        fo   = open(name, 'w')
-        fo.write(line)
-        fo.close()
+        with  open(name, 'w') as fo:
+            fo.write(line)
     except:
         pass
 
     vout = web_dir + catg + '/violations'
     if len(violation_save) ==  0:
-        mcf.rm_file(vout)
+        mcf.rm_files(vout)
     else:
-        fo  = open(vout, 'w')
+        line = ''
         for ent in violation_save:
             if len(ent[0]) < 8:
-                line = ent[0] + '\t\t' + ent[1] + '\n'
+                line = line + ent[0] + '\t\t' + ent[1] + '\n'
             else:
-                line = ent[0] + '\t' + ent[1] + '\n'
+                line = line + ent[0] + '\t'   + ent[1] + '\n'
+
+        with open(vout, 'w') as fo:
             fo.write(line)
-        fo.close()
         
 #----------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------
@@ -332,9 +321,6 @@ def check_na_std(line):
 
     return line
 
-
-
-
 #----------------------------------------------------------------------------------
 #-- read fitting results: read fitting results                                   --
 #----------------------------------------------------------------------------------
@@ -349,9 +335,9 @@ def extract_data(catg, msid, ltype, mtype):
     output: [a, b, d, avg, std, da, db, dd], fitting results and their errors
     """
     sfile = web_dir + catg + '/' + msid.capitalize() + '/Plots/' + msid + '_fit_results'
-    sdata = ecf.read_file_data(sfile)
+    sdata = mcf.read_data_file(sfile)
     dfile = web_dir + catg + '/' + msid.capitalize() + '/Plots/' + msid + '_dev_fit_results'
-    ddata = ecf.read_file_data(dfile)
+    ddata = mcf.read_data_file(dfile)
 
     a   = '0'
     b   = '0'
@@ -463,12 +449,6 @@ def create_link_names(catg, ltype, mtype, ptype):
                 continue
 
         this = create_out_name(catg, ltype, mtype, ptype_t)
-#        if ptype_t == 'static':
-#            text = 'Static'
-#        else:
-#            text = 'Interactive'
-#        link.append(this)
-#        discript.append(text)
 
     line = '<table border=1 cellpadding=2><tr>\n'
     for k in range(0, len(link)):
@@ -482,7 +462,6 @@ def create_link_names(catg, ltype, mtype, ptype):
     line = line + '<div style="padding-bottom:10px;"></div>'
 
     return line
-
 
 #----------------------------------------------------------------------------------
 #-- check_plot_existance: check whether a html file exist for the given msid and/or interactive plot exists
@@ -630,8 +609,11 @@ def clean_the_input(line):
                         otherwise, just return the value as it was
     """
 
-    if mcf.chkNumeric(line):
+    try:
+        chk = float(line)
         line = str(ecf.round_up(float(line)))
+    except:
+        pass
 
     return line
         

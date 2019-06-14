@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -24,8 +24,8 @@ ascdsenv = getenv('source /home/ascds/.ascrc -r release', shell='tcsh')
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
 data = [line.strip() for line in f.readlines()]
 f.close()
 
@@ -33,7 +33,7 @@ for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -53,7 +53,7 @@ import fits_operation           as mfo
 rtail  = int(time.time())
 zspace = '/tmp/zspace' + str(rtail)
 
-data_dir = '/data/mta/Script/MTA_limit_trends/Scripts/EPH/Recovery/Outdir/'
+data_dir = '/data/mta/Script/MTA_limit_trends/Scripts3.6/EPH/Recovery/Outdir/'
 
 mday_list  = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 mday_list2 = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -73,7 +73,7 @@ def update_simdiag_data(date = ''):
 #
     #sfile = house_keeping + 'msid_list_simdiag'
     sfile = './msid_list_ephkey'
-    data  = ecf.read_file_data(sfile)
+    data  = mcf.read_data_file(sfile)
     cols  = []
     g_dir = {}
     for ent in data:
@@ -155,12 +155,12 @@ def update_simdiag_data(date = ''):
             cmd = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace + '> ztemp_out'
             os.system(cmd)
 
-        mcf.rm_file(zspace)
+        mcf.rm_files(zspace)
 #
 #--- find the names of the fits files of the day of the group
 #
         try:
-            flist = ecf.read_file_data('ztemp_out', remove=1)
+            flist = mcf.read_data_file('ztemp_out', remove=1)
             flist = flist[1:]
         except:
             print "\t\tNo data"
@@ -767,7 +767,7 @@ def update_fits_file(fits, cols, cdata):
         nlist   = list(data[cols[k]]) + cdata[k]
         udata.append(nlist)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     create_fits_file(fits, cols, udata)
 
 #-------------------------------------------------------------------------------------------
@@ -794,7 +794,7 @@ def create_fits_file(fits, cols, cdata):
     dcols = pyfits.ColDefs(dlist)
     tbhdu = pyfits.BinTableHDU.from_columns(dcols)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     tbhdu.writeto(fits)
 
 #-------------------------------------------------------------------------------------------
@@ -873,7 +873,7 @@ def remove_old_data(fits, cols, cut):
     for k in range(0, len(cols)):
         udata.append(list(data[cols[k]][pos:]))
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     create_fits_file(fits, cols, udata)
 
 

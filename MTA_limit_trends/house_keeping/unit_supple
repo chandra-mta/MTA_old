@@ -166,10 +166,6 @@ mrmdest STEP
 mrmdest V
 flexbtset   K
 flexctset   K
-tcm_ifu K
-tcm_obc K
-tcm_ssr1 K
-tcm_ssr2 K
 flexadif    K
 flexbdif    K
 flexcdif    K

@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#           create_sun_angle_html_page.py: create sun angle html pages                              #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Feb 06, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#####################################################################################
+#                                                                                   #
+#           create_sun_angle_html_page.py: create sun angle html pages              #
+#                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                   #
+#           last update: May 20, 2018                                               #
+#                                                                                   #
+#####################################################################################
 
 import os
 import sys
@@ -26,29 +26,26 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
-
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 web_address = 'https://' + web_address
@@ -71,21 +68,17 @@ def create_sun_angle_html_page(msid_list='msid_list_sun_angle'):
 #--- read msid lists
 #
     ifile = house_keeping + msid_list
-    f     = open(ifile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data  = mcf.read_data_file(ifile)
 #
 #--- read template
 #
     tfile    = house_keeping + 'Templates/slide_template.html'
-    f        = open(tfile, 'r')
-    template = f.read()
-    f.close()
+    with open(tfile, 'r') as f:
+        template = f.read()
 
     tfile     = house_keeping + 'Templates/html_close'
-    f         = open(tfile, 'r')
-    tail_part = f.read()
-    f.close()
+    with open(tfile, 'r') as f:
+        tail_part = f.read()
 #
 #--- for each msid, create a html page
 #
@@ -117,10 +110,8 @@ def create_sun_angle_html_page(msid_list='msid_list_sun_angle'):
         else:
                 m_save.append(msid)
 
-
         if len(m_save) > 0:
             g_dict[group] = m_save
-
 
         for ltype in ['mid', 'min', 'max']:
     
@@ -148,7 +139,8 @@ def create_sun_angle_html_page(msid_list='msid_list_sun_angle'):
                 line2 = line2 + '\t<div class="mySlides xfade">\n'
                 line2 = line2 + '\t\t<div class="numbertext">' + str(k+1) + '/' + str(tot) + '</div>\n'
                 line2 = line2 + '\t\t<img src="' +  web_address + group.capitalize() + '/'
-                line2 = line2 + msid.capitalize() + '/Plots/' + msid + '_' + ltype +  '_sun_angle_' + str(year_list[k]) 
+                line2 = line2 + msid.capitalize() + '/Plots/' + msid + '_' 
+                line2 = line2 + ltype +  '_sun_angle_' + str(year_list[k]) 
                 line2 = line2 + '.png" style="width:100%">\n'
                 line2 = line2 + '\t\t<!--<div class="text"> Text</div> -->\n'
                 line2 = line2 + '\t</div>\n\n'
@@ -178,22 +170,18 @@ def create_sun_angle_html_page(msid_list='msid_list_sun_angle'):
             hpage = hpage + tail_part
 
             try:
-                fo    = open(oname, 'w')
-                fo.write(hpage)
-                fo.close()
+                with  open(oname, 'w') as fo:
+                    fo.write(hpage)
             except:
-                print "cannot create: " + oname
-
-
-
+                print("cannot create: " + oname)
 #
 #--- create the mid level (group level) web pages
 #
 
     hfile     = house_keeping + 'Templates/html_head'
-    f         = open(hfile, 'r')
-    head_part = f.read()
-    f.close()
+    with  open(hfile, 'r') as f:
+        head_part = f.read()
+
     head_part = head_part.replace("#MSID#", 'Sun Angle Plot')
     head_part = head_part.replace("#JAVASCRIPT#", '')
 
@@ -253,12 +241,10 @@ def create_sun_angle_html_page(msid_list='msid_list_sun_angle'):
             oline = head_part + line + tail_part
 
             oname = web_dir + group + '/' +  group.lower() + '_' +  mtype  + '_long_sun_angle.html'
-            fo    = open(oname, 'w')
-            fo.write(oline)
-            fo.close()
+            with  open(oname, 'w') as fo:
+                fo.write(oline)
 
 #-----------------------------------------------------------------------------------
-
 
 if __name__ == "__main__":
 

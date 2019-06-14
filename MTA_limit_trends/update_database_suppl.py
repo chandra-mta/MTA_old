@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #########################################################################################    
 #                                                                                       #
@@ -6,7 +6,7 @@
 #                                                                                       #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
 #                                                                                       #
-#           last update: Jun 15, 2018                                                   #
+#           last update: May 21, 2019                                                   #
 #                                                                                       #
 #########################################################################################
 
@@ -23,15 +23,14 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -40,7 +39,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv #---- contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -48,7 +46,8 @@ import fits_operation           as mfo
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time()*random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 sp_limt_case_c = ['1oahat','3faralat','3rctubpt','3tsmxcet', '3tsmxspt', '3tsmydpt', '3tspyfet',\
@@ -57,7 +56,7 @@ sp_limt_case_c = ['1oahat','3faralat','3rctubpt','3tsmxcet', '3tsmxspt', '3tsmyd
 
 
 #------------------------------------------------------------------------------------
-#-- run_update_with_ska: extract data from ska database and update the data for the msids in the msid_list 
+#-- run_update_with_ska: extract data from ska database and update the data for the msids
 #------------------------------------------------------------------------------------
 
 def run_update_with_ska(msid, group, msid_sub_list=[], glim=''):
@@ -114,7 +113,7 @@ def run_update_with_ska(msid, group, msid_sub_list=[], glim=''):
     
             if msid in sp_limt_case_c:
                 tchk = 1
-    
+
             glim  = ecf.get_limit(msid, tchk, mta_db, mta_cross)
 #
 #--- update database
@@ -138,7 +137,6 @@ def compute_sub_msid(msid, msid_sub_list, tstart, tstop):
     output: ttime   --- array of time values
             tdata   --- array of the data values
     """
-
     chk = 0
     for m in range(0, len(msid_sub_list)):
         if msid == msid_sub_list[m][0]:
@@ -242,7 +240,6 @@ def extract_data_arc5gl(detector, level, filetype, tstart, tstop, sub=''):
     output: cols        --- a list of col name
             tdata       --- a list of arrays of data
     """
-
 #
 #--- extract ephin hk lev 0 fits data
 #
@@ -259,32 +256,10 @@ def extract_data_arc5gl(detector, level, filetype, tstart, tstop, sub=''):
     line = line + 'tstop = '    + str(tstop)  + '\n'
     line = line + 'go\n'
 
-    fo = open(zspace, 'w')
-    fo.write(line)
-    fo.close()
-
-    try:
-        cmd = ' /proj/sot/ska/bin/arc5gl  -user isobe -script ' + zspace + '> ztemp_out'
-        os.system(cmd)
-    except:
-        cmd = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace + '> ztemp_out'
-        os.system(cmd)
-
-    mcf.rm_file(zspace)
-#
-#--- find the names of the fits files of the day of the group
-#
-    try:
-        flist = ecf.read_file_data('ztemp_out', remove=1)
-        flist = flist[1:]
-    except:
-        print "\t\tNo data"
-        #continue
-        return [[], []]
+    flist = mcf.run_arc5gl_process(line)
 
     if len(flist) < 1:
-        print "\t\tNo data"
-        #continue
+        print("\t\tNo data")
         return [[], []]
 #
 #--- combined them
@@ -292,7 +267,6 @@ def extract_data_arc5gl(detector, level, filetype, tstart, tstop, sub=''):
     flen = len(flist)
 
     if flen == 0:
-        #continue
         return [[], []]
 
     elif flen == 1:
@@ -342,7 +316,8 @@ def update_database(msid, group, dtime, data,  glim, pstart=0, pstop=0, step=360
     output: <msid>_data.fits, <msid>_short_data.fits
     """
 
-    cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper', 'dcount',\
+    cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+             'yupper', 'rlower', 'rupper', 'dcount',\
              'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
     out_dir = data_dir + group + '/'
@@ -660,7 +635,7 @@ def process_day_data(msid, time, data, glim, step = 3600.0):
 #
             if chk2 == 0:
                 rdata = data[spos2:k]
-                avg   = rdata.mean()
+                avg   = numpy.mean(rdata)
                 med   = numpy.median(rdata)
                 sig   = rdata.std()
                 amin  = rdata.min()
@@ -740,10 +715,6 @@ def process_day_data(msid, time, data, glim, step = 3600.0):
 
     return [week_p, short_p, long_p]
 
-
-
-
-
 #-------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------
 #-------------------------------------------------------------------------------------------
@@ -796,9 +767,8 @@ def remove_old_data(fits, cols, cut):
     for k in range(0, len(cols)):
         udata.append(list(data[cols[k]][pos:]))
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     ecf.create_fits_file(fits, cols, udata)
-
 
 #-------------------------------------------------------------------------------------------
 #-- find_violation_range: set violation range                                             --
@@ -885,9 +855,9 @@ def find_num_of_elements(carray, lim, side=0):
 
     return cnt 
 
-#--------------------------------------------------------------------------------------------------------
-#-- get_mta_fits_data: fetch data from mta local database                                              --
-#--------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------
+#-- get_mta_fits_data: fetch data from mta local database                      --
+#--------------------------------------------------------------------------------
 
 def get_mta_fits_data(msid, start, stop):
     """
@@ -914,7 +884,7 @@ def get_mta_fits_data(msid, start, stop):
         cmd = 'ls ' + deposit_dir + '*/*/' + msid + '_full_data_' + str(year) + '.fits* > ' + zspace
         os.system(cmd)
      
-        out  = ecf.read_file_data(zspace, remove=1)
+        out  = mcf.read_data_file(zspace, remove=1)
         fits = out[0]
     
         if not os.path.isfile(fits):
@@ -950,3 +920,219 @@ def get_mta_fits_data(msid, start, stop):
         return False
 
 
+
+#-------------------------------------------------------------------------------------------
+#-- update_week_database: update/create week long fits data files of msid                 --
+#-------------------------------------------------------------------------------------------
+
+def update_week_database(msid, group, glim, pstart, pstop, step):
+    """
+    update/create fits data files of msid
+    input:  msid    --- msid
+            pstart  --- starting time in seconds from 1998.1.1
+            pstop   --- stopping time in seconds from 1998.1.1
+            step    --- time interval of the short time data
+    output: <msid>_data.fits, <msid>_short_data.fits
+    """
+
+    cols  = ['time', msid, 'med', 'std', 'min', 'max', 'ylower',\
+              'yupper', 'rlower', 'rupper', 'dcount',\
+             'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
+
+    out_dir = data_dir + group + '/'
+#
+#--- make sure that the sub directory exists
+#
+    if not os.path.isdir(out_dir):
+        cmd = 'mkdir ' + out_dir
+        os.system(cmd)
+
+    week_p = get_data_from_archive(msid, pstart, pstop, glim, step)
+
+    fits3 = out_dir + msid + '_week_data.fits'
+    ecf.create_fits_file(fits3, cols, week_p)
+
+    return fits3
+
+#-----------------------------------------------------------------------------------
+#-- get_data_from_archive_week: extract data from the archive and compute the stats-
+#-----------------------------------------------------------------------------------
+
+def get_data_from_archive_week(msid, start, stop, glim, step):
+    """
+    extract data from the archive and compute the stats for weekly database
+    input:  msid    --- msid of the data
+            start   --- start time
+            stop    --- stop time
+            glim    --- a list of limit tables
+            step    --- a bin size in seconds
+    output: a list of two lists which contain:
+            week_p:
+                wtime   --- a list of time in sec from 1998.1.1
+                wdata   --- a list of the  mean of each interval
+                wmed    --- a list of the median of each interval
+                wstd    --- a list of the std of each interval
+                wmin    --- a list of the min of each interval
+                wmax    --- a list of the max of each interval
+                wyl     --- a list of the rate of yellow lower violation
+                wyu     --- a list of the rate of yellow upper violation
+                wrl     --- a list of the rate of red lower violation
+                wru     --- a list of the rate of red upper violation
+                wcnt    --- a list of the total data counts
+                wyl     --- a list of the lower yellow limits
+                wyu     --- a list of the upper yellow limits
+                wrl     --- a list of the lower red limits
+                wru     --- a list of the upper red limits
+    """
+    wtime = []
+    wdata = []
+    wmed  = []
+    wstd  = []
+    wmin  = []
+    wmax  = []
+    wyl   = []
+    wyu   = []
+    wrl   = []
+    wru   = []
+    wcnt  = []
+
+    wsave = []
+    vsave = []
+#
+#--- extract data from archive
+#
+    try:
+        out     = fetch.MSID(msid, start, stop)
+        tdata   = out.vals
+        ttime   = out.times
+        data    = []
+        dtime   = []
+#
+#--- if the data is not given, the database desplay it as -999.999 (or similar); so drop them
+#
+        for k in range(0, len(tdata)):
+
+            try:
+                test = int(float(tdata[k]))
+            except:
+                continue
+
+            if int(abs(tdata[k])) == 999:
+                continue
+
+            data.append(tdata[k])
+            dtime.append(ttime[k])
+
+        data  = numpy.array(data)
+        dtime = numpy.array(dtime)
+#
+#--- if a full resolution is asked...
+#
+        if step == 0.0:
+            wtime = dtime
+            wdata = data
+            wmed  = data
+            wstd  = [0]* len(data)
+            wmin  = data
+            wmax  = data
+            for m in range (0, len(dtime)):
+                vlimits = find_violation_range(glim, dtime[m])
+                darray  = numpy.array([data[m]])
+                [yl, yu, rl, ru, tot] = find_violation_rate(darray, vlimits)
+                wyl.append(yl)
+                wyu.append(yu)
+                wrl.append(rl)
+                wru.append(ru)
+                wcnt.append(1)
+                wsave.append(vlimits)
+
+#
+#--- if asked, devide the data into a smaller period (step size)
+#
+        else:
+            spos  = 0
+            spos2 = 0
+            chk   = 1
+            chk2  = 2
+            send2 = dtime[spos2] + step
+    
+            for k in range(0, len(dtime)):
+    
+                if dtime[k] < send2:
+                    chk2 = 0
+                else:
+                    sdata = data[spos2:k]
+    
+                    if len(sdata) <= 0:
+                        spos2 = k
+                        send2 = dtime[k] + step
+                        chk2  = 1
+                        continue
+    
+                    avg   = sdata.mean()
+                    med   = numpy.median(sdata)
+                    sig   = sdata.std()
+                    amin  = sdata.min()
+                    amax  = sdata.max()
+                    ftime = dtime[spos2 + int(0.5 * (k-spos2))]
+                    vlimits = find_violation_range(glim, ftime)
+                    [yl, yu, rl, ru, tot] = find_violation_rate(sdata, vlimits)
+    
+                    wtime.append(ftime)
+                    wdata.append(avg)
+                    wmed.append(med)
+                    wstd.append(sig)
+                    wmin.append(amin)
+                    wmax.append(amax)
+                    wyl.append(yl)
+                    wyu.append(yu)
+                    wrl.append(rl)
+                    wru.append(ru)
+                    wcnt.append(tot)
+                    wsave.append(vlimits)
+    
+                    spos2 = k
+                    send2 = dtime[k] + step
+                    chk2  = 1
+#
+#--- check whether there are any left over; if so add it to the data lists
+#
+            if chk2 == 0:
+                rdata = data[spos2:k]
+                if len(rdata) > 0:
+                    avg   = rdata.mean()
+                    med   = numpy.median(rdata)
+                    sig   = rdata.std()
+                    amin  = rdata.min()
+                    amax  = rdata.max()
+                    ftime = dtime[spos2 + int(0.5 * (k-spos2))]
+                    vlimits = find_violation_range(glim, ftime)
+                    [yl, yu, rl, ru, tot] = find_violation_rate(rdata, vlimits)
+     
+                    wtime.append(dtime[spos2 + int(0.5 * (k-spos2))])
+                    wdata.append(avg)
+                    wmed.append(med)
+                    wstd.append(sig)
+                    wmin.append(amin)
+                    wmax.append(amax)
+                    wyl.append(yl)
+                    wyu.append(yu)
+                    wrl.append(rl)
+                    wru.append(ru)
+                    wcnt.append(tot)
+                    wsave.append(vlimits)
+
+    except:
+        pass
+
+    week_p  = [wtime, wdata, wmed, wstd, wmin, wmax, wyl, wyu, wrl, wru, wcnt]
+#
+#--- adding limits to the table
+#
+    vtemp   = [[], [], [], []]
+    for k in range(0, len(wsave)):
+        for m in range(0, 4):
+            vtemp[m].append(wsave[k][m])
+    week_p = week_p + vtemp
+
+    return week_p

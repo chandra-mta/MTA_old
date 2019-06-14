@@ -1,10 +1,10 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Feb 15, 2018                                               #
+#           last update: May 20, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -18,20 +18,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -40,7 +39,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -48,10 +46,10 @@ import fits_operation           as mfo
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
-data_dir = '/data/mta/Script/MTA_limit_trends/Scripts/Comp/Recover/Outdir/'
+data_dir = '/data/mta/Script/MTA_limit_trends/Scripts3.6/Comp/Recover/Outdir/'
 #testfits = data_dir + 'compaciscent/1cbatc_data.fits'
 
 mday_list  = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -71,7 +69,7 @@ def update_grad_and_comp_data(date = ''):
 #--- read group names which need special treatment
 #
     sfile = 'grad_special_list'
-    glist = ecf.read_file_data(sfile)
+    glist = mcf.read_data_file(sfile)
 #
 #--- create msid <---> unit dictionary
 #
@@ -103,7 +101,7 @@ def update_grad_and_comp_data(date = ''):
             if mon < 10:
                 cmon = '0' + cmon
 
-            if tcnv.isLeapYear(year) == 1:
+            if mcf.is_leadyear(year):
                 lday = mday_list2[mon-1]
             else:
                 lday = mday_list[mon-1]
@@ -117,13 +115,13 @@ def update_grad_and_comp_data(date = ''):
                 day_list.append(sday)
         
     for sday in day_list:
-        print "Date: " + sday
+        print("Date: " + sday)
 
         start = sday + 'T00:00:00'
         stop  = sday + 'T23:59:59'
 
         for group in glist:
-            print "Group: " + group
+            print("Group: " + group)
 
             line = 'operation=retrieve\n'
             line = line + 'dataset = mta\n'
@@ -145,19 +143,19 @@ def update_grad_and_comp_data(date = ''):
                 cmd = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace + '> ztemp_out'
                 os.system(cmd)
 
-            mcf.rm_file(zspace)
+            mcf.rm_files(zspace)
 #
 #--- find the names of the fits files of the day of the group
 #
             try:
-                flist = ecf.read_file_data('ztemp_out', remove=1)
+                flist = mcf.read_data_file('ztemp_out', remove=1)
                 flist = flist[1:]
             except:
-                print "\t\tNo data"
+                print("\t\tNo data")
                 continue
 
             if len(flist) < 1:
-                print "\t\tNo data"
+                print("\t\tNo data")
                 continue
 #
 #--- combined them
@@ -768,7 +766,7 @@ def update_fits_file(fits, cols, cdata):
         nlist   = list(data[cols[k]]) + cdata[k]
         udata.append(nlist)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     create_fits_file(fits, cols, udata)
 
 #-------------------------------------------------------------------------------------------
@@ -795,7 +793,7 @@ def create_fits_file(fits, cols, cdata):
     dcols = pyfits.ColDefs(dlist)
     tbhdu = pyfits.BinTableHDU.from_columns(dcols)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     tbhdu.writeto(fits)
 
 #-------------------------------------------------------------------------------------------
@@ -874,7 +872,7 @@ def remove_old_data(fits, cols, cut):
     for k in range(0, len(cols)):
         udata.append(list(data[cols[k]][pos:]))
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     create_fits_file(fits, cols, udata)
 
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 21, 2018                                               #
+#           last update: May 22, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -20,20 +20,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -42,7 +41,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -51,7 +49,7 @@ import update_database_suppl    as uds
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mday_list  = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
@@ -73,7 +71,7 @@ def update_simdiag_data(date = ''):
 #--- read group names which need special treatment
 #
     sfile = house_keeping + 'msid_list_simdiag'
-    data  = ecf.read_file_data(sfile)
+    data  = mcf.read_data_file(sfile)
     cols  = []
     g_dir = {}
     for ent in data:
@@ -88,14 +86,13 @@ def update_simdiag_data(date = ''):
 #--- find date to read the data
 #
     if date == '':
-        yesterday = datetime.date.today() - datetime.timedelta(1)
-        yesterday = str(yesterday).replace('-', '')
-        date_list = find_the_last_entry_time(yesterday)
+        date_list = ecf.create_date_list_to_yestaday(testfits)
     else:
         date_list = [date]
 
     for sday in date_list:
-        print "Date: " + sday
+        sday = sday[:4] + '-' + sday[4:6] + '-' + sday[6:]
+        print("Date: " + sday)
 
         start = sday + 'T00:00:00'
         stop  = sday + 'T23:59:59'
@@ -104,7 +101,10 @@ def update_simdiag_data(date = ''):
 #
 #--- get time data in the list form
 #
-        dtime = list(tbdata.field('time'))
+        try:                                        #---03/07/19
+            dtime = list(tbdata.field('time'))
+        except:
+            continue
 
         for k in range(0, len(cols)):
             col = cols[k]
@@ -129,65 +129,6 @@ def update_simdiag_data(date = ''):
 #--- update database
 #
             uds.update_database(msid, g_dir[msid], dtime, data, glim)
-
-
-#-------------------------------------------------------------------------------------------
-#-- find_the_last_entry_time: find the last logged time                                   --
-#-------------------------------------------------------------------------------------------
-
-def find_the_last_entry_time(yesterday):
-    """
-    find the last entry date and then make a list of dates up to yesterday
-    input:  yesterday   --- date of yesterday in the format of yyyymmdd
-    output: otime       --- a list of date in the format of yyyymmdd
-    """
-#
-#--- find the last entry date from the "testfits" file
-#
-    f = pyfits.open(testfits)
-    data = f[1].data
-    f.close()
-#
-#--- find the last time logged and changed to a python standard time insecods
-#
-    ltime = numpy.max(data['time'])  + 883630800.0
-#
-#--- find the time of the start of the day
-#
-    ct    = time.strftime('%Y%m%d', time.gmtime(ltime))
-    year  = int(ct[0:4])
-    mon   = int(ct[4:6])
-    day   = int(ct[6:8])
-    dt    = datetime.datetime(year, mon, day)
-    ltime = time.mktime(dt.timetuple())
-#
-#--- set starting day to the next day
-#
-    ltime = ltime + 86400.0
-#
-#--- convert yesterday to seconds
-#
-    yesterday = str(yesterday)
-    year  = int(yesterday[0:4])
-    mon   = int(yesterday[4:6])
-    day   = int(yesterday[6:8])
-    dt    = datetime.datetime(year, mon, day)
-    stime = time.mktime(dt.timetuple())
-
-    ctime = [ltime]
-    while ltime < stime:
-        ltime += 86400.0
-        ctime.append(ltime)
-#
-#--- convert the list to yyyymmdd format
-#
-    otime = []
-    for ent in ctime:
-        oday =  time.strftime('%Y-%m-%d', time.gmtime(ent))
-        otime.append(oday)
-
-    return otime
-
 
 #-------------------------------------------------------------------------------------------
 

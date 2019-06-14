@@ -1,11 +1,11 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
 #       tephin_leak_data_update.py: update tephin - ephin rate/leak current data    #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 14, 2018                                               #
+#           last update: Jun 03, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -18,20 +18,19 @@ import numpy
 import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -40,7 +39,6 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
@@ -48,7 +46,7 @@ import update_database_suppl    as uds
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #-------------------------------------------------------------------------------------------
@@ -66,7 +64,7 @@ def tephin_leak_data_update(year=''):
 #
     tout = set_time_period(year)
     if len(tout) == 6:
-        [lstart, lstop, lyear, tstart, tstop, year] = tout
+        [ltstart, ltstop, lyear, tstart, tstop, year] = tout
         chk = 1
     else:
         [tstart, tstop, year] = tout
@@ -87,12 +85,11 @@ def tephin_leak_data_update(year=''):
         ltephin = update_database('tephin', 'Eleak', glim, ltstart, ltstop, lyear)
 
     tephin  = update_database('tephin', 'Eleak', glim, tstart, tstop, year)
-
 #
 #--- read msid list
 #
     mfile = house_keeping + 'msid_list_eph_tephin'
-    data  = ecf.read_file_data(mfile)
+    data  = mcf.read_data_file(mfile)
 
     for ent in data:
 #
@@ -123,13 +120,11 @@ def tephin_leak_data_update(year=''):
 #
         try:
             out = fetch.MSID(msid, '2017:001:00:00:00', '2017:002')
-            print "MSID: " + msid
+            print("MSID: " + msid)
         except:
             missed = house_keeping + '/missing_data'
-            fo     = open(missed, 'a')
-            fo.write(msid)
-            fo.write('\n')
-            fo.close()
+            with open(missed, 'a') as fo:
+                fo.write(msid + '\n')
 
             continue
 #
@@ -138,7 +133,10 @@ def tephin_leak_data_update(year=''):
         if chk == 1:
             update_database(msid, group,  glim, ltstart, ltstop, lyear, sdata=ltephin)
 
-        update_database(msid, group,  glim, tstart, tstop, year, sdata=tephin)
+        try:
+            update_database(msid, group,  glim, tstart, tstop, year, sdata=tephin)
+        except:
+            pass
 
 #-------------------------------------------------------------------------------------------
 #-- set_time_period: setting data extract data period                                     --
@@ -181,7 +179,7 @@ def set_time_period(year):
 #
 #--- if the time span goes over the year boundary, return two sets of periods
 #
-            start = str(year)   + ':001:00:00:00'
+            start = str(tyear)   + ':001:00:00:00'
             start = Chandra.Time.DateTime(start).secs
             stday = time.strftime("%Y:%j:00:00:00", time.gmtime())
             stop  = Chandra.Time.DateTime(stday).secs
@@ -207,7 +205,6 @@ def set_time_period(year):
 
         return [start, stop, year]
 
-
 #-------------------------------------------------------------------------------------------
 #-- update_database: update/create fits data files of msid                                --
 #-------------------------------------------------------------------------------------------
@@ -221,13 +218,13 @@ def update_database(msid, group, glim, pstart, pstop, year, sdata=''):
             sdata   --- data set to be added as an independent data
     output: <msid>_data.fits, <msid>_short_data.fits
     """
-
-    cols  = ['time', 'tephin', 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper', 'dcount',\
+    cols  = ['time', 'tephin', 'med', 'std', 'min', 'max', 'ylower',\
+             'yupper', 'rlower', 'rupper', 'dcount',\
              'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
 
-    cols2 = ['time', 'tephin',  msid, 'med', 'std', 'min', 'max', 'ylower', 'yupper', 'rlower', 'rupper',\
+    cols2 = ['time', 'tephin',  msid, 'med', 'std', 'min', 'max',\
+             'ylower', 'yupper', 'rlower', 'rupper',\
              'dcount', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
-
 #
 #--- make sure that the sub directory exists
 #

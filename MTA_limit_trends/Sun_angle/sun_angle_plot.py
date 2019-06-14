@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#           sun_angle_plot.py: create sun angle plots                                               #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Feb 13, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#############################################################################
+#                                                                           #
+#           sun_angle_plot.py: create sun angle plots                       #
+#                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
+#                                                                           #
+#           last update: May 21, 2019                                       #
+#                                                                           #
+#############################################################################
 
 import os
 import sys
@@ -36,36 +36,40 @@ if __name__ == '__main__':
 
     mpl.use('Agg')
 
+from pylab import *
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
+import matplotlib.lines as lines
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 import envelope_common_function as ecf  #---- collection of functions used in envelope fitting
 import find_moving_average      as fma  #---- moving average 
 import find_moving_average_bk   as fmab #---- moving average (backword fitting version)
 import robust_linear            as rbl  #---- robust linear fitting
-
+import create_html_suppl        as chs
+import create_derivative_plots  as cdp
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #-----------------------------------------------------------------------------------
@@ -76,9 +80,10 @@ def plot_sun_angle_data(msid_list, inyear='', lupdate = 0):
     """
     create msid vs sun angle plot and derivative plot
     input:  msid_list   --- a name of the file containing the msid list
-            inyear      --- the year you want to create the plot; if not provided, create 1999 to current
-            lupdate     --- if 1, update y plotting range. Otherwise, use the previous one or don't synch for 
-                            all years
+            inyear      --- the year you want to create the plot; 
+                            if not provided, create 1999 to current
+            lupdate     --- if 1, update y plotting range. Otherwise, 
+                            use the previous one or don't synch for all years
     output: <web_dir>/<group name>/<msid>/<msid>+sun_angle_<year>.png
     """
     if inyear == '':
@@ -91,9 +96,7 @@ def plot_sun_angle_data(msid_list, inyear='', lupdate = 0):
         year_list = [inyear]
 
     ifile  = house_keeping + msid_list
-    f      = open(ifile, 'r')
-    data   = [line.strip() for line in f.readlines()]
-    f.close()
+    data   = mcf.read_data_file(ifile)
     
     for ent in data:
         atemp = re.split('\s+', ent)
@@ -116,16 +119,17 @@ def plot_sun_angle_data(msid_list, inyear='', lupdate = 0):
         except:
             ydrange = 0.20
 
-        print "msid: " + msid
+        print("msid: " + msid)
 
         for year in year_list:
-            print "Year: " + str(year)
+            print("Year: " + str(year))
+
             fits = data_dir + group.capitalize() + '/' + msid.capitalize() + '/'
             fits = fits + msid + '_sun_angle_' + str(year) + '.fits'
             if not os.path.isfile(fits):
                 continue
 
-            data  = read_fits(fits, ['sun_angle', msid, 'min', 'max'])
+            data  = ecf.read_fits_col(fits, ['sun_angle', msid, 'min', 'max'])
             sdata = data[0]
 
             oname = web_dir + group.capitalize() + '/' + msid.capitalize() 
@@ -137,38 +141,24 @@ def plot_sun_angle_data(msid_list, inyear='', lupdate = 0):
 
             ofile = oname   + '/Plots/' + msid + '_mid_sun_angle_' + str(year) + '.png'
             mdata = data[1]
-            plot_data(sdata, mdata, year, msid, ofile, ymin, ymax, ydrange, msid_list, lupdate)
+            try:
+                plot_data(sdata, mdata, year, msid, ofile, ymin, ymax, ydrange, msid_list, lupdate)
+            except:
+                pass
 
             ofile = oname   + '/Plots/' + msid + '_min_sun_angle_' + str(year) + '.png'
             mdata = data[2]
-            plot_data(sdata, mdata, year, msid, ofile, ymin, ymax, ydrange, msid_list, lupdate)
+            try:
+                plot_data(sdata, mdata, year, msid, ofile, ymin, ymax, ydrange, msid_list, lupdate)
+            except:
+                pass
 
             ofile = oname   + '/Plots/' + msid + '_max_sun_angle_' + str(year) + '.png'
             mdata = data[3]
-            plot_data(sdata, mdata, year, msid, ofile, ymin, ymax, ydrange, msid_list, lupdate)
-
-
-#-----------------------------------------------------------------------------------
-#-- read_fits: read fits file                                                     --
-#-----------------------------------------------------------------------------------
-
-def read_fits(fits, col_list):
-    """
-    read fits file
-    input:  fits        --- file name
-            col_list    --- a list of column names to be extracted 
-    output: out         --- a list of data arrays corresponding to the column list
-    """
-
-    f = pyfits.open(fits)
-    data = f[1].data
-    f.close()
-
-    out = []
-    for col in col_list:
-        out.append(data[col])
-
-    return out
+            try:
+                plot_data(sdata, mdata, year, msid, ofile, ymin, ymax, ydrange, msid_list, lupdate)
+            except:
+                pass
 
 #-----------------------------------------------------------------------------------
 #-- plot_data: create two panel plots for msid vs sun angle and its deviation      -
@@ -189,7 +179,6 @@ def plot_data(sdata, mdata, year, msid, oname, ymin, ymax, ydrange, msid_list, l
             lupdate     --- if 1, update y plotting range.
     output: oname in png format
     """
-
     plt.close('all')
 
     fig, ax = plt.subplots(1, figsize=(8,6))
@@ -201,7 +190,7 @@ def plot_data(sdata, mdata, year, msid, oname, ymin, ymax, ydrange, msid_list, l
     xmax  = 170
 
     if ymax == -999:
-        [ymin, ymax, ypos] = set_y_plot_range(mdata)
+        [ymin, ymax, ypos] = chs.set_y_plot_range(mdata)
 #
 #--- since we want to all years to be in the same plotting range, this scripts adjust
 #--- the plotting range. you may need to run a couple of times for the full range to
@@ -210,7 +199,7 @@ def plot_data(sdata, mdata, year, msid, oname, ymin, ymax, ydrange, msid_list, l
         [ymin, ymax, ydev] = update_yrange(msid_list, msid, ymin=ymin, ymax=ymax, ydev=ydrange)
     else:
         if lupdate == 2:
-            [ymint, ymaxt, ypos] = set_y_plot_range(mdata)
+            [ymint, ymaxt, ypos] = chs.set_y_plot_range(mdata)
             mchk = 0
             if ymint < ymin:
                 ymin = ymint
@@ -261,9 +250,9 @@ def plot_data(sdata, mdata, year, msid, oname, ymin, ymax, ydrange, msid_list, l
 #
 #---- derivative plot
 #
-    [xd, yd, ad]          = find_deriv(sdata, mdata, step=5)
+    [xd, yd, ad]          = cdp.find_deriv(sdata, mdata, step=5)
 
-    [dymin, dymax, dypos] = set_y_plot_range(yd)
+    [dymin, dymax, dypos] = chs.set_y_plot_range(yd)
 
     if lupdate == 2:
         if abs(dymin) > abs(dymax):
@@ -274,7 +263,6 @@ def plot_data(sdata, mdata, year, msid, oname, ymin, ymax, ydrange, msid_list, l
 
     ydiff = ymax - ymin
     ypos  = ymax - 0.1 * ydiff
-
 
     ax2 = plt.subplot(212)
 
@@ -291,7 +279,7 @@ def plot_data(sdata, mdata, year, msid, oname, ymin, ymax, ydrange, msid_list, l
         try:
             [a, b, e] = rbl.robust_fit(xd, yd)
         except:
-            [a, b, e] = least_sq(xd, yd, 96)
+            [a, b, e] = chs.least_sq(xd, yd, 96)
     except:
         a  = 0
         b  = 0
@@ -334,18 +322,18 @@ def create_trend_envelope(sdata, mdata, period):
 #
 #--- center
 #
-    [x, y]     = select_y_data_range(sdata, mdata, period, top=2)
-    [xmc, ymc] = get_moving_average_fit(x, y, period)
+    [x, y]     = chs.select_y_data_range(sdata, mdata, period, top=2)
+    [xmc, ymc] = chs.get_moving_average_fit(x, y, period)
 #
 #--- bottom
 #
-    [x, y]     = select_y_data_range(sdata, mdata, period, top=0)
-    [xmb, ymb] = get_moving_average_fit(x, y, period)
+    [x, y]     = chs.select_y_data_range(sdata, mdata, period, top=0)
+    [xmb, ymb] = chs.get_moving_average_fit(x, y, period)
 #
 #--- top
 #
-    [x, y]     = select_y_data_range(sdata, mdata, period, top=1)
-    [xmt, ymt] = get_moving_average_fit(x, y, period)
+    [x, y]     = chs.select_y_data_range(sdata, mdata, period, top=1)
+    [xmt, ymt] = chs.get_moving_average_fit(x, y, period)
 #
 #---- adjust length of lists
 #
@@ -367,307 +355,7 @@ def create_trend_envelope(sdata, mdata, period):
         for k in range(0, diff):
             ymt.append(ymt[-1])
 
-
     return [xmc, ymc, xmb, ymb, xmt, ymt]
-
-#----------------------------------------------------------------------------------
-#-- get_moving_average_fit: get moving average                                   --
-#----------------------------------------------------------------------------------
-
-def get_moving_average_fit(x, y, period):
-    """
-    get moving average 
-    input:  x   --- a list of x values
-    y   --- a list of y values
-    period  --- a period of the step
-    output: [tx1, tx2]  --- a list of lists of x and y values of moving average
-    """
-#
-#--- first find moving average forward, then find moving average backward from the end
-#
-    try:
-        out1 = fma.find_moving_average(x,  y, period , 0)
-    except:
-        out1 = [[],[]]
-    try:
-        out2 = fmab.find_moving_average(x, y, period , 0)
-    except:
-        out2 = [[],[]]
-#
-#--- combined two of them so that fill all the way
-#
-    tx1 = out1[0]
-    ty1 = out1[1]
-    
-    tx2 = out2[0]
-    ty2 = out2[1]
-    
-    tx3 = []
-    ty3 = []
-    for k in range(0, len(tx2)):
-        if tx2[k] > tx1[-1]:
-            tx3.append(tx2[k])
-            ty3.append(ty2[k])
-    
-    tx1 = tx1 + tx3
-    ty1 = ty1 + ty3
-    
-    return [tx1, ty1]
-
-#----------------------------------------------------------------------------------
-#-- select_y_data_range: select data based on middle, top 25%, or bottom 25% area -
-#----------------------------------------------------------------------------------
-
-def select_y_data_range(xtime, yval, period, top=1):
-    """
-    select data based on middle, top 25%, or bottom 25% area 
-    input:  xtime   --- a list of x values
-    yval--- a list of y values
-    period  --- a compartment size
-    top --- position of the selction: 0: bottom 25%, 1: top 25%, other middle 96%
-    output: xadjust --- a list of x data in the selected range
-    yadjust --- a list of y data in the selected range
-    """
-#
-#--- set percentaile limit values
-#
-    if top == 0:
-        p1 = 2
-        p2 = 25
-    elif top == 1:
-        p1 = 75
-        p2 = 98
-    else:
-        p1 = 2
-        p2 = 98
-    
-    xt   = numpy.array(xtime)
-    yt   = numpy.array(yval)
-    aind = xt.argsort()
-    xt   = xt[aind[::]]
-    yt   = yt[aind[::]]
-    xadjust = []
-    yadjust = []
-#
-#--- set step size and numbers of periods: select the data span to 20% of the period given 
-#--- so that the bottom and top spans do not change much during the data selection period
-#
-    step  = 0.2 * period
-    start = xt[0]
-    stop  = xt[-1]
-    snum  = int((stop - start) / step) + 1
-    
-    begin = 0
-    for k in range(0, snum):
-#
-#--- select the data in that period
-#
-        xs = []
-        ys = []
-        sn = 0
-        lstop = (k+1) * step + start
-        for m in range(begin, len(xt)):
-            if xt[m] > lstop:
-                break
-            else:
-                xs.append(xt[m])
-                ys.append(yt[m])
-                sn += 1
-#
-#--- reset the starting spot for the next round
-#
-    begin += sn
-#
-#--- find given percentaile range
-#
-    limb = percentile(ys, p1)
-    limt = percentile(ys, p2)
-    lavg = 0.5 * (limb + limt)
-
-    for n in range(0, len(xs)):
-#
-#--- if the data is in the range, use the value
-#
-        if (ys[n] >= limb) and (ys[n] <= limt):
-            xadjust.append(xs[n])
-            yadjust.append(ys[n])
-#
-#--- if not, use the average
-#
-        else:
-            xadjust.append(xs[n])
-            yadjust.append(lavg)
-    
-    return [xadjust, yadjust]
-
-
-#----------------------------------------------------------------------------------
-#-- set_y_plot_range: find plotting y range                                     ---
-#----------------------------------------------------------------------------------
-
-def set_y_plot_range(y):
-
-    lcnt  = len(y)
-    if lcnt > 5:
-        p = int(0.02 * lcnt)
-        test  = y[p:lcnt-p]
-    else:
-        test = y
-
-    if len(y) < 1:
-        return [0,0,0]
-    
-    ymin  = min(test)
-    ymax  = max(test)
-
-    if ymin == ymax:
-        ymax = ymin + 0.5
-        ymin = ymin - 0.5
-    else:
-        ydiff = ymax - ymin
-        ymin -= 0.2 * ydiff
-        ymax += 0.2 * ydiff
-    
-    ydiff = ymax - ymin
-    ypos  = ymax - 0.1 * ydiff
-    
-    return  [ymin, ymax, ypos]
-
-#--------------------------------------------------------------------------------------------------------
-#-- find_deriv: compute the derivative per year                                                        --
-#--------------------------------------------------------------------------------------------------------
-
-def find_deriv(x, y, step=200):
-    """
-    compute the derivative per degree
-    the dy/dx is computed similar to that of moving average, but compute slope in that range
-    input;  x   --- a list of x values
-    y   --- a list of y values
-    step--- step size; how may data points should be include in the moving average
-    output: xd  --- a list of x position
-    yd  --- a list of dx/dy; of slope of the fitting
-    ad  --- a list of intercept of the fitting
-    """
-
-    hstep = int(0.5 * step)
-    dlen  = len(x)
-#
-#--- sort by x
-#
-    xa = numpy.array(x)
-    ya = numpy.array(y)
-    s  = numpy.argsort(xa)
-    x  = list(xa[s])
-    y  = list(ya[s])
-#
-#--- if the time is in days, convert it into years
-#
-    xd = []
-    yd = []
-    ad = []
-#
-#--- moving average but compute slope instead of average
-#
-    for k in range(hstep, dlen - hstep):
-        ks = k - hstep
-        ke = k + hstep
-        xs = x[ks:ke]
-        ys = y[ks:ke]
-    
-        [a, b, d] = least_sq(xs, ys)
-#
-#--- rare occasion, fits fail, skip the ponit
-#
-        if b == 999:
-            continue
-        else:
-            xd.append(x[k])
-            yd.append(b)
-            ad.append(a)
-    
-    xd = numpy.array(xd)
-    xd = xd.astype(float)
-    
-    yd = numpy.array(yd)
-    yd = yd.astype(float)
-    
-    ad = numpy.array(ad)
-    ad = ad.astype(float)
-
-    return [xd, yd, ad]
-
-#---------------------------------------------------------------------------------------------------
-#-- least_sq: compute a linear fit parameters using least sq method  ---
-#---------------------------------------------------------------------------------------------------
-
-def least_sq(xval, yval, ecomp = 0, p=100):
-
-    """
-    compute a linear fit parameters using least sq method
-    Input:  xval    --- a list of independent variable
-            yval    --- a list of dependent variable
-            ecomp   --- indicator whether to compute the slope error; 0: no, >0: yes
-            p       --- if you like to remove the outlayers, set p to smaller than 100 (say 98: remove top 2%)
-    Output: aa      --- intersect
-            bb      --- slope
-            be      --- slope error
-    """
-    if p < 100:
-        [xval, yval] = remove_extreme_vals(xval, yval, p)
-    
-    itot= len(xval)
-    tot = float(itot)
-    sx  = 0.0
-    sy  = 0.0
-    sxy = 0.0
-    sxx = 0.0
-    syy = 0.0
-    
-    for j in range(0, itot):
-        sx  += xval[j]
-        sy  += yval[j]
-        sxy += xval[j] * yval[j]
-        sxx += xval[j] * xval[j]
-        syy += yval[j] * yval[j]
-    
-    delta = tot * sxx - sx * sx
-    
-    aa = (sxx * sy  - sx * sxy) / delta
-    bb = (tot * sxy - sx * sy)  / delta
-    be = 0.0
-    
-    if ecomp > 0:
-        ss = (syy + tot*aa*aa + bb*bb*sxx - 2.0 *(aa*sy - aa*bb*sx + bb*sxy)) /(tot - 2.0)
-        be = math.sqrt(tot * ss / delta)
-    
-    return (aa, bb, be)
-
-#-----------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------
-
-def remove_extreme_vals(x, y, p=98):
-    """
-    remove outlayers
-    input:  x   --- x values
-            y   --- y values
-            p   --- how much include in the data in percentage; e.g.98-- remove top and bottom 1%
-    """
-
-    xa     = numpy.array(x)
-    ya     = numpy.array(y)
-
-    cut    = 100 - p 
-    bcut   =  0.5 * cut
-    tcut   = p + bcut
-    blim   = numpy.percentile(ya, bcut)
-    tlim   = numpy.percentile(ya, tcut)
-    select = [(ya > blim) & (ya < tlim)]
-
-    xo     = list(xa[select])
-    yo     = list(ya[select])
-
-    return [xo, yo]
 
 #-----------------------------------------------------------------------------------
 #-- update_yrange: updating the derivative plotting range in msid_list           ---
@@ -684,7 +372,6 @@ def update_yrange(msid_list, msid, ymin=-999, ymax=-999, ydev=-999):
           run this script (sun_angle_plot.py) twice to make the plotting range for
           all to be sych.
     """
-
     ymin = float(ymin)
     ymax = float(ymax)
     try:
@@ -696,11 +383,9 @@ def update_yrange(msid_list, msid, ymin=-999, ymax=-999, ydev=-999):
         ydev = float("%2.2e" % (ydev * 1.05))
 
     mfile = house_keeping + msid_list
-    f     = open(mfile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data  = mcf.read_data_file(mfile)
 
-    fo    = open(zspace, 'w')
+    sline = ''
     for ent in data:
         atemp = re.split('\s+', ent)
         if atemp[0] == msid:
@@ -744,24 +429,19 @@ def update_yrange(msid_list, msid, ymin=-999, ymax=-999, ydev=-999):
             else:
                 line = line + "%.3f" % round(float(ydevt),3) + '\n'
 
-            fo.write(line)
+            sline = sline + line
         else:
-            fo.write(ent)
-            fo.write('\n')
+            sline = sline + ent + '\n'
 
-    fo.close()
+    with open(zspace, 'w') as fo:
+        fo.write(sline)
+
     cmd = 'mv -f  ' + zspace + ' ' + mfile
     os.system(cmd)
 
     return [ymint, ymaxt, ydevt]
 
 #-----------------------------------------------------------------------------------
-
-from pylab import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-import matplotlib.lines as lines
-
 
 if __name__ == "__main__":
 
@@ -806,4 +486,4 @@ if __name__ == "__main__":
 
 
     else:
-       print "please provide <msid_list>. you can also specify year. year=<year> lupdate=<lupdate: 0 or 1>" 
+       print("please provide <msid_list>. you can also specify year. year=<year> lupdate=<lupdate: 0 or 1>" )

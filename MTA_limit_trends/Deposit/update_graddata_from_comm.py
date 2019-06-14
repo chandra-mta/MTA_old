@@ -1,11 +1,11 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
 #       update_graddata_from_comm.py: update grad related data using mp data        #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Feb 15, 2018                                               #
+#           last update: May 21, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -19,20 +19,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -41,21 +40,19 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
-import fits_operation           as mfo
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- a list of grad related group names
 #
 ifile      = house_keeping + 'grad_list'
-grad_entry = ecf.read_file_data(ifile)
+grad_entry = mcf.read_data_file(ifile)
 
 out_dir    =  deposit_dir + 'Grad_save/'
 
@@ -74,7 +71,7 @@ def update_graddata_from_comm():
 #--- read the last set of the input data and find the last entry 
 #
         past = house_keeping + grad_group + '_past'
-        past = ecf.read_file_data(past)
+        past = mcf.read_data_file(past)
 
         last = past[-1]
 #
@@ -82,7 +79,7 @@ def update_graddata_from_comm():
 #
         cmd  = 'ls /data/mta_www/mp_reports/*/' + grad_group + '/data/mta*fits* >' + zspace
         os.system(cmd)
-        current = ecf.read_file_data(zspace)
+        current = mcf.read_data_file(zspace)
 
         cmd  = 'mv '+  zspace + ' ' +  house_keeping + grad_group + '_past'
         os.system(cmd)
@@ -126,7 +123,6 @@ def update_graddata_from_comm():
                 else:
                     create_fits_file(ofits, ocols, cdata)
 
-        
 #-------------------------------------------------------------------------------------------
 #-- update_fits_file: update fits file                                                    --
 #-------------------------------------------------------------------------------------------
@@ -139,7 +135,6 @@ def update_fits_file(fits, cols, cdata):
             cdata   --- a list of lists of data values
     output: updated fits file
     """
-
     f     = pyfits.open(fits)
     data  = f[1].data
     f.close()
@@ -181,9 +176,8 @@ def create_fits_file(fits, cols, cdata):
     dcols = pyfits.ColDefs(dlist)
     tbhdu = pyfits.BinTableHDU.from_columns(dcols)
 
-    mcf.rm_file(fits)
+    mcf.rm_files(fits)
     tbhdu.writeto(fits)
-
 
 #-------------------------------------------------------------------------------------------
 

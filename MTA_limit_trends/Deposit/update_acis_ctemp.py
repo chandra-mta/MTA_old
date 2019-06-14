@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################    
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                   #
-#           last update: Mar 07, 2018                                               #
+#           last update: May 21, 2019                                               #
 #                                                                                   #
 #####################################################################################
 
@@ -20,20 +20,19 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 import datetime
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
@@ -42,15 +41,13 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat        as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions     as mcf        #---- contains other functions commonly used in MTA scripts
 import glimmon_sql_read         as gsr
 import envelope_common_function as ecf
-import fits_operation           as mfo
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #-------------------------------------------------------------------------------------------
@@ -63,18 +60,15 @@ def update_acis_ctemp():
     input: none
     output: <out_dir>/<msid>_full_data_<year>fits
     """
-
     t_file  = '1cbat_full_data_*.fits*'
     out_dir = deposit_dir + '/Comp_save/Compaciscent/'
 
     ifile = house_keeping + 'msid_list_compaciscent'
-    data  = ecf.read_file_data(ifile)
+    data  = mcf.read_data_file(ifile)
     acis_list = []
     for ent in data:
         atemp = re.split('\s+', ent)
         acis_list.append(atemp[0])
-
-
 
     [tstart, tstop, year] = ecf.find_data_collecting_period(out_dir, t_file)
 
@@ -97,8 +91,7 @@ def get_data(start, stop, year, msid_list, out_dir):
             msid_list   --- a list of msids
             out_dir --- output_directory
     """
-
-    print str(start) + '<-->' + str(stop)
+    print(str(start) + '<-->' + str(stop))
 
     for msid in msid_list:
 

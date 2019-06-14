@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                                   #
-#               last update: Jul 03, 2018                                           #
+#               last update: May 22, 2019                                           #
 #                                                                                   #
 #####################################################################################
 
@@ -25,27 +25,25 @@ import Chandra.Time
 #--- reading directory list
 #
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- output file tail 
@@ -83,7 +81,7 @@ def classify_hrc_data(tail=''):
 #
     cmd  = 'ls ' + data_dir + 'Hrcelec/*' + tail + '_data.fits* > ' + zspace
     os.system(cmd)
-    data = read_data(zspace, remove=1)
+    data = mcf.read_data_file(zspace, remove=1)
 #
 #--- create the separate fits files accroding to the active periods
 #
@@ -95,7 +93,7 @@ def classify_hrc_data(tail=''):
             if (mc1 is not None) or (mc2 is not None):
                 continue
 
-        print "FITS:" + str(fits)
+        print("FITS:" + str(fits))
 
         for k in range(0, 3):
             htype = hclass[k]
@@ -146,7 +144,7 @@ def select_data_period(fits, start, stop, htype):
 #
 #--- write out the data into a fits file
 #
-    if save == '':              #--- occasionally there is no data (e.g. weekly has not been filled)
+    if str(save) == '':              #--- occasionally there is no data (e.g. weekly has not been filled)
         return False
 
     hdu = pyfits.BinTableHDU(data=save)
@@ -154,7 +152,7 @@ def select_data_period(fits, start, stop, htype):
     rname   = 'Hrcelec_' + htype
     outname = fits.replace('Hrcelec', rname)
 
-    mcf.rm_file(outname)
+    mcf.rm_files(outname)
     hdu.writeto(outname)
 
     flist.close()
@@ -209,13 +207,14 @@ def separate_data(infile, cut):
             cut     --- the cut time which we need to examine
     output: a list of lists of starting and stopping time
     """
-    data   = read_data(infile)
+    data   = mcf.read_data_file(infile)
     start  = []
     stop   = []
     for ent in data:
-        atemp = re.split(':', ent)
-        stime = int(float(atemp[0]))
-        if stime > cut:
+        atemp  = re.split(':', ent)
+        stime  = int(float(atemp[0]))
+        stime2 = int(float(atemp[1]))
+        if (stime >= cut) or (stime < cut and stime2 > cut):
             start.append(stime)
             stop.append(int(float(atemp[1])))
 
@@ -258,7 +257,7 @@ def get_hrc_condition():
     try:
         tstart = 0
         for infile in (tsfile, spfile, imfile):
-            data   = read_data(tsfile)
+            data   = mcf.read_data_file(tsfile)
             astart = int(float((re.split(':', data[-1])[0])))
             astart = float(astart)
             if astart > tstart:
@@ -306,7 +305,7 @@ def get_hrc_condition():
 
 def check_file_cotent(ifile):
 
-   data = read_data(ifile)
+   data = mcf.read_data_file(ifile)
    if len(data) == 0:
        cmd = 'cp ' + ifile + '~ ' + ifile
        os.system(cmd)
@@ -394,7 +393,6 @@ def append_data(infile, tstart, tstop):
             <house_keeping>/sptpast_list    #--- hrc s active periods
             <house_keeping>/imbpast_list    #--- hrc i active periods
     """
-
     nstart = [tstart[0]]
     nstop  = []
     lcnt   = len(tstart)
@@ -419,9 +417,7 @@ def append_data(infile, tstart, tstop):
 #
 #--- if the period is shorter than 5 min, ignore
 #
-    f     = open(infile, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data  = mcf.read_data_file(infile)
 
     for k in range(0, len(nstart)):
         try:
@@ -461,13 +457,12 @@ def append_data(infile, tstart, tstop):
             else:
                 continue
     
-        fo = open(infile, 'w')
+        sline = ''
         for line in cleaned:
-            fo.write(line)
-            fo.write('\n')
+            sline = line + '\n'
     
-        fo.close()
-
+        with open(infile, 'w') as fo:
+            fo.write(line)
 
 #-----------------------------------------------------------------------------------
 #-- divide_hrc_data: find hrc is in  non-active period                            --
@@ -483,7 +478,7 @@ def divide_hrc_data():
 #--- read hrc i active period
 #
     ifile1 = house_keeping + 'imbpast_list'
-    data   = read_data(ifile1)
+    data   = mcf.read_data_file(ifile1)
     time_list = []
     time_dict = {}
     hrci_list = []
@@ -500,7 +495,7 @@ def divide_hrc_data():
 #--- read hrc s active period
 #
     ifile2 = house_keeping + 'sptpast_list'
-    data   = read_data(ifile2)
+    data   = mcf.read_data_file(ifile2)
     hrcs_list = []
     hrcs_dict = {}
     for ent in data:
@@ -530,33 +525,17 @@ def divide_hrc_data():
 #
 #--- print out the results
 #
-    infile = imfile = house_keeping + 'hrc_off_list'
-
-    fo = open(infile, 'w')
+    line   = ''
     for k in range(0, len(off_start)):
         diff = int(off_stop[k] - off_start[k])
         if diff < 300:
             continue
 
-        line = str(int(off_start[k])) + ':' + str(int(off_stop[k])) + ':' + str(diff) +  '\n'
+        line = line + str(int(off_start[k])) + ':' + str(int(off_stop[k])) + ':' + str(diff) +  '\n'
+
+    infile = imfile = house_keeping + 'hrc_off_list'
+    with  open(infile, 'w') as fo:
         fo.write(line)
-
-    fo.close()
-
-#-----------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------
-
-def read_data(infile, remove=0):
-
-    f    = open(infile, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-
-    if remove == 1:
-        mcf.rm_file(infile)
-
-    return data
 
 #-----------------------------------------------------------------------------------
 

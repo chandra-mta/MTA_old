@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #########################################################################################
 #                                                                                       #
@@ -6,7 +6,7 @@
 #                                                                                       #
 #           author: t. isobe    (tisobe@cfa.harvard.edu)                                #
 #                                                                                       #
-#           last update: Feb 20, 2018                                                   #
+#           last update: May 22, 2019                                                   #
 #                                                                                       #
 #########################################################################################
 
@@ -18,26 +18,24 @@ import time
 
 path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
-import mta_common_functions     as mtac #---- mta common functions
-import envelope_common_function as ecf
+import mta_common_functions     as mcf  #---- mta common functions
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time()*random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #----------------------------------------------------------------------------------------
@@ -53,10 +51,10 @@ def delate_old_file():
 #
 #--- find html files in Interactive directory
 #
-    cmd   = 'ls ' +   web_dir + 'Interactive/*.html > ' + zspace
+    cmd   = 'ls ' +   web_dir + 'Interactive/* > ' + zspace
     os.system(cmd)
 
-    dlist = ecf.read_file_data(zspace, remove=1)
+    dlist = mcf.read_data_file(zspace, remove=1)
 #
 #--- set one day ago 
 #
@@ -64,6 +62,9 @@ def delate_old_file():
 #
 #--- remove any files created older than one day ago
 #
+    if len(dlist) == 0:
+        exit(1)
+
     for cfile in dlist:
         mc = re.search('html', cfile)
         if mc is not None:

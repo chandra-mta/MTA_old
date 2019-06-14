@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #####################################################################################
 #                                                                                   #
@@ -6,7 +6,7 @@
 #                                                                                   #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                                   #
-#               last update: Jan 04, 2018                                           #
+#               last update: May 20, 2019                                           #
 #                                                                                   #
 #####################################################################################
 
@@ -25,28 +25,26 @@ import Chandra.Time
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/MTA_limit_trends/Scripts/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+path = '/data/mta/Script/MTA_limit_trends/Scripts3.6/house_keeping/dir_list'
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folder
 #
 sys.path.append(mta_dir)
 sys.path.append(bin_dir)
 #
-import convertTimeFormat        as tcnv #---- converTimeFormat contains MTA time conversion routines
 import mta_common_functions     as mcf  #---- mta common functions
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 bcols   = ['med', 'min', 'max', 'ylimlower', 'ylimupper', 'rlimlower', 'rlimupper']
@@ -68,7 +66,7 @@ def convert_acistemp_into_c():
     cmd = 'ls ' + data_dir + '/Acistemp/*fits* > ' + zspace
     os.system(cmd)
     fits_list = mcf.readFile(zspace)
-    mcf.rm_file(zspace)
+    mcf.rm_files(zspace)
 
 
     for fits in fits_list:
@@ -88,7 +86,7 @@ def convert_acistemp_into_c():
         flist[1].data = fdata
 
         outfile = outdir + fname
-        mcf.rm_file(outfile)
+        mcf.rm_files(outfile)
         flist.writeto(outfile)
 
 
