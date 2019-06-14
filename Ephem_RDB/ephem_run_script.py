@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#       ephem_run_script.py: update dephem.rdb file                                                 #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Jan 04, 2016                                                               #
-#                                                                                                   #
-#####################################################################################################
+#############################################################################
+#                                                                           #
+#       ephem_run_script.py: update dephem.rdb file                         #
+#                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
+#                                                                           #
+#           last update: Jun 13, 2019                                       #
+#                                                                           #
+#############################################################################
 
 import os
 import sys
@@ -18,21 +18,22 @@ import random
 import operator
 import math
 import numpy
-import subprocess
+import time
+import Chandra.Time
 import unittest
-import urllib2
-
+#
+#--- read data paths
+#
 path = '/data/mta/Script/Ephem/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
+
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -41,38 +42,29 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-
+import convert_ephem_data   as ced  #---- convert binary data into ascii data file
+import cocochan             as cch  #---- convert Chandra ECI linear coords to GSE, GSE coords
+import mta_common_functions as mcf  #---- contains other functions commonly used in MTA scripts
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- set a few paths
 #
-eph_data = '/data/mta/Script/Ephem/EPH_Data'
-rdb      = '/data/mta/DataSeeker/data/repository/dephem.rdb'
-idl_path = '+/data/mta/Script/Ephem/Scripts/:+/usr/local/rsi/user_contrib/astron_Oct09/pro:+/home/mta/IDL:/home/nadams/pros:+/data/swolk/idl_libs:/home/mta/IDL/tara:widget_tools:utilities:event_browser'
+kp_file  = '/data/mta4/proj/rac/ops/KP/k_index_data'
 
-#-------------------------------------------------------------------------------------------
-#-- update_dephem_data: the main script to update dephem.rdb file                        ---
-#-------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- update_dephem_data: the main script to update dephem.rdb file                ---
+#-----------------------------------------------------------------------------------
 
 def update_dephem_data():
     """
     the main script to update dephem.rdb file
     input:  none
-    output: rdb (/data/mta/DataSeeker/data/repository/dephem.rdb)
+    output: <ds_rep>/dephem.rdb)
     """
-#
-#--- copy idl scripts to the current directory
-#
-    cmd = 'cp ' + bin_dir + '/*.pro ' + exc_dir + '/.'
-    os.system(cmd)
-    cmd = 'chmod 755 ' + exc_dir + '/*pro'
-    os.system(cmd)
 #
 #--- find currently available data from GOT site
 #
@@ -101,25 +93,21 @@ def update_dephem_data():
 #
             chk = run_lephem(ent, time)
             if chk == 0:
-                continue                            #---- the process failed; skip the rest
+                continue                #---- the process failed; skip the rest
 #
 #--- using kplookup, put soloar wind information
 #
             chk = run_kplookup(time)
-#
-#--- compute/convert data format suitable for the dataseek database
-#
-            chk = convert_data_format(time)
             if chk == 0:
-                continue
+                continue                #--- it seems no data file created, skip
 #
-#---- select a new data from dephem.gsme and append to /data/mta/DataSeeker/data/repository/dephem.rdb
+#---- update <ds_rep>/dephem.rdb with the new info
 #
-            update_rdb()
+            update_rdb(time)
 
-#-------------------------------------------------------------------------------------------
-#-- find_available_deph_data: create a list of potential new data file name               --
-#-------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- find_available_deph_data: create a list of potential new data file name       --
+#-----------------------------------------------------------------------------------
 
 def find_available_deph_data():
     """
@@ -130,9 +118,10 @@ def find_available_deph_data():
 #
 #--- find current time
 #
-    ttemp = tcnv.currentTime()
-    year  = int(ttemp[0])
-    ydate = int(ttemp[7])
+    today = time.strftime('%Y:%j', time.gmtime())
+    atemp = re.split(':', today)
+    year  = int(atemp[0])
+    ydate = int(atemp[1])
 
     syear = str(year)
     tyear = syear[2] + syear[3]
@@ -157,15 +146,11 @@ def find_available_deph_data():
             os.system(cmd)
         except:
             pass
-
     try:
-        f     = open(zspace, 'r')
-        cdata = [line.strip() for line in f.readlines()]
-        f.close()
+        cdata = mcf.read_data_file(zspace, remove=1)
     except:
         cdata = []
-
-    mcf.rm_file(zspace)
+        mcf.rm_files(zspace)
 
     return cdata
 
@@ -179,14 +164,10 @@ def find_the_last_entry():
     input:  none, but read from /data/mta/Script/Ephem/EPH_Data/*dat0
     output: last    --- the time stamp of the last data file proccessed: <yy><ydate>
     """
-
-    cmd = 'ls /data/mta/Script/Ephem/EPH_Data/DE*.EPH.dat00 > ' + zspace
+    cmd = 'ls ' + eph_dir + 'DE*.EPH.dat00 > ' + zspace
     os.system(cmd)
 
-    f     = open(zspace, 'r')
-    pdata = [line.strip() for line in f.readlines()]
-    f.close()
-    mcf.rm_file(zspace)
+    pdata = mcf.read_data_file(zspace, remove=1)
 
     last  = pdata[len(pdata) -1]
     atemp = re.split('DE', last)
@@ -206,123 +187,131 @@ def run_lephem(fname, time):
             time    --- time stamp of the file copied
     output: ascii data file -- DE<time>.EPH.dat0
     """
-
-    cmd = 'cp ' + fname + ' ' +  eph_data + '/.'
+    cmd = 'cp ' + fname + ' ' +  eph_dir + '.'
     os.system(cmd)
 
     cname = 'DE' + str(time) + '.EPH'
     
     try:
-        line = "lephem,'" + str(cname) + "'\n"
-        line = line + "exit\n"
-        fo  = open('./eph_run.pro', 'w')
-        fo.write(line)
-        fo.close()
-
-        os.environ['IDL_PATH'] = idl_path
-        subprocess.call("idl eph_run.pro",  shell=True)
-        mcf.rm_file('./eph_run.pro')
+        ced.convert_ephem_data(cname)
         return 1
     except:
         return 0
 
 #-------------------------------------------------------------------------------------------
-#-- run_kplookup: run idl script kplookup.pro which adjusts the data for the solar wind   --
+#-- run_kplookup: append kp value to DE<time>.EPH.dat0 and create DE<time>.EPH.dat0.0    ---
 #-------------------------------------------------------------------------------------------
 
 def run_kplookup(time):
     """
-    run idl script kplookup.pro which adjusts the data for the solar wind influence
+    append kp value to DE<time>.EPH.dat0 and create DE<time>.EPH.dat0.0
     input:  time    --- time in the format of <yy><ydate>
-    output: DE<time>.EPH.dat0 updated for the soloar wind influence
+    output: DE<time>.EPH.dat00 updated for the soloar wind influence
     """
-
-    xxx = 999
-    if xxx ==999:
-#    try:
-        line = "kplookup,'/data/mta/Script/Ephem/EPH_Data/DE" + str(time) + ".EPH.dat0'" + "\n"
-        line = line + "exit\n"
-     
-        fo  = open('./kp_run.pro', 'w')
-        fo.write(line)
-        fo.close()
-    
-        os.environ['IDL_PATH'] = idl_path
-        subprocess.call("idl kp_run.pro", shell=True)
-        cmd = 'idl kp_run.pro'
-        os.system(cmd)
-        mcf.rm_file('./kp_run.pro')
-    
-        return  1
-#    except:
-#        return  0
-
-#-------------------------------------------------------------------------------------------
-#-- convert_data_format: using cocochan fortran code, convert the data format             --
-#-------------------------------------------------------------------------------------------
-
-def convert_data_format(time):
-    """
-    using cocochan fortran code, convert the data format
-    input:  time    --- time in format of <yy><ydate>
-    output: ./dephem.gsme 
-    """
+    ifile = eph_dir + 'DE' + str(time)  +  '.EPH.dat0'
 #
-#--- cp the data with "DE<time>.EPHH.dat0" to ./dephem.data
+#--- there is a data file; update with kp value
 #
-    cmd = 'cp  ' + eph_data + '/DE' + str(time) + '.EPH.dat00  ./dephem.dat'
-    os.system(cmd)
-#
-#--- run a fortran code cocochan. this converts the format to that of the rdb file
-#
-    try:
-        cmd = bin_dir + '/geopack/cocochan'
-        os.system(cmd)
-        mcf.rm_file('./dephem.dat')
-
+    if os.path.isfile(ifile):
+        kplookup(ifile)
         return 1
-    except:
-        mcf.rm_file('./dephem.dat')
+#
+#--- there is no data file; skip 
+#
+    else:
         return 0
+
+#-----------------------------------------------------------------------------------
+#-- kplookup: look up kp value and append to the data                            ---
+#-----------------------------------------------------------------------------------
+
+def kplookup(ifile):
+    """
+    look up kp value and append to the data
+    input:  ifile   --- input data file name
+    output: ofile   --- output data file name; <ifile>0
+    """
+#
+#--- read data and separate into column data; stime is Chandra time
+#
+    data  = mcf.read_data_file(ifile)
+    cdata = mcf.separate_data_to_arrays(data)
+#
+#--- make sure that the data is accending order in time
+#
+    stime = numpy.array(cdata[0])
+    ndata = numpy.array(data)
+    ind   = numpy.argsort(stime)
+    stime = list(stime[ind])
+    ndata = list(ndata[ind])
+#
+#--- read the current kp data
+#
+    kpdata      = mcf.read_data_file(kp_file)
+    [csec, ckp] = mcf.separate_data_to_arrays(kpdata)
+#
+#--- compare them and match kp to the data
+#
+    dlen  = len(ndata)
+    klen  = len(ckp)
+    line  = ''
+    mv    = 1
+    for k in range(0, dlen):
+        for m in range(mv, klen):
+            if (stime[k] >= csec[m-1]) and (stime[k] < csec[m]):
+                line = line + ndata[k] + '\t' + "%1.2f" % float(ckp[m-1]) + '\n'
+                mv += 1
+                break
+
+            elif stime[k] < csec[m-1]:
+                break   
+
+            elif stime[k] > csec[m]:
+                mv += 1
+                continue
+#
+#--- write out the ifile with matched kp value (a file name has an extra "0" at the end)
+#
+    ofile = ifile + '0'
+    with open(ofile, 'w') as fo:
+        fo.write(line)
 
 #-------------------------------------------------------------------------------------------
 #-- update_rdb: update dephem.rdb file                                                   ---
 #-------------------------------------------------------------------------------------------
 
-def update_rdb():
+def update_rdb(time):
     """
     update dephem.rdb file
-    input: none but read from dephem.rdb and dephem.gsme. the latter must be
-           in the current directory. 
-    output: updated dephem.rdb
+    input:  time    --- time in format of <yy><ydate>
+            read from <rdb_dir>/dephem.rdb
+    output: updated <rdb_dir>/dephem.rdb
     """
+#
+#---input file name
+#
+    ifile = eph_dir + 'DE' + str(time) + '.EPH.dat00'
+#
+#--- create data with the format of: 
+#---        time    ALT ECIX    ECIY    ECIZ    GSMX    GSMY    GSMZ    CRMREG
+#
+    oline = cch.cocochan(ifile)
+    try:
+        atemp = re.split('\s+', oline)
+        start = float(atemp[0])
+    except:
+        return 'NA'
 #
 #--- read the rdb file (dephem.rdb)
 #
-    rdb_file  = '/data/mta/DataSeeker/data/repository/dephem.rdb'
-    f    = open(rdb_file)
-    rdb  = [line.strip() for line in f.readlines()]
-    f.close()
-#
-#--- read the new data file
-#
-    f    = open('./dephem.gsme', 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-
-    if len(data) < 1:
-        return 
-#
-#--- find the starting time of the new data
-#
-    atemp = re.split('\s+', data[0])
-    stime = float(atemp[0])
+    rdb_file  = ds_rep + 'dephem.rdb'
+    rdb       = mcf.read_data_file(rdb_file)
 #
 #---- extract the data from dephem.rdb up to the starting time of the new data
 #
-    lsave = []
+    rline = ''
     for ent in rdb:
-        atemp = re.split('\s+|\t+', ent)
+        atemp = re.split('\s+', ent)
 
         try:
             rtime = float(atemp[0])
@@ -330,30 +319,16 @@ def update_rdb():
             continue 
 
         if rtime < stime:
-            lsave.append(ent)
+            rline = ent + '\n'
         else:
             break
 #
-#--- now add the newest data
-#
-    for ent in data:
-        ent = ent.replace('|', '\t')
-        lsave.append(ent)
-#
 #--- update dephem.rdb
 #
-    fo = open(rdb_file, 'w')
-    line = 'time    ALT ECIX    ECIY    ECIZ    GSMX    GSMY    GSMZ    CRMREG\n'
-    fo.write(line)
-    line = 'N   N   N   N   N   N   N   N   N\n'
-    fo.write(line)
+    line = rline + oline
 
-    for ent in lsave:
-        fo.write(ent)
-        fo.write('\n')
-    fo.close()
-
-    mcf.rm_file('./dephem.gsme')
+    with  open(rdb_file, 'w') as fo:
+        fo.write(line)
 
 #-------------------------------------------------------------------------------------------
 

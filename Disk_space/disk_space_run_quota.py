@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #################################################################################
 #                                                                               #
@@ -6,7 +6,7 @@
 #                                                                               #
 #       author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                               #
-#       last update: Sep 26, 2018                                               #
+#       last update: May 17, 2019                                               #
 #                                                                               #
 #################################################################################
 
@@ -17,21 +17,19 @@ import string
 import time
 import socket
 import getpass
-
+import random
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/Disk_check/house_keeping/dir_list_py'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
 #--- append a path to a private folder to python directory
 #
@@ -40,12 +38,11 @@ sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat    as tcnv
-import mta_common_functions as mcf
+import mta_common_functions_short as mcf
 #
 #--- set a temporary file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #-----------------------------------------------------------------------------------------------
@@ -57,7 +54,8 @@ def disk_space_run_quota():
     check the quota of home directory
     input:  none
     output: <data_out>/quota_<user name>. time and  rate of the space used against the limit
-            email --- if the quota reached above 90% of the limit, the warning email will be sent out
+            email --- if the quota reached above 90% of the limit, 
+                      the warning email will be sent out
     """
 #
 #--- find the quota information
@@ -65,10 +63,7 @@ def disk_space_run_quota():
     cmd  = 'quota -A > ' + zspace
     os.system(cmd)
 
-    f    = open(zspace, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-    mcf.rm_file(zspace)
+    data = mcf.read_data_file(zspace, remove=1)
 
     out  = re.split('\s+', data[-1].strip())
 #
@@ -106,9 +101,8 @@ def disk_space_run_quota():
     user    = getpass.getuser()
     outname = data_out + 'quota_' + user
 
-    fo      = open(outname, 'a')
-    fo.write(line)
-    fo.close()
+    with  open(outname, 'a') as fo:
+        fo.write(line)
 #
 #--- if the quota exceeded 90% of the limit, send out a warning email
 #
@@ -117,15 +111,14 @@ def disk_space_run_quota():
         for ent in data:
             mline = mline + ent + '\n'
 
-        fo = open(zspace, 'w')
-        fo.write(mline)
-        fo.close()
+        with open(zspace, 'w') as fo:
+            fo.write(mline)
 
-        cmd = 'cat ' + zspace + ' |mailx -s\"Subject: Disk Quota Warning\n\" isobe\@head.cfa.harvard.edu'
+        cmd = 'cat ' + zspace + ' |mailx -s\"Subject: Disk Quota Warning\n\" '
+        cmd = cmd    + 'isobe\@head.cfa.harvard.edu'
         os.system(cmd)
 
-        mcf.rm_file(zspace)
-
+        mcf.rm_files(zspace)
 
 #--------------------------------------------------------------------
 

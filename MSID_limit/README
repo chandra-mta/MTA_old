@@ -3,9 +3,6 @@
 updates op_limits.db
 ####################
 
-Dir: /data/mta/Script/MSID_limit
-See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_mta_op_limit_upates.html
-
 ++++++++
 Scripts
 ++++++++
@@ -42,12 +39,10 @@ This script compares the current mta limit data base to glimmon and update the f
 
     /data/mta4/MTA/data/op_limits/op_limits.db  ---- the database to be actually used
 
-
 ++++++++++++++++++++
 Environment setting
 ++++++++++++++++++++
-Need sot python:    source /proj/sot/ska/bin/ska_envs.csh
-
+setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
 +++++++
 Others
@@ -60,6 +55,6 @@ Past_data:  hold the past op_limits.db and  glimmondb.sqlite3
 ++++++++
 Cron Job
 ++++++++
-on r2d2-v as mta
+on luke-v as mta
 
 35 4 1 * * cd /data/mta/Script/MSID_limit; /data/mta/Script/MSID_limit/compare_database_wrap_script > /home/mta/op_limit_updates.cron 2>&1 

@@ -1,7 +1,6 @@
 cd /data/mta/Script/Disk_check/Exc
 
-source /proj/sot/ska/bin/ska_envs.csh
-
+setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
 /data/mta/Script/Disk_check/Scripts/disk_space_check_size.py
 

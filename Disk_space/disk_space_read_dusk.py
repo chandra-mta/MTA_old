@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #################################################################################
 #                                                                               #
@@ -6,7 +6,7 @@
 #                                                                               #
 #       author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                               #
-#       last update: Oct 27, 2014                                               #
+#       last update: May 13, 2019                                               #
 #                                                                               #
 #################################################################################
 
@@ -16,23 +16,20 @@ import re
 import string
 import random
 import numpy as np
-
-
-
+import time
+import Chandra.Time
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/Disk_check/house_keeping/dir_list_py'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
 #--- append a path to a private folder to python directory
 #
@@ -41,24 +38,28 @@ sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat    as tcnv
+import plot_function        as pf
 import mta_common_functions as mcf
-
 #
 #--- temp writing file name
 #
-
-rtail  = int(10000 * random.random())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- disk_space_read_dusk: read dusk result, update data file, and plot the data  ---
+#-----------------------------------------------------------------------------------
 
 def disk_space_read_dusk():
-
+    """
+    control scripts to: read dusk result, update data file, and plot the data
+    input: none but read files named dusk_<disk name>
+    output: udated <data_out>/disk_data_<disk name>
+                   <plot_dir>/<disk_name>_disk.png
+    """
     diskName = '/data/mta/'
-    nameList = ['Script','DataSeeker','Test','CAL']
+    nameList = ['Script','DataSeeker','Test','GIT']
     duskName = 'dusk_mta'
     pastData = data_out + 'disk_data_mta'
     plot_dusk_result(diskName, duskName, nameList, pastData)
@@ -87,131 +88,133 @@ def disk_space_read_dusk():
     pastData = data_out + 'disk_proj_ops'
     plot_dusk_result(diskName, duskName, nameList, pastData)
 
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- plot_dusk_result: read dusk result, update data file, and plot the data       --
+#-----------------------------------------------------------------------------------
 
 def plot_dusk_result(diskName, duskName, nameList, pastData):
-
+    """
+    read dusk result, update data file, and plot the data
+    input:  diskName    --- name of the disk
+            duskName    --- a file name in which dusk result is written
+            nameList    --- subdirectory names
+            pastData    --- data file name
+    output: udated <data_out>/disk_data_<disk name>
+                   <plot_dir>/<disk_name>_disk.png
+    """
 #
 #--- find the disk capacity of the given disk
 #
     disk_capacity = diskCapacity(diskName)
-
 #
 #--- read the output from dusk
 #
     line = run_dir + duskName
-    f    = open(line, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(line)
+
     capacity = {}               #---- make a dictionary
     for ent in data:
         atemp = re.split('\s+|\t+', ent)
         try:
             val = 100.0 * float(atemp[0]) /disk_capacity
             val =  round(val, 2)
+            atemp[1] = atemp[1].replace('./', '')
             capacity[atemp[1]] = val 
         except:
             pass
 #
 #--- today's date
 #
-    today   = tcnv.currentTime('local')
-    year    = today[0]
-    month   = today[1]
-    day     = today[2]
-    hours   = today[3]
-    minutes = today[4]
-    seconds = today[5]
-#
-#--- convert to dom
-#
-    dom   = tcnv.findDOM(year, month, day, hours, minutes,seconds)
-    dom   = round(dom, 2)
+    out   = time.strftime('%Y:%j:%H:%M:%S', time.gmtime())
+    stime = Chandra.Time.DateTime(out).secs
+    ftime = mcf.chandratime_to_fraq_year(stime)
 #
 #--- append the new data to the data table
 #
-    f   = open(pastData, 'a')
-    f.write(str(dom))
+    sline = '%3.3f' % ftime
     for dName in nameList:
-        f.write(':')
-        string = str(capacity[dName])
-        f.write(string)
-    f.write('\n')
-    f.close()
+        sline = sline + ':' + str(capacity[dName]) 
+    sline = sline + '\n'
 
+    with open(pastData, 'a') as fo:
+        fo.write(sline)
 #
 #---- start plotting history data
 #
-    try:
+    xxx = 999
+    if xxx == 999:
+    #try:
         plot_history_trend(diskName, duskName, nameList, pastData)
-    except:
-        pass
+    #except:
+    #    pass
 
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- plot_history_trend: plot history trend                                        --
+#-----------------------------------------------------------------------------------
 
 def plot_history_trend(diskName, duskName, nameList, pastData):
-
+    """
+    plot history trend
+    input:  diskName    --- name of the disk
+            duskName    --- a file name in which dusk result is written
+            nameList    --- subdirectory names
+            pastData    --- data file name
+    output: <plot_dir>/<disk_name>_disk.png
+    """
 #
 #--- read past data
 #
-    f    = open(pastData, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(pastData)
 
     colNum = len(nameList)
 
-    domTime = []
-    for ent in nameList:
-        vnam = ent + '_dat'
-        exec "%s = []" % (vnam)
+    stime = []
+    yval  = [[] for x in range(0, colNum)]
     
     prev = 0
     for ent in data:
         atemp = re.split(':', ent)
-        domTime.append(float(atemp[0]))
+        stime.append(float(atemp[0]))
+
         for i in range(0, colNum):
-            vnam  = nameList[i] + '_dat'
             try:
                val  = float(atemp[i+1]) 
                prev = val
             except:
                 val = prev
 
-            exec "%s.append(val)" % (vnam)
+            if val > 100:
+                if prev < 100:
+                    val = prev
+                else:
+                    val = 0.0
 
+            yval[i].append(val)
 
-    xSets = [domTime]
-#    xmin  = min(domTime)
-#    xdiff = xmax - xmin
-#    xmin  = int(xmin - 0.1 * xdiff)
-    xmin  = 1000                                #---- the earliest data starts DOM ~ 1000
-    xmax  = max(domTime)
-    xdiff = xmax - xmin
-    xmax  = int(xmax + 0.1 * xdiff)
-    xname = 'Time (DOM)'
+    xSets = [stime]
+    xmin  = int(min(stime))
+    xmax  = max(stime)
+    ixmax = int(xmax)
+    xmax = ixmax + 1
+
+    xname = 'Time (Year)'
     yname = 'Disk Capacity Used (%)'
 
-    for ent in nameList:
-        vnam = ent + '_dat'
-        exec "yval = %s" % (vnam)
+    for k in range(0, colNum):
+        ent   = nameList[k]
 
-        ymin  = min(yval)
-        ymax  = max(yval)
+        ymin  = min(yval[k])
+        ymax  = max(yval[k])
         ydiff = ymax - ymin
         if ydiff == 0:
             ymin = 0
             if ymax < 1:
                 ymax == 5
 
-#        ymin  = int(ymin - 0.1 * ydiff)
-#        if ymin < 0:
-#            ymin = 0
         ymin  = 0
         ymaxt = int(ymax + 0.1 * ydiff) 
+        if ymax > 100:
+            ymax = 100
 
         if ymaxt < ymax:
             ymax += 2
@@ -219,28 +222,26 @@ def plot_history_trend(diskName, duskName, nameList, pastData):
         else:
             ymax = ymaxt
 
-
-        ySets     = [yval]
+        ySets     = [yval[k]]
         entLabels = [ent]
 
-        plotPanel(xmin, xmax, ymin, ymax, xSets, ySets, xname, yname, entLabels)
+        outname = fig_out +  ent.lower() + '_disk.png'
+        pf.plotPanel(xmin, xmax, ymin, ymax, xSets, ySets, xname, yname, entLabels, outname)
 
-        out_name =  ent.lower() + '_disk.png'
-
-        cmd = 'mv out.png ' + fig_out +  out_name
-        os.system(cmd)
-
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- diskCapacity: find a disk capacity                                           ---
+#-----------------------------------------------------------------------------------
 
 def diskCapacity(diskName):
-
+    """
+    find a disk capacity
+    input:  diskName        --- name of the disk
+    output: disk_capacity   --- disk capacity
+    """
     cmd = 'df -k ' + diskName + '> ' + zspace
     os.system(cmd)
-    f    = open(zspace, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(zspace, remove=1)
+
     disk_capacity = 'na'
 
     for ent in data:
@@ -257,216 +258,6 @@ def diskCapacity(diskName):
 
     return disk_capacity
 
-
-
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
-#-----------------------------------------------------------------------------------------------
-#--- plotPanel: plots multiple data in separate panels                                       ---
-#-----------------------------------------------------------------------------------------------
-
-def plotPanel(xmin, xmax, ymin, ymax, xSets, ySets, xname, yname, entLabels):
-
-    """
-    This function plots multiple data in separate panels.
-    Input:  xmin, xmax, ymin, ymax: plotting area
-            xSets: a list of lists containing x-axis data
-            ySets: a list of lists containing y-axis data
-            xname: a name of x-axis
-            yname: a name of y-axis
-            entLabels: a list of the names of each data
-
-    Output: a png plot: out.png
-    """
-#
-#--- set line color list
-#
-    colorList = ('blue', 'green', 'red', 'aqua', 'lime', 'fuchsia', 'maroon', 'black', 'yellow', 'olive')
-#
-#--- clean up the plotting device
-#
-    plt.close('all')
-#
-#---- set a few parameters
-#
-    mpl.rcParams['font.size'] = 9
-    props = font_manager.FontProperties(size=9)
-    plt.subplots_adjust(hspace=0.08)
-
-    tot = len(entLabels)
-#
-#--- start plotting each data
-#
-    for i in range(0, tot):
-        axNam = 'ax' + str(i)
-#
-#--- setting the panel position
-#
-        j = i + 1
-        if i == 0:
-            line = str(tot) + '1' + str(j)
-        else:
-            line = str(tot) + '1' + str(j) + ', sharex=ax0'
-            line = str(tot) + '1' + str(j)
-
-        exec "%s = plt.subplot(%s)"       % (axNam, line)
-        exec "%s.set_autoscale_on(False)" % (axNam)      #---- these three may not be needed for the new pylab, but 
-        exec "%s.set_xbound(xmin,xmax)"   % (axNam)      #---- they are necessary for the older version to set
-
-        exec "%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam)
-        exec "%s.set_ylim(ymin=ymin, ymax=ymax, auto=False)" % (axNam)
-
-        xdata  = xSets[i]
-        ydata  = ySets[i]
-  
-#
-#---- actual data plotting
-#
-        p, = plt.plot(xdata, ydata, color=colorList[i], lw =1.5)
-
-#
-#--- add legend
-#
-        leg = legend([p],  [entLabels[i]], prop=props, loc=2)
-        leg.get_frame().set_alpha(0.5)
-
-        exec "%s.set_ylabel(yname, size=8)" % (axNam)
-
-#
-#--- add x ticks label only on the last panel
-#
-    for i in range(0, tot):
-        ax = 'ax' + str(i)
-
-        if i != tot-1: 
-            exec "line = %s.get_xticklabels()" % (ax)
-            for label in  line:
-                label.set_visible(False)
-        else:
-            pass
-
-    xlabel(xname)
-
-#
-#--- set the size of the plotting area in inch (width: 10.0in, height 2.08in x number of panels)
-#
-    fig = matplotlib.pyplot.gcf()
-    height = (2.00 + 0.08) * tot
-    fig.set_size_inches(10.0, height)
-#
-#--- save the plot in png format
-#
-    plt.savefig('out.png', format='png', dpi=100)
-
-
-#-----------------------------------------------------------------------------------------------
-#-- plotPanel2: plotting multiple data in a single panel                                     ---
-#-----------------------------------------------------------------------------------------------
-
-def plotPanel2(xmin, xmax, ymin, ymax, xSets, ySets, xname, yname, entLabels):
-
-    """
-    This function plots multiple data in a single panel.
-    Input:  xmin, xmax, ymin, ymax: plotting area
-            xSets: a list of lists containing x-axis data
-            ySets: a list of lists containing y-axis data
-            xname: a name of x-axis
-            yname: a name of y-axis
-            entLabels: a list of the names of each data
-
-    Output: a png plot: out.png
-    """
-
-    colorList = ('blue', 'green', 'red', 'aqua', 'lime', 'fuchsia', 'maroon', 'black', 'yellow', 'olive')
-    plt.close('all')
-#
-#---- set a few parameters
-#
-    mpl.rcParams['font.size'] = 9
-    props = font_manager.FontProperties(size=9)
-    plt.subplots_adjust(hspace=0.08)
-
-#
-#---- set a panel
-#
-    ax = plt.subplot(111)
-    ax.set_autoscale_on(False)      #---- these three may not be needed for the new pylab, but 
-    ax.set_xbound(xmin,xmax)        #---- they are necessary for the older version to set
-
-    ax.set_xlim(xmin=xmin, xmax=xmax, auto=False)
-    ax.set_ylim(ymin=ymin, ymax=ymax, auto=False)
-
-    tot = len(entLabels)
-#
-#--- start plotting each data set
-#
-    lnamList = []
-    for i in range(0, tot):
-        xdata  = xSets[i]
-        ydata  = ySets[i]
-
-        if tot > 1:
-            lnam = 'p' + str(i)
-            lnamList.append(lnam)
-            exec "%s, = plt.plot(xdata, ydata, color=colorList[i], lw =1 , marker='.', markersize=0.5, label=entLabels[i])" % (lnam)
-        else:
-#
-#--- if there is only one data set, ignore legend
-#
-            plt.plot(xdata, ydata, color=colorList[i], lw =1 , marker='.', markersize=0.5)
-
-#
-#--- add legend
-#
-    if tot > 1:
-        line = '['
-        for ent in lnamList:
-            if line == '[':
-                line = line + ent
-            else:
-                line = line +', ' +  ent
-        line = line + ']'
-
-        exec "leg = legend(%s,  entLabels, prop=props)" % (line)
-        leg.get_frame().set_alpha(0.5)
-
-    ax.set_xlabel(xname, size=8)
-    ax.set_ylabel(yname, size=8)
-
-
-#
-#--- set the size of the plotting area in inch (width: 10.0in, height 5.0in)
-#
-    fig = matplotlib.pyplot.gcf()
-    fig.set_size_inches(10.0, 5.0)
-#
-#--- save the plot in png format
-#
-    plt.savefig('out.png', format='png', dpi=100)
-
-
 #--------------------------------------------------------------------
-
-#
-#--- pylab plotting routine related modules
-#
-import matplotlib as mpl
-
-if __name__ == '__main__':
-
-    mpl.use('Agg')
-
-from pylab import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-import matplotlib.lines as lines
 
 disk_space_read_dusk()

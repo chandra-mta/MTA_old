@@ -13,11 +13,12 @@ Directory
 '/data/mta/Script/ACIS/Count_rate/house_keeping/'  :house_keeping
 '/data/mta/Script/Python_script3.6/'               :mta_dir
 
-
 #######
 Scripts
 #######
 
+count_rate_day_wrap_script
+count_rate_day_main_script
 count_rate_wrap_script
 count_rate_main_script  --- controlling tsh scripts
 
@@ -26,13 +27,16 @@ All scripts need the following environment setting:
 setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
 ----------------------
-get_data_for_month.py
+get_data_for_day.py
 ----------------------
 
-get a month amount of data and update data files
+get a day amount of data and update data files
 
 Input:  year    --- the year of the data 
         month   --- the month of the data
+        day     --- the day of the data
+        if day is not given, the entire month of the data are extracted
+        if none are give, the data for the day before will be extracted
         the data are obtained using arc5gl
 
 Output: <data_dir>/<MMM><YYYY>/ccd<ccd#>
@@ -94,6 +98,7 @@ CRON Job
 ########
 
 on luke-v as mta
+20 3 * * * cd /data/mta/Script/ACIS/Count_rate/Exc; /data/mta/Script/ACIS/Count_rate/Scripts/count_rate_day_wrap_script >> $HOME/Logs/acis_dose_day_py.cron
 
 35 3 3 * * cd /data/mta/Script/ACIS/Count_rate/Exc; /data/mta/Script/ACIS/Count_rate/Scripts/count_rate_wrap_script >> $HOME/Logs/acis_dose_py.cron
 

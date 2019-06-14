@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #################################################################################
 #                                                                               #
@@ -7,29 +7,26 @@
 #                                                                               #
 #       author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                               #
-#       last update: Oct 27, 2014                                               #
+#       last update: May 13, 2019                                               #
 #                                                                               #
 #################################################################################
 
 import os
 import sys
 import re
-import string
 
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/Disk_check/house_keeping/dir_list_py'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
+    exec("%s = %s" %(var, line))
 #
 #--- append a path to a private folder to python directory
 #
@@ -38,7 +35,6 @@ sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat    as tcnv
 import mta_common_functions as mcf
 
 #-----------------------------------------------------------------------------------------------
@@ -46,16 +42,15 @@ import mta_common_functions as mcf
 #-----------------------------------------------------------------------------------------------
 
 def disk_space_run_dusk():
-
 #
 #--- /data/mta/
 #
-    cmd = 'cd /data/mta; nice -n15 /usr/local/bin/dusk > ' + run_dir + '/dusk_mta'
+    cmd = 'cd /data/mta;  /usr/local/bin/dusk > ' + run_dir + '/dusk_mta'
     os.system(cmd)
 #
 #--- /data/mta4/
 #
-    cmd = 'cd /data/mta4; nice -n15  /usr/local/bin/dusk > ' + run_dir + '/dusk_mta4'
+    cmd = 'cd /data/mta4;  /usr/local/bin/dusk > ' + run_dir + '/dusk_mta4'
     os.system(cmd)
 #
 #--- /data/mays/
@@ -82,9 +77,6 @@ def disk_space_run_dusk():
 #
 #    cmd = 'cd /data/swolk/AARON/; dusk > ' + run_dir + '/dusk_check4'
 #    os.system(cmd)
-
-
-
 
 #--------------------------------------------------------------------
 

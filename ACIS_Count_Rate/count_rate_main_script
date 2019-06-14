@@ -2,7 +2,6 @@ cd /data/mta/Script/ACIS/Count_rate/Exc
 
 setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
-/data/mta/Script/ACIS/Count_rate/Scripts/get_data_for_month.py
 /data/mta/Script/ACIS/Count_rate/Scripts/create_aggragate_data_sets.py
 /data/mta/Script/ACIS/Count_rate/Scripts/plot_count_rate.py
 /data/mta/Script/ACIS/Count_rate/Scripts/print_html_page.py

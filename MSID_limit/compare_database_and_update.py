@@ -1,15 +1,15 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#       compare_database_and_update.py: compare the current mta limit data base                     #
-#                                       to glimmon and update the former                            #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           last update: Nov 01, 2018                                                               #
-#                                                                                                   #
-#####################################################################################################
+#####################################################################################
+#                                                                                   #
+#       compare_database_and_update.py: compare the current mta limit data base     #
+#                                       to glimmon and update the former            #
+#                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                               #
+#                                                                                   #
+#           last update: May 16, 2019                                               #
+#                                                                                   #
+#####################################################################################
 
 import os
 import sys
@@ -20,11 +20,14 @@ import math
 import sqlite3
 import unittest
 import time
-from time import gmtime, strftime, localtime
+import Chandra.Time
+
+sys.path.append('/data/mta/Script/Python3.6/MTA/')
+import mta_common_functions as mcf
 #
 #--- temp writing file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- set a few names etc
@@ -47,17 +50,12 @@ def compare_database_and_update():
 #
 #--- read the special_msid_list
 #
-    ifile = './special_msid_list'
-    f     = open(ifile, 'r')
-    special_msid_list = [line.strip() for line in f.readlines()]
-    f.close()
+    special_msid_list = mcf.read_data_file('./special_msid_list')
 #
 #--- get time stamps
 #
-    today   = strftime("%Y_%m_%d", localtime())                     #--- e.g.2015_03_13
-    Epoch   = float(time.mktime(localtime()))
-    Ebase_t = float(time.mktime((1998, 1, 1, 0, 0, 0, 5, 1, 0)))
-    stime   = str(Epoch - Ebase_t)                                  #--- seconds from 1998.1.1
+    today   = time.strftime('%Y:%j:00:00:00', time.gmtime())
+    stime   = Chandra.Time.DateTime(today).secs
 #
 #--- download the current glimmon sql data base
 #
@@ -143,7 +141,7 @@ def compare_database_and_update():
 #--- time stamp 
 #
                 org = temp[5].strip()
-                line = line.replace(org, stime)
+                line = line.replace(org, str(stime))
 #
 #--- new data entry indicator
 #
@@ -157,28 +155,26 @@ def compare_database_and_update():
 #
 #--- now update the original data. append the updated line to the end of each msid entry
 #
-    fo = open('./op_limits.db', 'w')
 
-    prev = ''
+    prev  = ''
+    sline = ''
     for ent in org_data:
         if prev == "":
             atemp = re.split('\s+', ent)
             prev  = atemp[0]
-            fo.write(ent)
-            fo.write('\n')
+            sline = sline + ent + '\n'
         else:
 #
 #--- for the case msid is the same as the previous; do nothing
 #
             atemp = re.split('\s+', ent)
             if prev == atemp[0]:
-                fo.write(ent)
-                fo.write('\n')
+                sline = sline + ent + '\n'
                 continue
             else:
 #
-#--- if the msid changed from the last entry line, check there is an update for the previous msid
-#--- if so, add the line before printing the current line
+#--- if the msid changed from the last entry line, check there is an update 
+#--- for the previous msid. if so, add the line before printing the current line
 #
                 try:
                     if not (prev.lower() in special_msid_list):
@@ -187,14 +183,14 @@ def compare_database_and_update():
                 except:
                     line = ent
 
-                fo.write(line)
-                fo.write('\n')
+                sline = sline + line + '\n'
 
                 atemp = re.split('\s+', ent)
                 prev  = atemp[0]
 
 
-    fo.close()
+    with open('./op_limits.db', 'w') as fo:
+        fo.write(sline)
 #
 #--- check whether there are any changes and if so, save/update databases
 #
@@ -221,9 +217,7 @@ def read_mta_database():
 #
 #--- read the database
 #
-    f     = open(mta_op_limit, 'r')
-    data  = [line.strip() for line in f.readlines()]
-    f.close()
+    data  = mcf.read_data_file(mta_op_limit)
 
     prev  = ''
     ymin  = ''
@@ -337,14 +331,14 @@ def download_glimmon():
     cmd = 'mv -f  ' + glimmon + ' ' + glimmon + '~'
     os.system(cmd)
 
-    f   = open('/home/isobe/.occpass')
-    out = f.read()
-    f.close()
-    out = out.replace('\n', '')
+    with open('/home/isobe/.occpass' , 'r') as f:
+        out = f.read().strip()
 #
 #--- download the database
 #
-    cmd = 'curl -u tisobe:' + out + ' https://occweb.cfa.harvard.edu/occweb/FOT/engineering/thermal/AXAFAUTO_RSYNC/G_LIMMON_Archive/glimmondb.sqlite3 > ' +  glimmon
+    cmd = 'curl -u tisobe:' + out 
+    cmd = cmd + ' https://occweb.cfa.harvard.edu/occweb/FOT/engineering/thermal/'
+    cmd = cmd + 'AXAFAUTO_RSYNC/G_LIMMON_Archive/glimmondb.sqlite3 > ' +  glimmon
 
     os.system(cmd)
 
@@ -354,7 +348,8 @@ def download_glimmon():
 
 def test_and_save():
     """
-     save a copy of op_limit.db and glimon to Past_data directory and also update the main mta limit database
+     save a copy of op_limit.db and glimon to Past_data directory and also 
+     update the main mta limit database
      input: none but read from op_limits.db and the current mta limit database
      output: ./Past_data/op_limits.db_<time stamp>
              ./Past_data/glimmondb.sqlite3_<time stamp>
@@ -370,18 +365,13 @@ def test_and_save():
 #
     cmd  = 'diff ' + mta_op_limit + ' ./op_limits.db > ' + zspace
     os.system(cmd)
-    f    = open(zspace, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
-
-    cmd = 'rm ' + zspace
-    os.system(cmd)
+    data = mcf.read_data_file(zspace, remove=1)
 #
 #--- if so, save a copy of op_limit.db and glimon to Past_data directory and also 
 #--- update the main mta limit database
 #
     if len(data) > 0:
-        tail = strftime("%m%d%y", localtime())
+        tail = time.strftime("%m%d%y", time.gmtime())
 
         cmd = 'cp ./op_limits.db ./Past_data/op_limits.db_' + tail
         os.system(cmd)
@@ -389,28 +379,31 @@ def test_and_save():
         cmd = 'cp -f ./op_limits.db  ' + mta_op_limit
         os.system(cmd)
 
+        cmd = 'cp -f ' + glimmon  + '/data/mta4/MTA/data/op_limits/.'
+        os.system(cmd)
+
         cmd = 'cp ' +  glimmon + ' ./Past_data/' + glimmon + '_' + tail
         os.system(cmd)
 #
 #--- notify the changes to admin person
 #
-        fo = open(zspace, 'w')
-        line = 'There are some changes in mta limit database; check /data/mta/Script/MSID_limit/* '
+        line = 'There are some changes in mta limit database; '
+        line = line + 'check /data/mta/Script/MSID_limit/* '
         line = line + 'and /data/mta4/MTA/data/op_limits/op_limits.db.\n'
-        fo.write(line)
-        fo.close()
+
+        with  open(zspace, 'w') as fo:
+            fo.write(line)
 
         cmd = 'cat ' + zspace + '| mailx -s "Subject: MTA limit database updated  " ' + admin
         os.system(cmd)
 
-        cmd = 'rm ' + zspace
-        os.system(cmd)
+        mcf.rm_files(zspace)
 
-        cmd = 'chgroup mtagroup ./*'
+        cmd = 'chgrp mtagroup ./*'
         os.system(cmd)
-        cmd = 'chgroup mtagroup ./Past_data/*'
+        cmd = 'chgrp mtagroup ./Past_data/*'
         os.system(cmd)
-        cmd = 'chgroup mtagroup ' + mta_op_limit
+        cmd = 'chgrp mtagroup ' + mta_op_limit
         os.system(cmd)
 
     return True 
@@ -423,22 +416,20 @@ class TestFunctions(unittest.TestCase):
     """
     testing functions
     """
-
 #------------------------------------------------------------
 
     def test_read_mta_database(self):
 
         [msids, y_min, y_max, r_min, r_max, fline, tind, org_data] = read_mta_database()
 
-        print str(msids[:10])
+        print(str(msids[:10]))
 
-        print str(y_min['OHRTHR44'])
-        print str(y_max['OHRTHR44'])
-        print str(r_min['OHRTHR44'])
-        print str(r_max['OHRTHR44'])
+        print(str(y_min['OHRTHR44']))
+        print(str(y_max['OHRTHR44']))
+        print(str(r_min['OHRTHR44']))
+        print(str(r_max['OHRTHR44']))
 
-        print str(tind['OHRTHR44'])
-
+        print(str(tind['OHRTHR44']))
 
 #------------------------------------------------------------
 
@@ -448,12 +439,12 @@ class TestFunctions(unittest.TestCase):
         #msid = '1CBAT'
         tind = 1
         out = read_glimmon(msid, tind)
-        print str(out)
+        print(str(out))
 
         msid  = '1DAHBVO'
         tind = 1
         out = read_glimmon(msid, tind)
-        print str(out)
+        print(str(out))
 
 #------------------------------------------------------------
 
@@ -466,12 +457,10 @@ class TestFunctions(unittest.TestCase):
 
         f   = open('zzz', 'r')
         test = f.read()
-        print test
+        print(test)
         cmd =  'rm zzz'
         os.system(cmd)
 
-
-        
 #-----------------------------------------------------------------------------------
 
 if __name__ == "__main__":
