@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #########################################################################################
 #                                                                                       #
@@ -6,7 +6,7 @@
 #                                                                                       #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                       #
-#               last update: Apr 19, 2017                                               #
+#               last update: Jun 24, 2019                                               #
 #                                                                                       #
 #########################################################################################
 
@@ -22,36 +22,30 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 #
-#--- interactive plotting module
-#
-import mpld3
-from mpld3 import plugins, utils
-#
 #--- pylab plotting routine related modules
 #
 import matplotlib as mpl
 
 if __name__ == '__main__':
     mpl.use('Agg')
+
 from pylab import *
 import matplotlib.pyplot       as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines        as lines
-
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/ALIGNMENT/Sim_twist/house_keeping/dir_list_py'
+path = '/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -60,14 +54,13 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-import robust_linear              as rfit       #---- robust fit rountine
-
+import mta_common_functions as mcf        #---- contains other functions commonly used in MTA scripts
+import robust_linear        as rfit       #---- robust fit rountine
 #
 #--- temp writing file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mon_list = [0, 31, 59, 90, 120, 151, 181, 212, 234, 373, 304, 334]
@@ -86,7 +79,6 @@ def fid_light_trend_plot():
     input:  none but read from <data_dir>/<I-*/S-*> and <data_dir>/<H-I-*/H-S-*>
     output: png plots e.g., I-2.png, H-S-1.png
     """
-
     for part in range(1, 7):
         name   = 'I-'   + str(part)
         infile = data_dir + name
@@ -97,8 +89,6 @@ def fid_light_trend_plot():
         infile = data_dir + name
         indata = read_fid_light_data(infile)
         plot_panel(indata, name)
-
-
 
     for part in range(1, 5):
         name   = 'H-I-' + str(part)
@@ -123,15 +113,14 @@ def read_fid_light_data(infile):
             acen_i  --- acent i
             acen_j  --- acent j
     """
-
-    out    = read_data(infile)
+    out    = mcf.read_data_file(infile)
     atime  = []
     acen_i = []
     acen_j = []
     for ent in out:
         try:
             atemp = re.split('\s+', ent)
-            var1  = convert_to_fyear(float(atemp[0]))
+            var1  = mcf.chandratime_to_fraq_year(float(atemp[0]))
             var2  = float(atemp[4])
             var3  = float(atemp[5])
         except:
@@ -154,7 +143,6 @@ def plot_panel(data, outname):
             outname --- the name of the data to be plotted
     output: <web_dir>/Plots/<outname>.png
     """
-
     r_len    = len(b_period)
 #
 #--- data are separated into a few sections. here we set the end of the each
@@ -167,7 +155,6 @@ def plot_panel(data, outname):
 
     e_period.append(4000.0)
 
-
     plt.close('all')
     dlen = 2
     mlen = dlen - 1
@@ -178,7 +165,7 @@ def plot_panel(data, outname):
     plt.subplots_adjust(hspace=0.08)
     props = font_manager.FontProperties(size=9)
 #
-#--- set xrange
+#--- set x range
 #
     [atime, xmin, xmax, xlabel, xtext] = set_x_range(data[0])
 #
@@ -187,15 +174,15 @@ def plot_panel(data, outname):
     for k in range(0, dlen):
         j = k +  1
         line = str(dlen) + '1' + str(j)
-        exec "ax%s = plt.subplot(%s)" % (str(k), line)
-        exec "ax%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (str(k))
+        exec("ax%s = plt.subplot(%s)" % (str(k), line))
+        exec("ax%s.set_xlim(left=xmin, right=xmax, auto=False)" % (str(k)))
 #
 #--- if ymin and ymax are given, use them
 #
         ydata = data[k+1]
         [ymin, ymax, ytext] = set_y_range(data[0], ydata)
-        exec "ax%s.set_ylim(ymin=ymin, ymax=ymax, auto=False)" % (str(k))
-        exec "ax%s.plot(atime, ydata, color='blue', marker='.', markersize=1, lw=0)" % (str(k))
+        exec("ax%s.set_ylim(bottom=ymin, top=ymax, auto=False)" % (str(k)))
+        exec("ax%s.plot(atime, ydata, color='blue', marker='.', markersize=1, lw=0)" % (str(k)))
 #
 #--- fit lines
 #
@@ -208,18 +195,19 @@ def plot_panel(data, outname):
                 bot = 0
             else:
                 bot = 1
-            [xrange, yrange, ytext, line] = fit_line_period(data[0], ydata, b_period[m], e_period[m], m, ymin, ymax, bot)
+            [x_range, y_range, ytext, line] \
+               = fit_line_period(data[0], ydata, b_period[m], e_period[m], m, ymin, ymax, bot)
 
-            exec "ax%s.plot(xrange, yrange, color='red', lw=2)" % (str(k))
+            exec("ax%s.plot(x_range, y_range, color='red', lw=2)" % (str(k)))
             plt.text(xtext, ytext, line)
 #
 #--- y axis label
 #
-        exec "ax%s.set_ylabel('%s')" % (str(k), ylab[k])
+        exec("ax%s.set_ylabel('%s')" % (str(k), ylab[k]))
 #
 #--- x axis label
 #
-    exec 'ax%s.set_xlabel("%s")' % (str(mlen), 'Time (Year)')
+    exec('ax%s.set_xlabel("%s")' % (str(mlen), 'Time (Year)'))
 #
 #--- add x ticks label only on the last panel
 #
@@ -227,12 +215,11 @@ def plot_panel(data, outname):
         ax = 'ax' + str(k)
 
         if k != mlen:
-            exec "line = %s.get_xticklabels()" % (ax)
+            line = eval("%s.get_xticklabels()" % (ax))
             for label in  line:
                 label.set_visible(False)
         else:
             pass
-
 #
 #--- save the plot in a file
 #
@@ -243,7 +230,6 @@ def plot_panel(data, outname):
     outname = web_dir + 'Plots/' + outname + '.png'
 
     plt.savefig(outname, format='png', dpi=100.0)
-
 
 #------------------------------------------------------------------------------------------
 #-- fit_line_period: fit a line on the given data section and return the results         --
@@ -260,12 +246,11 @@ def fit_line_period(x, y, x_start, x_stop, m,  ymin, ymax, bot=0):
             ymin    --- y min
             yax     --- y max
             bot     --- an indicator of where to print the text. bot =1 to bottom side
-    output: xrange  --- a list of start and stop position of the line in x 
-            yrange  --- a list of start and stop position of the line in y
+    output: x_range  --- a list of start and stop position of the line in x 
+            y_range  --- a list of start and stop position of the line in y
             ytext   --- y position of the text
             line    --- a line to be printed
     """
-
     dlen = len(x)
     xn   = []
     yn   = []
@@ -277,16 +262,15 @@ def fit_line_period(x, y, x_start, x_stop, m,  ymin, ymax, bot=0):
             if y[k] >= ymin and y[k] <= ymax:
                 xn.append(x[k])
                 yn.append(y[k])
-
-    try:
 #
 #--- compute the fitted line with robust method
 #
+    try:
         [a, b, e] = rfit.robust_fit(xn, yn)
         y1        = a + b * x_start
         y2        = a + b * x_stop
-        xrange    = [x_start, x_stop]
-        yrange    = [y1, y2]
+        x_range    = [x_start, x_stop]
+        y_range    = [y1, y2]
 #
 #--- set the text postion and create the text to be printed
 #
@@ -303,7 +287,7 @@ def fit_line_period(x, y, x_start, x_stop, m,  ymin, ymax, bot=0):
         else:
             line      = "Slope (%4.1f <  year < %4.1f): %3.3f" % (x_start, x_stop, round(b, 3))
     
-        return [xrange, yrange, ytext, line]
+        return [x_range, y_range, ytext, line]
 #
 #--- for the case the fitting failed
 #
@@ -330,14 +314,13 @@ def set_x_range(xdata):
             xlabel  --- label of x axis
             xtext   --- x position of the text to be printed
     """
-
     xmin = min(xdata)
     year = int(xmin)
     xmax = max(xdata)
 
     xdiff = xmax - xmin
     if xdiff < 2.0:
-        if tcnv.isLeapYear(year) == 1:
+        if mcf.is_leapyear(year):
             base = 366
         else:
             base = 365
@@ -376,7 +359,6 @@ def set_y_range(xdata, ydata):
             ymax    --- y max
             ytext   --- y position of the text to printed
     """
-    
     xmax     = int(max(xdata))
     yavg     = numpy.median(ydata)
     interval = 4 + 0.5 * (xmax - 2005)
@@ -387,122 +369,6 @@ def set_y_range(xdata, ydata):
     ytext    = ymax - 0.1 * interval
 
     return [ymin, ymax, ytext]
- 
-
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-
-def read_data(infile, clean=0, emp=0):
-
-    try:
-        f    = open(infile, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
-        if len(data) > 0:
-#
-#--- if emp == 1, remove the empty elements
-#
-            if emp == 1:
-                out = []
-                for ent in data:
-                    if ent != '':
-                        out.append(ent)
-                data = out
-    
-        if clean == 1:
-            mcf.rm_file(infile)
-    except:
-        data = []
-    
-    return data
-
-#------------------------------------------------------------------------------------------
-#-- convert_to_fyear: convert time format to fractional year                            ---
-#------------------------------------------------------------------------------------------
-
-def convert_to_fyear(cdate):
-    """
-    convert time format to fractional year
-    input:  cdate   --- time in either <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss> or seconds from 1998.1.1
-    output: fyear   --- time in fractional year
-    """
-
-    try:
-        mc = re.search('T', cdate)
-    except:
-        mc = None
-#
-#--- for the case the time format is: <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss>
-#
-    if mc is not None:
-        atemp = re.split('T', cdate)
-        btemp = re.split('-', atemp[0])
-        ctemp = re.split(':', atemp[1])
-        year  = float(btemp[0])
-        mon   = float(btemp[1])
-        day   = float(btemp[2])
-        hh    = float(ctemp[0])
-        mm    = float(ctemp[1])
-        ss    = float(ctemp[2])
-
-        ydate = mon_list[int(mon)-1] + day 
-        if tcnv.isLeapYear(year) == 1:
-            if mon > 2:
-                ydate += 1
-#
-#---- for the case the time format is seconds from 1998.1.1
-#
-    elif mcf.chkNumeric(cdate):
-        out   = Chandra.Time.DateTime(float(cdate)).date
-        atemp = re.split(':', out)
-
-        year  = float(atemp[0])
-        ydate = float(atemp[1])
-        hh    = float(atemp[2])
-        mm    = float(atemp[3])
-        ss    = float(atemp[4])
-
-    else:
-        atemp = re.split(':', cdate)
-        year  = float(atemp[0])
-        ydate = float(atemp[1])
-        hh    = float(atemp[2])
-        mm    = float(atemp[3])
-        ss    = float(atemp[4])
-
-    ydate = ydate + hh / 24.0 + mm / 1440.0 + ss / 86400.0
-
-    if tcnv.isLeapYear(year) == 1:
-        base = 366.0
-    else:
-        base = 365.0
-
-    fyear = year + ydate / base
-
-    return fyear
-
-#------------------------------------------------------------------------------------------
-#-- quickChandra_time: axTime3 replacement                                             ----
-#------------------------------------------------------------------------------------------
-
-def quickChandra_time(ent):
-    """
-    axTime3 replacement
-    input:  ent --- either seconds from 1998.1.1 or date in <yyyy>:<ddd>:<hh>:<mm>:<ss>
-    output: out --- either seconds from 1998.1.1 or date in <yyyy>:<ddd>:<hh>:<mm>:<ss>
-    """
-
-    if mcf.chkNumeric(ent):
-        out = Chandra.Time.DateTime(float(ent)).date
-    else:
-        out = Chandra.Time.DateTime(str(ent)).secs
-
-    return out
-
-
-
-
 
 #------------------------------------------------------------------------------------------
 

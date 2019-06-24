@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #########################################################################################
 #                                                                                       #
@@ -6,7 +6,7 @@
 #                                                                                       #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                       #
-#               last update: Apr 19, 2017                                               #
+#               last update: Jun 24, 2019                                               #
 #                                                                                       #
 #########################################################################################
 
@@ -20,45 +20,36 @@ import time
 import numpy
 import astropy.io.fits  as pyfits
 
-#
-#--- from ska
-#
-from Ska.Shell import getenv, bash
-ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param', shell='tcsh')
-ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/CTI/Exc/Temp_comp_area/'
-
 import Chandra.Time
 import Ska.engarchive.fetch as fetch
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/ALIGNMENT/Sim_twist/house_keeping/dir_list_py'
+path = '/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
 sys.path.append(bin_dir)
 sys.path.append(mta_dir)
+sys.path.append(sybase_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-from DBI import *
-
+import mta_common_functions as mcf      #---- contains other functions commonly used in MTA scripts
+import set_sybase_env_and_run as sser   #--- access to sybase
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mon_list = [0, 31, 59, 90, 120, 151, 181, 212, 234, 373, 304, 334]
@@ -97,7 +88,11 @@ def alignment_sim_twist_extract(tstart='', tstop='', year=''):
 #
         ifile  = data_dir + 'data_info_' + str(year)
         if os.path.isfile(ifile):
-            data  = read_data(ifile, emp=1)
+            out  = mcf.read_data_file(ifile)
+            data = []
+            for ent in out:
+                if ent != '':
+                    data.append(ent)
         else:
 #
 #--- if the current year data files are not there, just creates an empty list
@@ -114,9 +109,9 @@ def alignment_sim_twist_extract(tstart='', tstop='', year=''):
 
             ending = extract_data(tstart, tstop, year-1)
 #
-#--- check the last entry again for the next round
+#--- check the last entry again for the next round (for the new year data set)
 #
-            tstart = convert_time_format(ending)
+            tstart = mcf.convert_date_format(ending, ifmt='%Y-%m-%dT%H:%M:%S', ofmt='%Y:%j:%H:%M:%S')
 #
 #--- work on this year's data
 #
@@ -135,12 +130,12 @@ def get_last_entry_time(infile, pos=4):
     input:  infile  --- input file, ususally data_infor_<year> and assume that
                         pos-th entry is the (ending) time
             pos     --- position of the time element in the data (usually 4th)
+    output: ftime   --- the last entry data in <yyy>:<ddd>:<hh>:<mm>:<ss>
     """
-
-    data   = read_data(infile)
+    data   = mcf.read_data_file(infile)
 
     if len(data) == 0:
-        print "something wrong in starting time; exist"
+        print("something wrong in starting time; exist")
         exit(1)
     else:
         atemp  = re.split('\s+', data[-1])
@@ -148,42 +143,9 @@ def get_last_entry_time(infile, pos=4):
 #
 #--- convert time format to be used
 #
-        ftime  = convert_time_format(ltime)
+        ftime  = mcf.convert_date_format(ltime, ifmt='%Y-%m-%dT%H:%M:%S', ofmt='%Y:%j:%H:%M:%S')
 
         return ftime
-
-
-#------------------------------------------------------------------------------------------
-#-- convert_time_format: convert data fromat                                             --
-#------------------------------------------------------------------------------------------
-
-def convert_time_format(ltime):
-    """
-    convert data fromat from <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss> to <yyyy>:<ddd>:<hh>:<mm>:<ss>
-    input:  ltime   time in the format of <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss>
-    output: date    time in the format of <yyyy>:<ddd>:<hh>:<mm>:<ss>
-    """
-    
-    atemp = re.split('T', ltime)
-    btemp = re.split('-', atemp[0])
-    year  = int(float(btemp[0]))
-    mon   = int(float(btemp[1]))
-    day   = int(float(btemp[2]))
-
-    yday  = mon_list[mon-1] + day
-    if (tcnv.isLeapYear(year) == 1) and (mon > 2):
-        yday += 1
-
-    lyday = str(yday)
-    if yday < 10:
-        lyday = '00' + lyday
-    elif yday < 100:
-        lyday = '0'  + lyday
-
-    date = str(year) + ':' + lyday + ':' + atemp[1]
-
-    return date
-
 
 #------------------------------------------------------------------------------------------
 #-- extract_data: using arc5gl, extract fits file and extract data                       --
@@ -226,7 +188,7 @@ def extract_data(tstart, tstop, year, ldir=''):
 #--- now extract the "asol" files one by one
 #
     for infits in aca_list:
-        fout   = call_arc5gl('retrieve', 'pcad', '1', tstart='', tstop='', sub='aca', file=infits)
+        fout   = call_arc5gl('retrieve', 'pcad', '1', tstart='', tstop='', sub='aca', ifile=infits)
         try:
             fits   = fout[0]
         except:
@@ -247,13 +209,9 @@ def extract_data(tstart, tstop, year, ldir=''):
 #--- write the extracted information
 #
     outfile = ldir + 'data_info_' + str(year)
-    if os.path.isfile(outfile):
-        fo      = open(outfile, 'a')
-    else:
-        fo      = open(outfile, 'a')
-    for line in info_list:
-        fo.write(line)
-    fo.close()
+    with open(outfile, 'a') as fo:
+        for line in info_list:
+            fo.write(line)
 #
 #--- the last date of the data extraction (closing time)
 #
@@ -263,13 +221,9 @@ def extract_data(tstart, tstop, year, ldir=''):
 #---- write the extracted data
 #
     outfile = ldir + 'data_extracted_' + str(year)
-    if os.path.isfile(outfile):
-        fo      = open(outfile, 'a')
-    else:
-        fo      = open(outfile, 'w')
-    for line in data_list:
-        fo.write(line)
-    fo.close()
+    with open(outfile, 'a') as fo:
+        for line in data_list:
+            fo.write(line)
 
     return ending
 
@@ -286,7 +240,7 @@ def get_header_info(fits):
                         <sim x> <sim y> <sim z> <pitchamp> <yawamp>
             obsid   --- obsid   
             inst    --- instrument
-                            ---- these are duplicate but easier for the calling function to use
+                        ---- these are duplicate but easier for the calling function to use
     """
 #
 #--- read header of the fits file. assume that extension is 1.
@@ -307,7 +261,7 @@ def get_header_info(fits):
 #
     try:
         sqlcmd   = 'select instrument from target where obsid=' + str(obsid)
-        [inst]   = readSQL(sqlcmd, 'axafocat')
+        [inst]   = sser.set_sybase_env_and_run(sqlcmd, fetch='fetchone')
     except:
         inst = 'NA'
 
@@ -325,7 +279,6 @@ def get_header_info(fits):
 
     return [line, obsid, inst]
 
-
 #------------------------------------------------------------------------------------------
 #-- get_data: extract data from the fits file                                           ---
 #------------------------------------------------------------------------------------------
@@ -339,8 +292,7 @@ def get_data(fits, obsid, inst):
     output: out_list--- a list of lines containing the data 
                         <time> <obsid> <instrument> <dy> <dz> <dtheta>
     """
-
-    ff = pyfits.open(fits)
+    ff   = pyfits.open(fits)
     data = ff[1].data
     tin  = data.field('time')
     dyin = data.field('dy')
@@ -407,7 +359,7 @@ def get_data(fits, obsid, inst):
 #-- call_arc5gl: using arc5gl to extract a fits file list or a file itself              ---
 #------------------------------------------------------------------------------------------
 
-def call_arc5gl(op, detector, level, tstart='', tstop='', sub='', file=''):
+def call_arc5gl(op, detector, level, tstart='', tstop='', sub='', ifile=''):
     """
     using arc5gl to extract a fits file list or a file itself
     input:  op      ---- operation: retreive/browse
@@ -416,10 +368,9 @@ def call_arc5gl(op, detector, level, tstart='', tstop='', sub='', file=''):
             tstart      --- starting time if file name is provided, it is ignored
             tstop       --- stopping time if file name is provided, it is ignored
             sub         --- sub detector name; default ""
-            file        --- file name; default ""
+            ifile       --- file name; default ""
     output: flist       --- a list of fits file, either results of browse or extracted file name
     """
-
     line = 'operation=' + op + '\n'
     line = line + 'dataset=flight\n'
     line = line + 'detector='     + detector    + '\n'
@@ -429,118 +380,17 @@ def call_arc5gl(op, detector, level, tstart='', tstop='', sub='', file=''):
 
     line = line + 'level='        + str(level)  + '\n'
 
-    if file == '':
+    if ifile == '':
         line = line + 'tstart='   + str(tstart) + '\n'
         line = line + 'tstop='    + str(tstop)  + '\n'
     else:
-        line = line + 'filename=' + file        + '\n'
+        line = line + 'filename=' + ifile       + '\n'
 
     line = line + 'go\n'
-    fo = open(zspace, 'w')
-    fo.write(line)
-    fo.close()
 
-    cmd = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace + ' >ztemp_out'
-    run_ascds(cmd)
-    mcf.rm_file(zspace)
-
-    data = read_data('ztemp_out', clean=1)
-    flist = []
-    for ent in data:
-        mc = re.search('fits', ent)
-        if mc is not None:
-            flist.append(str(ent))
+    flist = mcf.run_arc5gl_process(line)
 
     return flist
-
-
-#------------------------------------------------------------------------------------------
-#-- run_ascds: run the command in ascds environment                                      --
-#------------------------------------------------------------------------------------------
-
-def run_ascds(cmd):
-    """
-    run the command in ascds environment
-    input:  cmd --- command line
-    output: command results
-    """
-    acmd = '/usr/bin/env PERL5LIB=""  ' + cmd
-
-    try:
-        bash(acmd, env=ascdsenv)
-    except:
-        try:
-            bash(acmd, env=ascdsenv)
-        except:
-            pass
-
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-
-def read_data(infile, clean=0, emp=0):
-
-    try:
-        f    = open(infile, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
-        if len(data) > 0:
-#
-#--- if emp == 1, remove the empty elements
-#
-            if emp == 1:
-                out = []
-                for ent in data:
-                    if ent != '':
-                        out.append(ent)
-                data = out
-    
-        if clean == 1:
-            mcf.rm_file(infile)
-    except:
-        data = []
-    
-    return data
-
-#------------------------------------------------------------------------------------------
-#-- readSQL: for a given sql command and database, return result in dictionary form.     --
-#------------------------------------------------------------------------------------------
-
-def readSQL(cmd, database):
-    """
-    for a given sql command and database, return result in dictionary form.
-    input   cmd         --- sql command
-            database    --- the database to be used
-    output: outdat      --- results
-    """
-    db_user = 'mtaops_internal_web'
-    server  = 'ocatsqlsrv'
-
-    line      = pass_dir + '.targpass_internal'
-    f         = open(line, 'r')
-    db_passwd = f.readline().strip()
-    f.close()
-
-    db = DBI(dbi='sybase', server=server, user=db_user, passwd=db_passwd, database=database)
-
-    outdata = db.fetchone(cmd)
-    atemp   = re.split('select', cmd)
-    btemp   = re.split('from', atemp[1])
-    ctemp   = re.split('\s+|,', btemp[0])
-
-    results = []
-    for ent in ctemp:
-        if ent == '':
-            continue
-        ent = ent.strip()
-        try:
-            results.append(outdata[ent])
-        except:
-            pass
-
-    return results
-
-
 
 #------------------------------------------------------------------------------------------
 
@@ -556,7 +406,3 @@ if __name__ == "__main__":
         year   = ''
 
     alignment_sim_twist_extract(tstart, tstop, year)
-
-
-
-

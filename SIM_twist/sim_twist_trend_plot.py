@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #########################################################################################
 #                                                                                       #
@@ -6,7 +6,7 @@
 #                                                                                       #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                       #
-#               last update: Jun 05, 2017                                               #
+#               last update: Jun 24, 2019                                               #
 #                                                                                       #
 #########################################################################################
 
@@ -22,11 +22,6 @@ import astropy.io.fits  as pyfits
 import Ska.engarchive.fetch as fetch
 import Chandra.Time
 #
-#--- interactive plotting module
-#
-import mpld3
-from mpld3 import plugins, utils
-#
 #--- pylab plotting routine related modules
 #
 import matplotlib as mpl
@@ -37,21 +32,19 @@ from pylab import *
 import matplotlib.pyplot       as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines        as lines
-
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/ALIGNMENT/Sim_twist/house_keeping/dir_list_py'
+path = '/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -60,14 +53,13 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-import robust_linear              as rfit       #---- robust fit rountine
-
+import mta_common_functions as mcf    #---- contains other functions commonly used in MTA scripts
+import robust_linear        as rfit   #---- robust fit rountine
 #
 #--- temp writing file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 mon_list = [0, 31, 59, 90, 120, 151, 181, 212, 234, 373, 304, 334]
@@ -87,10 +79,9 @@ def sim_twist_trend_plot(inyear):
     output: <web_dir>/Plots>/sim_plot_<year>.png
             <web_dir>/Plots>/twist_plot_<year>.png
             <web_dir>/Plots>/dtheta_plot_<year>.png
-            if year is not given, it creates each year plot for all year from 1999 to present and
-            the full range plots
+            note: if year is not given, it creates each year plot for all year 
+                  from 1999 to present and the full range plots
     """
-
     if inyear != '':
         syear = inyear
         pyear = inyear
@@ -116,8 +107,9 @@ def sim_twist_trend_plot(inyear):
     full_hrc_s     = []
     for year in range(syear, eyear):
 
-        data_info      = read_data_info(year)
-        data_extr      = read_data_extracted(year)
+        data_info  = read_data_info(year)
+        data_extr  = read_data_extracted(year)
+
         [acis_i, acis_s, hrc_i, hrc_s] = dtheta_on_inst(data_extr)
 #
 #--- update plots for this year and possibly the last year (for the first two months of the year)
@@ -147,7 +139,6 @@ def sim_twist_trend_plot(inyear):
                     full_hrc_i[k]     = full_hrc_i[k]     + hrc_i[k]
                     full_hrc_s[k]     = full_hrc_s[k]     + hrc_s[k]
 
-
     if lchk == 1:
         plot_data_info(full_data_info)
         plot_data_extr(full_data_extr)
@@ -163,9 +154,8 @@ def read_data_info(year):
     input:  year    --- the year of the data set
     output: [time, sim_x, sim_y, sim_z, pitch, yaw]
     """
-
     infile = data_dir + 'data_info_' + str(year)
-    data   = read_data(infile)
+    data   = mcf.read_data_file(infile)
 
     time   = []
     sim_x  = []
@@ -175,8 +165,13 @@ def read_data_info(year):
     yaw    = []
     for ent in data:
         atemp = re.split('\s+', ent)
-        start = convert_to_fyear(atemp[3])
-        stop  = convert_to_fyear(atemp[4])
+
+        out   = mcf.convert_date_format(atemp[3], ifmt='%Y-%m-%dT%H:%M:%S', ofmt='chandra')
+        start = mcf.chandratime_to_fraq_year(out)
+
+        out   = mcf.convert_date_format(atemp[4], ifmt='%Y-%m-%dT%H:%M:%S', ofmt='chandra')
+        stop  = mcf.chandratime_to_fraq_year(out)
+
         mid   = 0.5 *(start + stop)
         try:
             val1 = float(atemp[5])
@@ -213,7 +208,7 @@ def read_data_extracted(year):
     xbot   =  out = Chandra.Time.DateTime(xbot).secs
 
     infile = data_dir + 'data_extracted_' + str(year)
-    data   = read_data(infile)
+    data   = mcf.read_data_file(infile)
     
     time   = []
     dy     = []
@@ -225,7 +220,7 @@ def read_data_extracted(year):
         try:
             if float(atemp[0]) < xbot:
                 continue
-            tval  = convert_to_fyear(atemp[0])
+            tval  = mcf.chandratime_to_fraq_year(atemp[0])
             yval  = float(atemp[3])
             zval  = float(atemp[4])
             hval  = float(atemp[5]) * 3600.0
@@ -251,7 +246,6 @@ def dtheta_on_inst(data):
     output: [acis_i, acis_s, hrc_i, hrc_s] each has the same stracture as data but only
             for that instrument
     """
-    
     acis_i = [[], [], [], [], []]
     acis_s = [[], [], [], [], []]
     hrc_i  = [[], [], [], [], []]
@@ -275,7 +269,6 @@ def dtheta_on_inst(data):
                 hrc_s[m].append(data[m][k])
 
     return [acis_i, acis_s, hrc_i, hrc_s]
-        
 
 #------------------------------------------------------------------------------------------
 #-- plot_data_info: plot trend of the information related to sim twist                   --
@@ -289,7 +282,6 @@ def plot_data_info(data_info, year =''):
                             from the beginning
     output: <web_dir>/Plots/sim_plot_<year>.png   _<year> can be ""
     """
-    
     ylims = [[-2.0, 0.5], [-0.05, 0.05] , [-300, 300], [0, 100], [0, 100]]
     ylab  = ['sim_x (mm)', 'sim_y (mm)', 'sim_z (mm)', 'pitchamp (sec)', 'yawamp (sec)']
 
@@ -299,7 +291,6 @@ def plot_data_info(data_info, year =''):
         outname = 'sim_plot_' + str(year) + '.png'
 
     plot_panel(data_info, ylims, ylab, outname)
-
 
 #------------------------------------------------------------------------------------------
 #-- plot_data_extr: plot sim twist trend                                                 --
@@ -313,7 +304,6 @@ def plot_data_extr(data_extr, year=''):
                             from the beginning
     output: <web_dir>/Plots/twist_plot_<year>.png   _<year> can be ""
     """
-    
     ylims = [[-0.5, 2.0], [-0.1, 2.4], [-50, 50]]
     ylab  = ['dy (mm)', 'dz (mm)', 'dtheta (sec)']
 
@@ -342,8 +332,6 @@ def plot_dtheta(acis_i, acis_s, hrc_i, hrc_s, year=''):
                         from the beginning 
     output: <web_dir>/Plots/dtheta_plot_<year>.png _<year> can be ""
     """
-
-
     ylims = [[-30, 20], [-40, 10], [10, 60], [-40, 10]]
     ylab  = ['ACIS-I','ACIS-S','HRC-I','HRC-S']
 
@@ -353,8 +341,6 @@ def plot_dtheta(acis_i, acis_s, hrc_i, hrc_s, year=''):
         outname = 'dtheta_plot_' + str(year) + '.png'
 
     plot_panel2(acis_i, acis_s, hrc_i, hrc_s, 3, ylims, ylab, outname, lfit=1)
-
-
 
 #------------------------------------------------------------------------------------------
 #-- plot_panel: plot sim twist and sim information trends                               ---
@@ -384,7 +370,6 @@ def plot_panel(data, ylims, ylab, outname, lfit=0):
 
     e_period.append(4000.0)
 
-
     plt.close('all')
     dlen = len(ylab)
     mlen = dlen - 1
@@ -404,18 +389,18 @@ def plot_panel(data, ylims, ylab, outname, lfit=0):
     for k in range(0, dlen):
         j = k +  1
         line = str(dlen) + '1' + str(j)
-        exec "ax%s = plt.subplot(%s)" % (str(k), line)
-        exec "ax%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (str(k))
+        exec("ax%s = plt.subplot(%s)" % (str(k), line))
+        exec("ax%s.set_xlim(left=xmin, right=xmax, auto=False)" % (str(k)))
 #
 #--- if ymin and ymax are given, use them
 #
         if len(ylims) == dlen:
             ymin = ylims[k][0]
             ymax = ylims[k][1]
-            exec "ax%s.set_ylim(ymin=ymin, ymax=ymax, auto=False)" % (str(k))
+            exec("ax%s.set_ylim(bottom=ymin, top=ymax, auto=False)" % (str(k)))
 
         ydata = data[k+1]
-        exec "ax%s.plot(atime, ydata, color='blue', marker='.', markersize=1, lw=0)" % (str(k))
+        exec("ax%s.plot(atime, ydata, color='blue', marker='.', markersize=1, lw=0)" % (str(k)))
 #
 #--- for the case that a fitting line is requested
         if lfit == 1:
@@ -423,7 +408,7 @@ def plot_panel(data, ylims, ylab, outname, lfit=0):
             y1        = a + b * xmin
             y2        = a + b * xmax
             yrange    = [y1, y2]
-            exec "ax%s.plot(xrange, yrange, color='red', lw=2)" % (str(k))
+            exec("ax%s.plot(xrange, yrange, color='red', lw=2)" % (str(k)))
 
             ydiff     = ymax - ymin
             ytext     = ymax -0.1 * ydiff
@@ -434,16 +419,16 @@ def plot_panel(data, ylims, ylab, outname, lfit=0):
             for m in range(0, r_len):
                 [xrange, yrange, ytext, line] \
                     = fit_line_period(atime, ydata, b_period[m], e_period[m],  m,  ymin, ymax, bot=0)
-                exec "ax%s.plot(xrange, yrange, color='red', lw=2)" % (str(k))
+                exec("ax%s.plot(xrange, yrange, color='red', lw=2)" % (str(k)))
                 plt.text(xtext, ytext, line)
 #
 #--- y axis label
 #
-        exec "ax%s.set_ylabel('%s')" % (str(k), ylab[k])
+        exec("ax%s.set_ylabel('%s')" % (str(k), ylab[k]))
 #
 #--- x axis label
 #
-    exec 'ax%s.set_xlabel("%s")' % (str(mlen), xlabel)
+    exec('ax%s.set_xlabel("%s")' % (str(mlen), xlabel))
 #
 #--- add x ticks label only on the last panel
 #
@@ -451,12 +436,11 @@ def plot_panel(data, ylims, ylab, outname, lfit=0):
         ax = 'ax' + str(k)
 
         if k != mlen:
-            exec "line = %s.get_xticklabels()" % (ax)
+            line = eval("%s.get_xticklabels()" % (ax))
             for label in  line:
                 label.set_visible(False)
         else:
             pass
-
 #
 #--- save the plot in a file
 #
@@ -466,8 +450,6 @@ def plot_panel(data, ylims, ylab, outname, lfit=0):
 
     outfile = web_dir + 'Plots/' + outname
     plt.savefig(outfile, format='png', dpi=100.0)
-
-
 
 #------------------------------------------------------------------------------------------
 #-- plot_panel2: plotting dtheta information                                            ---
@@ -487,7 +469,6 @@ def plot_panel2(data1, data2, data3, data4, ydpos, ylims, ylab, outname, lfit=0)
             lfit    --- indicator of whether to fit line lfit=1: yes
     output: <web_dir>/Plots/<outname>.png
     """
-
     plt.close('all')
     dlen = len(ylab)
     mlen = dlen - 1
@@ -524,19 +505,19 @@ def plot_panel2(data1, data2, data3, data4, ydpos, ylims, ylab, outname, lfit=0)
     for k in range(0, dlen):
         j = k +  1
         line = str(dlen) + '1' + str(j)
-        exec "ax%s = plt.subplot(%s)" % (str(k), line)
-        exec "ax%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (str(k))
+        exec("ax%s = plt.subplot(%s)" % (str(k), line))
+        exec("ax%s.set_xlim(left=xmin, right=xmax, auto=False)" % (str(k)))
 #
 #--- if ymin and ymax are given, use them
 #
         if len(ylims) == dlen:
             ymin = ylims[k][0]
             ymax = ylims[k][1]
-            exec "ax%s.set_ylim(ymin=ymin, ymax=ymax, auto=False)" % (str(k))
+            exec("ax%s.set_ylim(ymin=ymin, ymax=ymax, auto=False)" % (str(k)))
 
         xdata = atime[k]
         ydata = data[k]
-        exec "ax%s.plot(xdata, ydata, color='blue', marker='.', markersize=1, lw=0)" % (str(k))
+        exec("ax%s.plot(xdata, ydata, color='blue', marker='.', markersize=1, lw=0)" % (str(k)))
 #
 #--- for the case that a fitting line is requested
         if lfit == 1:
@@ -545,7 +526,7 @@ def plot_panel2(data1, data2, data3, data4, ydpos, ylims, ylab, outname, lfit=0)
             y1        = a + b * xmin
             y2        = a + b * xmax
             yrange    = [y1, y2]
-            exec "ax%s.plot(xrange, yrange, color='red', lw=2)" % (str(k))
+            exec("ax%s.plot(xrange, yrange, color='red', lw=2)" % (str(k)))
 
             ydiff     = ymax - ymin
             ytext     = ymax -0.1 * ydiff
@@ -554,11 +535,11 @@ def plot_panel2(data1, data2, data3, data4, ydpos, ylims, ylab, outname, lfit=0)
 #
 #--- y axis label
 #
-        exec "ax%s.set_ylabel('%s')" % (str(k), ylab[k])
+        exec("ax%s.set_ylabel('%s')" % (str(k), ylab[k]))
 #
 #--- x axis label
 #
-    exec 'ax%s.set_xlabel("%s")' % (str(mlen), xlabel)
+    exec('ax%s.set_xlabel("%s")' % (str(mlen), xlabel))
 #
 #--- add x ticks label only on the last panel
 #
@@ -566,12 +547,11 @@ def plot_panel2(data1, data2, data3, data4, ydpos, ylims, ylab, outname, lfit=0)
         ax = 'ax' + str(k)
 
         if k != mlen:
-            exec "line = %s.get_xticklabels()" % (ax)
+            line = eval("%s.get_xticklabels()" % (ax))
             for label in  line:
                 label.set_visible(False)
         else:
             pass
-
 #
 #--- save the plot in a file
 #
@@ -581,7 +561,6 @@ def plot_panel2(data1, data2, data3, data4, ydpos, ylims, ylab, outname, lfit=0)
 
     outfile = web_dir + 'Plots/' + outname
     plt.savefig(outfile, format='png', dpi=100.0)
-
  
 #------------------------------------------------------------------------------------------
 #-- set_x_range: setting x range. if less than 2 years, use yday, otherwise, fractional year 
@@ -603,7 +582,7 @@ def set_x_range(xdata):
 
     xdiff = xmax - xmin
     if xdiff < 2.0:
-        if tcnv.isLeapYear(year) == 1:
+        if mcf.is_leapyear(year):
             base = 366
         else:
             base = 365
@@ -617,7 +596,6 @@ def set_x_range(xdata):
 
             xmin   = 0
             xmax   = base
-
     else:
         ndata = xdata
         xmin  = int(xmin)
@@ -643,7 +621,6 @@ def remove_out_layer(x, y, ymin, ymax):
     output: nx      --- x data without outlayers
             ny      --- y data without outlayers
     """
-
     ya = []
     for m in range(0, len(y)):
         if y[m] >= ymin and y[m] <= ymax:
@@ -662,114 +639,6 @@ def remove_out_layer(x, y, ymin, ymax):
             ny.append(y[k])
 
     return [nx, ny]
-
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-
-def read_data(infile, clean=0, emp=0):
-
-    try:
-        f    = open(infile, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
-        if len(data) > 0:
-#
-#--- if emp == 1, remove the empty elements
-#
-            if emp == 1:
-                out = []
-                for ent in data:
-                    if ent != '':
-                        out.append(ent)
-                data = out
-    
-        if clean == 1:
-            mcf.rm_file(infile)
-    except:
-        data = []
-    
-    return data
-
-#------------------------------------------------------------------------------------------
-#-- convert_to_fyear: convert time format to fractional year                            ---
-#------------------------------------------------------------------------------------------
-
-def convert_to_fyear(cdate):
-    """
-    convert time format to fractional year
-    input:  cdate   --- time in either <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss> or seconds from 1998.1.1
-    output: fyear   --- time in fractional year
-    """
-
-    mc = re.search('T', cdate)
-#
-#--- for the case the time format is: <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss>
-#
-    if mc is not None:
-        atemp = re.split('T', cdate)
-        btemp = re.split('-', atemp[0])
-        ctemp = re.split(':', atemp[1])
-        year  = float(btemp[0])
-        mon   = float(btemp[1])
-        day   = float(btemp[2])
-        hh    = float(ctemp[0])
-        mm    = float(ctemp[1])
-        ss    = float(ctemp[2])
-
-        ydate = mon_list[int(mon)-1] + day 
-        if tcnv.isLeapYear(year) == 1:
-            if mon > 2:
-                ydate += 1
-#
-#---- for the case the time format is seconds from 1998.1.1
-#
-    elif mcf.chkNumeric(cdate):
-        out   = Chandra.Time.DateTime(float(cdate)).date
-        atemp = re.split(':', out)
-
-        year  = float(atemp[0])
-        ydate = float(atemp[1])
-        hh    = float(atemp[2])
-        mm    = float(atemp[3])
-        ss    = float(atemp[4])
-
-    else:
-        atemp = re.split(':', cdate)
-        year  = float(atemp[0])
-        ydate = float(atemp[1])
-        hh    = float(atemp[2])
-        mm    = float(atemp[3])
-        ss    = float(atemp[4])
-
-    ydate = ydate + hh / 24.0 + mm / 1440.0 + ss / 86400.0
-
-    if tcnv.isLeapYear(year) == 1:
-        base = 366.0
-    else:
-        base = 365.0
-
-    fyear = year + ydate / base
-
-    return fyear
-
-#------------------------------------------------------------------------------------------
-#-- quickChandra_time: axTime3 replacement                                             ----
-#------------------------------------------------------------------------------------------
-
-def quickChandra_time(ent):
-    """
-    axTime3 replacement
-    input:  ent --- either seconds from 1998.1.1 or date in <yyyy>:<ddd>:<hh>:<mm>:<ss>
-    output: out --- either seconds from 1998.1.1 or date in <yyyy>:<ddd>:<hh>:<mm>:<ss>
-    """
-
-    if mcf.chkNumeric(ent):
-        out = Chandra.Time.DateTime(float(ent)).date
-    else:
-        out = Chandra.Time.DateTime(str(ent)).secs
-
-    return out
 
 #------------------------------------------------------------------------------------------
 #-- fit_line_period: fit a line on the given data section and return the results         --
@@ -802,7 +671,6 @@ def fit_line_period(x, y, x_start, x_stop, m,  ymin, ymax, bot=0):
             if y[k] >= ymin and y[k] <= ymax:
                 xn.append(x[k])
                 yn.append(y[k])
-
     try:
 #
 #--- compute the fitted line with robust method
@@ -828,7 +696,6 @@ def fit_line_period(x, y, x_start, x_stop, m,  ymin, ymax, bot=0):
             line      = "Slope (year > %4.1f):  %3.3f" % (x_start, round(b, 3))
         else:
             line      = "Slope (%4.1f <  year < %4.1f): %3.3f" % (x_start, x_stop, round(b, 3))
-
 #
 #--- for the case the fitting failed
 #
@@ -845,7 +712,6 @@ def fit_line_period(x, y, x_start, x_stop, m,  ymin, ymax, bot=0):
 
     return [xrange, yrange, ytext, line]
 
-
 #------------------------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -856,9 +722,3 @@ if __name__ == "__main__":
         year   = ''
 
     sim_twist_trend_plot(year)
-
-
-
-
-
-

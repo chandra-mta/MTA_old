@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #########################################################################################
 #                                                                                       #
@@ -6,7 +6,7 @@
 #                                                                                       #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                               #
 #                                                                                       #
-#               last update: Jun 12, 2017                                               #
+#               last update: Jun 24, 2019                                               #
 #                                                                                       #
 #########################################################################################
 
@@ -19,30 +19,21 @@ import math
 import time
 import numpy
 import astropy.io.fits  as pyfits
-
-#
-#--- from ska
-#
-from Ska.Shell import getenv, bash
-ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param', shell='tcsh')
-ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/CTI/Exc/Temp_comp_area/'
-
 import Chandra.Time
 import Ska.engarchive.fetch as fetch
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/ALIGNMENT/Sim_twist/house_keeping/dir_list_py'
+path = '/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -51,14 +42,11 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-from DBI import *
-
+import mta_common_functions as mcf  #---- contains other functions commonly used in MTA scripts
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())  
 zspace = '/tmp/zspace' + str(rtail)
 
 mon_list = [0, 31, 59, 90, 120, 151, 181, 212, 234, 373, 304, 334]
@@ -80,25 +68,7 @@ def fid_light_data_extract(tstart='', tstop='', year=''):
 #--- if the starting and stopping time are not given, set them
 #
     if tstart == '':
-#
-#--- current time
-#
-        today = time.strftime("%Y:%j:%H:%M:00", time.gmtime())
-        year  = int(float(time.gmtime().tm_year))
-        mon   = int(float(time.gmtime().tm_mon))
-#
-#--- set the data extraction time span to the entire previous month
-#
-        pyear = year
-        pmon  = mon - 1
-        if pmon < 1:
-            pmon   = 12
-            pyear -= 1
-        lydate = find_ydate(pyear, pmon, 1, string=1)
-        tstart = str(pyear) + ':' + lydate + ':00:00:00'
-
-        lydate = find_ydate(year, mon, 1, string=1)
-        tstop  = str(year)  + ':' + lydate + ':00:00:00'
+        [tstart, tstop] = find_start_and_stop_time()
 #
 #--- get fid light information
 #
@@ -107,6 +77,32 @@ def fid_light_data_extract(tstart='', tstop='', year=''):
 #--- get oterh informatin related to the fid information and print out the results
 #
     get_acen_data(tstart, tstop, file_id, fid_detect)
+
+#------------------------------------------------------------------------------------------
+#-- find_start_and_stop_time: find start and stop time                                  ---
+#------------------------------------------------------------------------------------------
+
+def find_start_and_stop_time():
+    """
+    find start and stop time (set for the last month)
+    """
+    out = time.strftime("%Y:%m", time.gmtime())
+    [lyear, lmon] = re.split(':', out)
+    tstop = lyear+':'+ lmon + ':01'
+    tstop = mcf.convert_date_format(tstop, ifmt='%Y:%m:%d', ofmt='%Y:%j:00:00:00')
+
+    year  = int(float(lyear))
+    mon   = int(float(lmon))
+    pyear = year
+    pmon  = mon - 1
+    if pmon < 1:
+        pmon   = 12
+        pyear -= 1
+
+    tstart = str(pyear) + ':' + mcf.add_leading_zero(pmon) + ':01'
+    tstart = mcf.convert_date_format(tstart, ifmt='%Y:%m:%d', ofmt='%Y:%j:00:00:00')
+
+    return [tstart, tstop]
 
 #------------------------------------------------------------------------------------------
 #-- get_acen_data: for given fid light information, extract acen fits files and extract needed information
@@ -124,7 +120,8 @@ def get_acen_data(tstart, tstop, file_id, fid_detect):
 #
 #--- first just get a list of potential acent fits files
 #
-    acent_list = call_arc5gl('browse', 'pcad', 1, tstart=tstart, tstop=tstop, filetype='acacent', sub='aca')
+    acent_list = call_arc5gl('browse', 'pcad', 1, tstart=tstart, tstop=tstop,\
+                              filetype='acacent', sub='aca')
 #
 #--- compare the list with a file id, and if it is found, procceed farther
 #
@@ -141,7 +138,8 @@ def get_acen_data(tstart, tstop, file_id, fid_detect):
 #
 #--- extract an acen fits file
 #
-        [fits] = call_arc5gl('retrieve', 'pcad', 1, tstart='', tstop='', filetype='acacent', filename=filename, sub='aca')
+        [fits] = call_arc5gl('retrieve', 'pcad', 1, tstart='', tstop='',\
+                             filetype='acacent', filename=filename, sub='aca')
 
         ff     = pyfits.open(fits)
         data   = ff[1].data
@@ -163,12 +161,6 @@ def get_acen_data(tstart, tstop, file_id, fid_detect):
 
             if len(time) == 0:
                 continue
-     
-            ofile  = data_dir + fid_detect[fname][1][m]
-            if os.path.isfile(ofile):
-                fo    = open(ofile, 'a')
-            else:
-                fo    = open(ofile, 'w')
 #
 #---- take 5 min average for the data
 #
@@ -179,6 +171,7 @@ def get_acen_data(tstart, tstop, file_id, fid_detect):
             end    = begin + 300.0
             m      = 0
             k_list = []
+            sline   = ''
             for k in range(m, len(time)):
                 if time[k] < begin:
                     continue
@@ -201,26 +194,27 @@ def get_acen_data(tstart, tstop, file_id, fid_detect):
                     tslist  = fetch.MSID('3tscpos', time[k_list[0]], time[k_list[-1]])
                     fapos   = numpy.mean(flist.vals)
                     tscpos  = numpy.mean(tslist.vals)
-#
-#--- print out the results
-#
-                    line    = str(atime) + '\t'
-                    line    = line  + str(fid_detect[fname][0][m]) + '\t'
-                    line    = line  + str(fid_detect[fname][2][m]) + '\t'
-                    line    = line  + str(aalg)    + '\t'
-                    line    = line  + str(format(acent_i, '.3f'))  + '\t'
-                    line    = line  + str(format(acent_j, '.3f'))  + '\t'
-                    line    = line  + str(format(aang_y,  '.6f'))  + '\t'
-                    line    = line  + str(format(aang_z,  '.6f'))  + '\t'
-                    line    = line  + str(fapos)   + '\t'
-                    line    = line  + str(tscpos)  + '\n'
-                    fo.write(line)
+
+                    sline    = sline  + str(atime) + '\t'
+                    sline    = sline  + str(fid_detect[fname][0][m]) + '\t'
+                    sline    = sline  + str(fid_detect[fname][2][m]) + '\t'
+                    sline    = sline  + str(aalg)    + '\t'
+                    sline    = sline  + str(format(acent_i, '.3f'))  + '\t'
+                    sline    = sline  + str(format(acent_j, '.3f'))  + '\t'
+                    sline    = sline  + str(format(aang_y,  '.6f'))  + '\t'
+                    sline    = sline  + str(format(aang_z,  '.6f'))  + '\t'
+                    sline    = sline  + str(fapos)   + '\t'
+                    sline    = sline  + str(tscpos)  + '\n'
     
                     k_list = []
                     begin  = end
                     end   += 300.0
-
-            fo.close()
+#
+#--- write out the results
+#
+            ofile  = data_dir + fid_detect[fname][1][m]
+            with open(ofile, 'a') as fo:
+                fo.write(sline)
 
 #------------------------------------------------------------------------------------------
 #-- extract_fidlight_data: get fid light information from fidpr fits file                --
@@ -245,8 +239,8 @@ def extract_fidlight_data(tstart, tstop):
 #
 #--- retrieve fidpr fits file
 #
-    fid_list = call_arc5gl('retrieve', 'pcad', 1, tstart=tstart, tstop=tstop, filetype='fidprops', sub='aca')
-
+    fid_list = call_arc5gl('retrieve', 'pcad', 1, tstart=tstart, tstop=tstop,\
+                            filetype='fidprops', sub='aca')
     file_id    = []
     fid_detect = {}
     for fits in fid_list:
@@ -256,17 +250,16 @@ def extract_fidlight_data(tstart, tstop):
 #
 #--- get fit light infor. see above for the structure of the table data
 #
-        #fits    = fits + '.gz'
         ff      = pyfits.open(fits)
         data    = ff[1].data
         ff.close()
         slot    = data['slot']
-        id      = get_id_name(data['id_string'])
+        sid     = get_id_name(data['id_string'])
         id_n    = data['id_num']
 #
 #--- data is saved as a dictionary form
 #
-        fid_detect[file_n] = [slot, id, id_n]
+        fid_detect[file_n] = [slot, sid, id_n]
         file_id.append(file_n)
 
         mcf.rm_file(fits)
@@ -283,13 +276,13 @@ def get_id_name(i_list):
     input:  i_list  --- a list of id string from fidpr fits file
     output: out     --- a list of chip ids
     """
-
     out = []
     for ent in i_list:
         mc = re.search('ACIS', ent)
         if mc is not None:
             atemp = re.split('ACIS-', ent)
             out.append(atemp[1])
+
         else:
             atemp = re.split('HRC-',  ent)
             name = 'H-' + str(atemp[1])
@@ -297,36 +290,6 @@ def get_id_name(i_list):
 
     return out
     
-#------------------------------------------------------------------------------------------
-#-- find_ydate: find ydate for given year/mon/day                                        --
-#------------------------------------------------------------------------------------------
-
-def find_ydate(year, mon, day, string=0):
-    """
-    find ydate for given year/mon/day
-    input:  year    --- year
-            mon     --- month
-            day     --- day of month
-            string  --- indicator whether to convert into string. 0: no, 1: yes
-    output: ydate   --- ydate
-    """
-
-    ydate = mon_list[mon-1] + day 
-    if (tcnv.isLeapYear(year) == 1) and mon > 2:
-        ydate += 1
-
-    if string == 1:
-        lydate = str(ydate)
-        if ydate < 10:
-            lydate = '00' + lydate
-        elif ydate < 100:
-            lydate = '0' + lydate
-
-        return lydate
-    else:
-        return ydate
-
-
 #------------------------------------------------------------------------------------------
 #-- call_arc5gl: using arc5gl to extract a fits file list or a file itself              ---
 #------------------------------------------------------------------------------------------
@@ -361,78 +324,9 @@ def call_arc5gl(op, detector, level, tstart='', tstop='', filetype='', sub='', f
     else:
         line = line + 'filename=' + filename    + '\n'
 
-    line = line + 'go\n'
-    fo = open(zspace, 'w')
-    fo.write(line)
-    fo.close()
-
-    cmd = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ' + zspace + ' >ztemp_out'
-    run_ascds(cmd)
-    mcf.rm_file(zspace)
-
-    data = read_data('ztemp_out', clean=1)
-    flist = []
-    for ent in data:
-        mc = re.search('fits', ent)
-        if mc is not None:
-            atemp = re.split('\s+', ent)
-            if len(atemp) > 1:
-                flist.append(str(atemp[0]))
-            else:
-                flist.append(ent)
+    flist = mcf.run_arc5gl_process(line)
 
     return flist
-
-
-#------------------------------------------------------------------------------------------
-#-- run_ascds: run the command in ascds environment                                      --
-#------------------------------------------------------------------------------------------
-
-def run_ascds(cmd):
-    """
-    run the command in ascds environment
-    input:  cmd --- command line
-    output: command results
-    """
-    acmd = '/usr/bin/env PERL5LIB=""  ' + cmd
-
-    try:
-        bash(acmd, env=ascdsenv)
-    except:
-        try:
-            bash(acmd, env=ascdsenv)
-        except:
-            pass
-
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-#------------------------------------------------------------------------------------------
-
-def read_data(infile, clean=0, emp=0):
-
-    try:
-        f    = open(infile, 'r')
-        data = [line.strip() for line in f.readlines()]
-        f.close()
-        if len(data) > 0:
-#
-#--- if emp == 1, remove the empty elements
-#
-            if emp == 1:
-                out = []
-                for ent in data:
-                    if ent != '':
-                        out.append(ent)
-                data = out
-    
-        if clean == 1:
-            mcf.rm_file(infile)
-    except:
-        data = []
-    
-    return data
-
-
 
 #------------------------------------------------------------------------------------------
 
@@ -448,7 +342,3 @@ if __name__ == "__main__":
         year   = ''
 
     fid_light_data_extract(tstart, tstop, year)
-
-
-
-

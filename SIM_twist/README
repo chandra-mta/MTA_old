@@ -6,9 +6,6 @@ Sim Twsit/Fid Light Trending
 This directory contains the scripts to update sim twist and fid light
 trendings.
 
-Dir: /data/mta/Script/ALIGNMENT/Sim_twist/ 
-See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_sim_twist.html
-
 ++++++++
 Scripts
 ++++++++
@@ -58,30 +55,20 @@ input:  none, but read from <data_dir>/<I-*/S-*> and <data_dir>/<H-I-*/H-S-*>
 output: <web_dir>/I-<#>.png   <web_dir>/S-<#>.png       ---- acis
         <web_dir>/H-I-<#>.png <web_dir>/H-S-<#>.png     ---- hrc
 
-DBI.py
-------
-Ska.DBI provides simple methods for database access and data insertion
-
 Directory
 ----------
-/mta/Script/ALIGNMENT/Sim_twist/Alignment_sim_twist/'           : bin_dir
-'/data/mta/MTA/data/'                                           : bdata_dir
-'/data/mta_www/mta_sim_twist/'                                  : web_dir
-'/data/mta/Script/ALIGNMENT/Sim_twist/Data/'                    : data_dir
-'/data/mta/Script/ALIGNMENT/Sim_twist/house_keeping/'           : house_keeping
-'/usr/local/bin/'                                               : op_dir
-'/data/mta4/CUS/www/Usint/Pass_dir/'                            : pass_dir
-'/data/mta/Script/Python_script2.7/'                            : mta_dir
+'/data/mta/Script/ALIGNMENT/Sim_twist/Scripts/'             : bin_dir
+'/data/mta_www/mta_sim_twist/'                              : web_dir
+'/data/mta/Script/ALIGNMENT/Sim_twist/Data/'                : data_dir
+'/data/mta/Script/ALIGNMENT/Sim_twist/house_keeping/'       : house_keeping
+'/data/mta/Script/Python3.6/MTA/'                           : mta_dir
+'/data/mta/Script/Python3.6/Sybase/'                        : sybase_dir
+
+s
 
 Environment
 -----------
-It must be under sot ska environment:
-
-    source /proj/sot/ska/bin/ska_envs.csh
-
-If you are running ciao or ascds, use:
-    
-    setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:$PYTHONPATH"
+setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Python3.6/lib/python3.6/site-packages/"
 
 Web site
 --------
@@ -90,6 +77,6 @@ https://cxc.cfa.harvard.edu/mta_days/mta_sim_twist/fid_light_drift.html
 
 Cron job
 --------
-as mta on r2d2-v:
-0 1 3 * *   cd /data/mta/Script/ALIGNMENT/Sim_twist/Exec; /data/mta/Script/ALIGNMENT/Sim_twist/Scripts/sim_twist_wrap_script  >> $HOME/Logs/sim_twist.cron
+as mta on luke-v:
+11 1 3 * *   cd /data/mta/Script/ALIGNMENT/Sim_twist/Exec; /data/mta/Script/ALIGNMENT/Sim_twist/Scripts/sim_twist_wrap_script  >> $HOME/Logs/sim_twist.cron
 
