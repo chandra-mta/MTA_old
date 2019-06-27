@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#   find_moving_average.py: find moving average and envelops on the given data set                  #
-#                                                                                                   #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
-#                                                                                                   #
-#           Last update: Jun 19, 2017                                                               #
-#                                                                                                   #
-#####################################################################################################
+#########################################################################################
+#                                                                                       #
+#   find_moving_average.py: find moving average and envelops on the given data set      #
+#                                                                                       #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
+#                                                                                       #
+#           Last update: May 23, 2019                                                   #
+#                                                                                       #
+#########################################################################################
 
 import os
 import sys
@@ -18,42 +18,14 @@ import random
 import operator
 import math
 import numpy
-#
-#--- reading directory list
-#
-path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
-
-for ent in data:
-    atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-#
-#--- append a path to a private folder to python directory
-#
-sys.path.append(bin_dir)
-sys.path.append(mta_dir)
-#
-#--- converTimeFormat contains MTA time conversion routines
-#
-import convertTimeFormat    as tcnv
-import mta_common_functions as mcf
-
+sp_dir = '/data/mta/Script/Python3.6/lib/python3.6/site-packages/'
+sys.path.append(sp_dir)
 from kapteyn import kmpfit
-#
-#--- temp writing file name
-#
 
-rtail  = int(10000 * random.random())
-zspace = '/tmp/zspace' + str(rtail)
-
-#---------------------------------------------------------------------------------------------------
-#-- run_moving_average: moving average calling function. Read data and run the function          ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- run_moving_average: moving average calling function. Read data and run the function-
+#---------------------------------------------------------------------------------------
 
 def run_moving_average():
 
@@ -115,39 +87,38 @@ def run_moving_average():
 #
 #-- calling the maion function
 #
-    [xcent, movavg, sigma, min_sv, max_sv, y_avg, y_min, y_max, y_sig] = find_moving_average(x, y, arange, nterms, nodrop)
+    [xcent, movavg, sigma, min_sv, max_sv, y_avg, y_min, y_max, y_sig]\
+                        = find_moving_average(x, y, arange, nterms, nodrop)
 #
 #--- print out the results
 #
-    fo = open('outfile', 'w')
-    for i in range(0, len(xcent)):
-        fo.write(str(xcent[i]))
-        fo.write('\t')
-        fo.write(str(movavg[i]))
-        fo.write('\t')
-        fo.write(str(sigma[i]))
-        fo.write('\t')
-        fo.write(str(min_sv[i]))
-        fo.write('\t')
-        fo.write(str(max_sv[i]))
-        fo.write('\t')
-        fo.write(str(y_avg[i]))
-        fo.write('\t')
-        fo.write(str(y_min[i]))
-        fo.write('\t')
-        fo.write(str(y_max[i]))
-        fo.write('\t')
-        fo.write(str(y_sig[i]))
-        fo.write('\n')
+    with open('outfile', 'w') as fo:
+        for i in range(0, len(xcent)):
+            fo.write(str(xcent[i]))
+            fo.write('\t')
+            fo.write(str(movavg[i]))
+            fo.write('\t')
+            fo.write(str(sigma[i]))
+            fo.write('\t')
+            fo.write(str(min_sv[i]))
+            fo.write('\t')
+            fo.write(str(max_sv[i]))
+            fo.write('\t')
+            fo.write(str(y_avg[i]))
+            fo.write('\t')
+            fo.write(str(y_min[i]))
+            fo.write('\t')
+            fo.write(str(y_max[i]))
+            fo.write('\t')
+            fo.write(str(y_sig[i]))
+            fo.write('\n')
 
-    fo.close()
 
-#---------------------------------------------------------------------------------------------------
-#-- find_moving_average: compute moving average and lower and upper envelop of the data         ----
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- find_moving_average: compute moving average and lower and upper envelop of the data-
+#---------------------------------------------------------------------------------------
 
 def find_moving_average(xorg, yorg, arange, nterms, nodrop = 0):
-    
     """
    fit a moving average, a n-th degree polynomial, and an envelope to a given data (x, y)        
                                            
@@ -222,8 +193,8 @@ def find_moving_average(xorg, yorg, arange, nterms, nodrop = 0):
 #--- n-th degree polynomial fitting: moving average
 #
     if nterms > 0:
-        acoeff = fit_poly(xcent, movavg, nterms)                   #---- polynomial coeff estimation
-        y_avg  = estimatepolyfit(xcent, acoeff)                    #---- estimated fit
+        acoeff = fit_poly(xcent, movavg, nterms)       #---- polynomial coeff estimation
+        y_avg  = estimatepolyfit(xcent, acoeff)        #---- estimated fit
 #
 #--- n-th degree polynomial fitting: lower envelope
 #
@@ -248,23 +219,21 @@ def find_moving_average(xorg, yorg, arange, nterms, nodrop = 0):
 
     return [xcent, movavg, sigma, min_sv, max_sv, y_avg, y_min, y_max, y_sig]
 
-#---------------------------------------------------------------------------------------------------
-#--  readData: read data from a given data file                                                  ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--  readData: read data from a given data file                                      ---
+#---------------------------------------------------------------------------------------
 
 def readData(file):
-
     """
      read data from a given data file 
      Input: file
      Output: (<x array>, <y array>)
-     Note: the file contins two column data which separated by either space (\t+, \s+), ",", ":", or ";".
+     Note: the file contins two column data which separated 
+           by either space (\t+, \s+), ",", ":", or ";".
      The values are converted into float.
     """
-
-    f     = open(file, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    with open(file, 'r') as f:
+        data = [line.strip() for line in f.readlines()]
 #
 #--- check data and devide them into x and y
     xorg = []
@@ -304,12 +273,11 @@ def readData(file):
 
     return (xorg, yorg)
 
-#---------------------------------------------------------------------------------------------------
-#--  findSlopeSigma: finds a standard deviation for the residuals from a fitted straight line    ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--  findSlopeSigma: finds a standard deviation for the residuals from a fitted straight line
+#---------------------------------------------------------------------------------------
         
 def findSlopeSigma(x, y, intercept, slope):
-
     """
     finds a standard deviation for the residuals from a fitted straight line
     Inout:      x         --- independent value (array)
@@ -318,26 +286,24 @@ def findSlopeSigma(x, y, intercept, slope):
                 slope     --- slope of the fitted line
     Output:     std       --- standard deviation of the residuals from the fitted line
     """
-
-    sum  = 0.0
+    sum1 = 0.0
     sum2 = 0.0
 
     for i in range(0, len(x)):
         diff  = y[i] - intercept - slope * x[i]
-        sum  += diff
+        sum1 += diff
         sum2 += diff * diff
 
-    avg = float(sum)/float(len(x))
+    avg = float(sum1)/float(len(x))
     std = math.sqrt(float(sum2) / float(len(x)) - avg * avg)
 
     return std
 
-#---------------------------------------------------------------------------------------------------
-#--- findCutValues: finds the values of thetop and the bottom 0.5% of the data                   ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- findCutValues: finds the values of thetop and the bottom 0.5% of the data       ---
+#---------------------------------------------------------------------------------------
 
 def findCutValues(y):
-
     """
     finds the values of thetop and the bottom 0.5% of the data
     Input:      y            --- array
@@ -354,12 +320,11 @@ def findCutValues(y):
 
     return(ybot, ytop)
 
-#---------------------------------------------------------------------------------------------------
-#--- findMovingAvg: estimate moving average, top and bottom envelope                            ----
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- findMovingAvg: estimate moving average, top and bottom envelope                ----
+#---------------------------------------------------------------------------------------
 
 def findMovingAvg(xdata, ydata, arange):
-
     """
     estimate moving average, top and bottom envelope
     Input:      xdata --- independent variable (array)
@@ -371,7 +336,6 @@ def findMovingAvg(xdata, ydata, arange):
                 min_sv--- the min of the period
                 max_sv--- the max of the period
     """
-
     xcent   = []
     movavg  = []
     sigma   = []
@@ -389,7 +353,7 @@ def findMovingAvg(xdata, ydata, arange):
     ydata = list(asy)
     start = xdata[0]
     end   = start + arange
-    sum   = 0.0
+    sum1  = 0.0
     sum2  = 0.0
     smax  = -1.0e5
     smin  =  1.0e5
@@ -400,7 +364,7 @@ def findMovingAvg(xdata, ydata, arange):
 #--- if the data value is in the range, just accumulate
 #
         if xdata[i] >= start and xdata[i] < end:
-            sum  += ydata[i]
+            sum1 += ydata[i]
             sum2 += ydata[i] * ydata[i]
             if ydata[i] > smax:
                 smax = ydata[i]
@@ -426,7 +390,7 @@ def findMovingAvg(xdata, ydata, arange):
                     start = end
                     end   = start + arange
 
-                sum  += ydata[i]
+                sum1 += ydata[i]
                 sum2 += ydata[i] * ydata[i]
                 if ydata[i] > smax:
                     smax = ydata[i]
@@ -434,7 +398,7 @@ def findMovingAvg(xdata, ydata, arange):
                     smin = ydata[i]
                 mcnt += 1
             else:
-                avg = float(sum) / float(mcnt)
+                avg = float(sum1) / float(mcnt)
                 try:
                     std = math.sqrt(float(sum2) /float(mcnt) - avg * avg)
                 except:
@@ -451,7 +415,7 @@ def findMovingAvg(xdata, ydata, arange):
     
                 start = end
                 end   = start + arange
-                sum   = 0.0
+                sum1  = 0.0
                 sum2  = 0.0
                 smax  = -1.0e5
                 smin  =  1.0e5
@@ -459,19 +423,17 @@ def findMovingAvg(xdata, ydata, arange):
 
     return (xcent, movavg, sigma, min_sv, max_sv) 
 
-#---------------------------------------------------------------------------------------------------
-#--- estimatepolyfit: compute polynomial fit value for given parameter sets                      ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- estimatepolyfit: compute polynomial fit value for given parameter sets          ---
+#---------------------------------------------------------------------------------------
 
 def estimatepolyfit(x, acoeff):
-
     """
     compute polynomial fit value for given parameter sets
     Input:      x      ---   independent variable array
                 acoeff --- array of polynomial coefficients
     Output:     yest   --- the estimated fitted values (array)
     """
-
     numcoeff = len(acoeff)
 
     yest = []
@@ -484,12 +446,11 @@ def estimatepolyfit(x, acoeff):
 
     return yest
 
-#---------------------------------------------------------------------------------------------------
-#-- fit_poly: estimate polynomial fitting coefficients                                          ----
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- fit_poly: estimate polynomial fitting coefficients                              ----
+#---------------------------------------------------------------------------------------
 
 def fit_poly(x, y, nterms):
-
     """
     estimate polynomial fitting coefficients
     Input:      x      --- independent variable (array)
@@ -517,18 +478,17 @@ def fit_poly(x, y, nterms):
     try:
         fitobj.fit(params0=paraminitial)
     except:
-        print "Something wrong with kmpfit fit" 
+        print("Something wrong with kmpfit fit") 
         raise SystemExit
 
 
     return fitobj.params
 
-#---------------------------------------------------------------------------------------------------
-#--- residuals: compute residuals                                                                ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- residuals: compute residuals                                                    ---
+#---------------------------------------------------------------------------------------
 
 def residuals(p, data):
-
     """
     compute residuals
     Input:  p    --- parameter array
@@ -538,18 +498,16 @@ def residuals(p, data):
 
     return y - model(p, x)
 
-#---------------------------------------------------------------------------------------------------
-#--- model: the model to be fit                                                                  ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- model: the model to be fit                                                      ---
+#---------------------------------------------------------------------------------------
 
 def model(p, x):
-
     """
     the model to be fit
     Input:  p   --- parameter array
             x   --- independent value (array --- numpyed)
     """
-
     plen = len(p)
     yest = [p[0] for i in range(0, len(x))]
     for i in range(1, plen):

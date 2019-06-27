@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #############################################################################################
 #                                                                                           #
@@ -7,7 +7,7 @@
 #                                                                                           #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                       #
 #                                                                                           #
-#           Last update:     Jan 15, 2014                                                   #
+#           Last update:     Mar 14, 2019                                                   #
 #                                                                                           #
 #############################################################################################
 
@@ -20,37 +20,11 @@ import operator
 import math
 import numpy
 
-#
-#--- reading directory list
-#
-path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
-
-for ent in data:
-    atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-#
-#--- append a path to a private folder to python directory
-#
-sys.path.append(bin_dir)
-sys.path.append(mta_dir)
-#
-#--- converTimeFormat contains MTA time conversion routines
-#
-import convertTimeFormat    as tcnv
-import mta_common_functions as mcf
-
-#---------------------------------------------------------------------------------------------------
-#-- robust_fit: compute a linear fit parameters using rubst fit                                  ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- robust_fit: compute a linear fit parameters using rubst fit                          ---
+#-------------------------------------------------------------------------------------------
 
 def robust_fit(x, y, iter=0):
-
     """
     compute a linear fit parameters using rubst fit
     Input:      x   --- a list of independent variable
@@ -92,12 +66,11 @@ def robust_fit(x, y, iter=0):
 
     return (alpha, beta, berr)
 
-#---------------------------------------------------------------------------------------------------
-#-- least_sq: compute a linear fit parameters using least sq method                              ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- least_sq: compute a linear fit parameters using least sq method                      ---
+#-------------------------------------------------------------------------------------------
 
 def least_sq(xval, yval):
-
     """
     compute a linear fit parameters using least sq method
     Input:  xval    --- a list of independent variable
@@ -106,7 +79,6 @@ def least_sq(xval, yval):
             bb      --- slope
             delta   --- denominator
     """
-
     tot = len(xval)
     sx  = 0.0
     sy  = 0.0
@@ -126,13 +98,11 @@ def least_sq(xval, yval):
 
     return (aa, bb, delta)
 
-
-#---------------------------------------------------------------------------------------------------
-#-- medfit: fit a straight line according to robust fit                                          ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- medfit: fit a straight line according to robust fit                                  ---
+#-------------------------------------------------------------------------------------------
 
 def medfit(xval, yval):
-
     """
     fit a straight line according to robust fit Numerical Recipes (FORTRAN version) p.544
     Input:  xval    --- a list of independent variable
@@ -140,7 +110,6 @@ def medfit(xval, yval):
     Output: alpha   --- intersect
             beta    --- slope
     """
-
     tot = len(xval)
 #
 #--- first compute a least sq. solution
@@ -203,12 +172,11 @@ def medfit(xval, yval):
 
     return (alpha, beta)
 
-#---------------------------------------------------------------------------------------------------
-#-- rofunc: evaluatate 0 = SUM[ x *sign(y - a bx)]                                               ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- rofunc: evaluatate 0 = SUM[ x *sign(y - a bx)]                                       ---
+#-------------------------------------------------------------------------------------------
 
 def rofunc(b_in, xval, yval):
-
     """
     evaluatate 0 = SUM[ x *sign(y - a bx)]
     Input:  b_in    --- slope
@@ -217,7 +185,6 @@ def rofunc(b_in, xval, yval):
     Ouptput: sum    --- evaluated results
             abdev   --- a+b deviation
     """
-
     tot = len(xval)
 
     n1  = tot + 1
@@ -238,18 +205,16 @@ def rofunc(b_in, xval, yval):
 
     return (sum, abdev)
 
-#---------------------------------------------------------------------------------------------------
-#-- sign: sign function                                                                           --
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- sign: sign function                                                                   --
+#-------------------------------------------------------------------------------------------
 
 def sign(e1, e2):
-
     """
     sign function
     Input:  e1, e2
     Output: sign * el
     """
-
     if e2 >= 0:
         sign = 1
     else:
@@ -257,12 +222,11 @@ def sign(e1, e2):
 
     return sign * e1
 
-#---------------------------------------------------------------------------------------------------
-#-- find_ebar: find error bar for slope using bootstrapp method                                  ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------------
+#-- find_ebar: find error bar for slope using bootstrapp method                          ---
+#-------------------------------------------------------------------------------------------
 
 def find_ebar(x, y, rounds=100):
-
     """
     find error bar for slope using bootstrapp method  
     Input:  x   ---- a list of independent variable
@@ -270,7 +234,6 @@ def find_ebar(x, y, rounds=100):
             rounds --- how many iterations should be run. default = 100
     Output: std ---- a sigma of the slope
     """
-
     tot  = len(x)
     sum  = 0.0
     sum2 = 0.0

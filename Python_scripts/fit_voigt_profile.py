@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################
-#                                                                                                   #
-#      fit_voigt_profile.py: fitting Voigt or Gaussian profile on a given data                      # 
-#                                                                                                   #
-#           author: t. isobe(tisobe@cfa.harvard.edu)                                                #
-#                                                                                                   #
-#           Last Update:    May 14, 2014                                                            #
-#                                                                                                   #
-#####################################################################################################
+#########################################################################################
+#                                                                                       #
+#      fit_voigt_profile.py: fitting Voigt or Gaussian profile on a given data          # 
+#                                                                                       #
+#           author: t. isobe(tisobe@cfa.harvard.edu)                                    #
+#                                                                                       #
+#           Last Update:    Mar 14, 2019                                                #
+#                                                                                       #
+#########################################################################################
 
 import os
 import sys
@@ -19,49 +19,25 @@ import operator
 import math
 import numpy
 import astropy.io.fits  as pyfits
+from scipy.special import wofz
 
 import matplotlib as mpl
 
 if __name__ == '__main__':
         mpl.use('Agg')
-#
-#--- reading directory list
-#
-path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
-
-for ent in data:
-    atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
 #
-#--- append  pathes to private folders to a python directory
+#--- append a path to a private folder to python directory
 #
-sys.path.append(bin_dir)
-sys.path.append(mta_dir)
-#
-#--- import several functions
-#
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
-
-from scipy.special import wofz
+sp_dir = '/data/mta/Script/Python3.6/lib/python3.6/site-packages'
+sys.path.append(sp_dir)
 from kapteyn import kmpfit
+
 ln2 = numpy.log(2)
 
-#
-#--- temp writing file name
-#
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
-zspace = '/tmp/zspace' + str(rtail)
-
-#---------------------------------------------------------------------------------------------------
-#--- fit_voigt_profile: fitting Voigt or Gaussian profile on a given data                        ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#--- fit_voigt_profile: fitting Voigt or Gaussian profile on a given data            ---
+#---------------------------------------------------------------------------------------
 
 def  fit_voigt_profile(x, y, type='voigt',  plot_title='', xname='',yname=''):
 
@@ -88,18 +64,16 @@ def  fit_voigt_profile(x, y, type='voigt',  plot_title='', xname='',yname=''):
         return [center, width, amp]
 
 
-#---------------------------------------------------------------------------------------------------
-#-- find_med: find median point of pha postion                                                   ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- find_med: find median point of pha postion                                       ---
+#---------------------------------------------------------------------------------------
 
 def find_center(x, y):
-
     """
     find median point of pha postion
     Input:       x ---  a list of pha counts
     OUtput:     position of the estimated median
     """
-
     sorted_y = sorted(y)
     ypos     = int(0.95 * len(y))
     target   = sorted_y[ypos]
@@ -112,12 +86,11 @@ def find_center(x, y):
 
     return  xpos
 
-#---------------------------------------------------------------------------------------------------
-#-- fit_gauss: fitting a normal distribution on a given data                                     ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- fit_gauss: fitting a normal distribution on a given data                         ---
+#---------------------------------------------------------------------------------------
 
 def fit_gauss(x, y):
-
     """
     fitting a normal distribution on a given data
     Input:  x   --- a list of the bin
@@ -125,7 +98,6 @@ def fit_gauss(x, y):
     Output: amp --- amp of the a normal distribution
             cent--- center of the normal distribution
             width--- width of the normal distribution
-
     """
     nx = numpy.array(x)
     ny = numpy.array(y)
@@ -143,12 +115,11 @@ def fit_gauss(x, y):
 
     return [cent, width, amp]
 
-#---------------------------------------------------------------------------------------------------
-#-- plot_voigt: plotting a fitted result on the data                                             ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- plot_voigt: plotting a fitted result on the data                                 ---
+#---------------------------------------------------------------------------------------
 
 def plot_voigt(x, y,center, width, amp,  alphaD, alphaL, nu_0, I, a_back, b_back, name='',xname='', yname='', outfile='out.png'):
-
     """
     plotting a fitted result on the data
     Input:      x   ---- a list of bin value
@@ -213,12 +184,11 @@ def plot_voigt(x, y,center, width, amp,  alphaD, alphaL, nu_0, I, a_back, b_back
 #
     plt.savefig(outfile, format='png', dpi=100)
 
-#---------------------------------------------------------------------------------------------------
-#-- plot_gauss: plotting a fitted result on the data                                             ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- plot_gauss: plotting a fitted result on the data                                 ---
+#---------------------------------------------------------------------------------------
 
 def plot_gauss(x, y, center, width,amp,  name='', xname='', yname='', outfile='out.png'):
-
     """
     plotting a fitted result on the data
     Input:  x   ---- a list of bin value
@@ -298,7 +268,7 @@ def funcG(p, x):
     return( A * numpy.exp(-(x-mu)*(x-mu)/(2*sigma*sigma)) + zerolev )
 
 #----------------------------------------------------------------------------------
-#-- residualsG: Return weighted residuals of Gauss  ---
+#-- residualsG: Return weighted residuals of Gauss                              ---
 #----------------------------------------------------------------------------------
 
 def residualsG(p, data):
@@ -313,9 +283,9 @@ def residualsG(p, data):
     x, y, err = data
     return (y-funcG(p,x)) / err
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
 
 def voigt(x, y):
    # The Voigt function is also the real part of 
@@ -327,9 +297,9 @@ def voigt(x, y):
    return I
 
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
 
 def Voigt(nu, alphaD, alphaL, nu_0, A, a=0, b=0):
    # The Voigt line shape in terms of its physical parameters
@@ -341,30 +311,29 @@ def Voigt(nu, alphaD, alphaL, nu_0, A, a=0, b=0):
    return V
 
 
-#---------------------------------------------------------------------------------------------------
-#-- funcV: Compose the Voigt line-shape                                                          ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- funcV: Compose the Voigt line-shape                                              ---
+#---------------------------------------------------------------------------------------
 
 def funcV(p, x):
     # Compose the Voigt line-shape
     alphaD, alphaL, nu_0, I, a, b = p
     return Voigt(x, alphaD, alphaL, nu_0, I, a, b)
 
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
 
 def residualsV(p, data):
    # Return weighted residuals of Voigt
    x, y, err = data
    return (y-funcV(p,x)) / err
 
-#---------------------------------------------------------------------------------------------------
-#-- voigt_fit: fitting voigt profile to the data                                                 ---
-#---------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------
+#-- voigt_fit: fitting voigt profile to the data                                     ---
+#---------------------------------------------------------------------------------------
 
 def voigt_fit(x, y):
-
     """
     fitting voigt profile to the data
     Input:      x   --- independent var
@@ -469,12 +438,12 @@ if __name__ == '__main__':
         xname = sys.argv[4]
         yname = sys.argv[5]
     elif len(sys.argv) > 6:
-        print 'too many input, you can put:'
-        print '<file name> <type(optional): voigt/gauss> <title(optionanl)> <x axis name(optional)> <y axis name(optional)>'
+        print('too many input, you can put:')
+        print('<file name> <type(optional): voigt/gauss> <title(optionanl)> <x axis name(optional)> <y axis name(optional)>')
         exit(1)
     else:
-        print "you need to add an input file name"
-        print '<file name> <type(optional): voigt/gauss> <title(optionanl)> <x axis name(optional)> <y axis name(optional)>'
+        print("you need to add an input file name")
+        print('<file name> <type(optional): voigt/gauss> <title(optionanl)> <x axis name(optional)> <y axis name(optional)>')
         exit(1)
 
 #
@@ -491,6 +460,6 @@ if __name__ == '__main__':
         y.append(float(atemp[1]))
 
     out = fit_voigt_profile(x, y, type, title,  xname, yname)
-    print str(out)
+    print(str(out))
 
 

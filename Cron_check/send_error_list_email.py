@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#      send_error_list_email.py: read the current error lists and send out email                            #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           Last Update: Mar 06, 2019                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#########################################################################################
+#                                                                                       #
+#      send_error_list_email.py: read the current error lists and send out email        #
+#                                                                                       #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
+#                                                                                       #
+#           Last Update: Jun 27, 2019                                                   #
+#                                                                                       #
+#########################################################################################
 
 import sys
 import os
@@ -19,24 +19,20 @@ import socket
 import random
 import time
 import datetime
-
+import Chandra.Time
 #
 #--- reading directory list
 #
-comp_test = 'live'
-if comp_test == 'test':
-    path = '/data/mta/Script/Cron_check/house_keeping/dir_list_py_test'
-else:
-    path = '/data/mta/Script/Cron_check/house_keeping/dir_list_py'
+path = '/data/mta/Script/Cron_check/house_keeping/dir_list_py'
 
-f= open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
+
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append  pathes to private folders to a python directory
 #
@@ -45,8 +41,7 @@ sys.path.append(mta_dir)
 #
 #--- import several functions
 #
-import convertTimeFormat          as tcnv       #---- contains MTA time conversion routines
-import mta_common_functions       as mcf        #---- contains other functions commonly used in MTA scripts
+import mta_common_functions as mcf   #---- contains other functions commonly used in MTA scripts
 #
 #--- check whose account, and set a path to temp location
 #
@@ -62,58 +57,54 @@ machine = machine.strip()
 #
 cpu_list     = ['colossus-v', 'c3po-v', 'r2d2-v', 'han-v', 'luke-v']
 usr_list     = ['mta', 'cus']
-cpu_usr_list = ['colossus-v_mta', 'r2d2-v_mta', 'r2d2-v_cus', 'c3po-v_mta', 'c3po-v_cus', 'han-v_mta', 'luke-v_mta', 'luke-v_cus']
+cpu_usr_list = ['colossus-v_mta', 'r2d2-v_mta', 'r2d2-v_cus', 'c3po-v_mta',\
+                'c3po-v_cus', 'han-v_mta', 'luke-v_mta', 'luke-v_cus']
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
-email_list = ['tisobe@cfa.harvard.edu','swolk@head.cfa.harvard.edu','msobolewska@cfa.harvard.edu','lina.pulgarin-duque@cfa.harvard.edu']
-#email_list = ['tisobe@cfa.harvard.edu','swolk@head.cfa.harvard.edu','brad@head.cfa.harvard.edu']
-#email_list = ['tisobe@cfa.harvard.edu']
+email_list = ['tisobe@cfa.harvard.edu','swolk@head.cfa.harvard.edu',\
+              'msobolewska@cfa.harvard.edu','lina.pulgarin-duque@cfa.harvard.edu']
 
-#--------------------------------------------------------------------------------------------------------------------------
-#-- report_error: read errors from <cup_usr_list>_error_list, sort it out, clean, and send out email                    ---
-#--------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- report_error: read errors from <cup_usr_list>_error_list, sort it out, clean, and send out email
+#--------------------------------------------------------------------------------------------------
 
 def report_error():
-
     """
     read errors from <cup_usr_list>_error_list, sort it out, clean, and send out email
     Input:  none but read from <cup_usr_list>_error_list
     Output: email sent out
     """
-
 #
 #--- find the current time
 #
-    [year, mon, day, hours, min, sec, weekday, yday, dst] = tcnv.currentTime("Local")
+    out = time.strftime('%Y:%m:%d', time.gmtime())
+    [year, mon, day] = re.split(':', out)
+#
+#--- set cutting date for the report
+#
+    out = time.strftime('%Y:%j:%H:%M:%S', time.gmtime())
+    cut = Chandra.Time.DateTime(out).secs - 1.5 * 86400.0
 #
 #--- create surfix for files which will be saved in Past_errors directory
 #
-    smon = str(mon)
-    if mon < 10:
-        smon = '0' + smon
-    sday = str(day)
-    if day < 10:
-        sday = '0' + sday
+    smon = mcf.add_leading_zero(mon)
+    sday = mcf.add_leading_zero(day, dlen=3)
     tail = str(year) + smon + sday
 
     for tag in cpu_usr_list:
-
         efile = house_keeping + 'Records/' + tag + '_error_list'
         pfile = house_keeping + 'Records/Past_errors/' + tag + '_error_list_' + tail
         prev_line = ''
 
-        chk   =  mcf.chkFile(efile)
-        if chk > 0:
+        if os.path.isfile(efile):
 #
 #--- read error messages from the file
 #
-            f    = open(efile, 'r')
-            data = [line.strip() for line in f.readlines()]
-            f.close()
+            data = mcf.read_data_file(efile)
 #
 #--- sort the data so that we can correct messages to each cron job together
 #
@@ -124,41 +115,44 @@ def report_error():
             mssg_list = []
             for ent in data:
                 atemp = re.split(' : ' , ent)
-                task_list.append(atemp[0])
 
-                stime = int(atemp[1])
-                dtime = tcnv.axTimeMTA(stime)
+                otime = int(float(atemp[1]))
+                dtime = mcf.convert_date_format(str(otime), ifmt='%Y%m%d%H%M%S', ofmt='%Y:%j:%H:%M:%S')
+#
+#--- if the error is more than <cut> day old, ignore
+#
+                stime = Chandra.Time.DateTime(dtime).secs
+                if stime < cut:
+                    continue
+
+                task_list.append(atemp[0])
                 time_list.append(dtime)
 
                 mssg_list.append(atemp[2])
 #
 #--- write out cron job name
 #
-            fo    = open(zspace, 'w')
-            cname = task_list[0]
-            line  = '\n\n' + cname + '\n____________________\n\n'
-            fo.write(line)
+            cname  = task_list[0]
+            sline  = '\n\n' + cname + '\n____________________\n\n'
 
-            for i in range(0, len(mssg_list)):
+            for i in range(1, len(mssg_list)):
                 if task_list[i] != cname:
                     cname = task_list[i]
-                    line  = '\n\n' + cname + '\n____________________\n\n'
-                    fo.write(line)
+                    sline  =  sline + '\n\n' + cname + '\n____________________\n\n'
 #
 #--- create each line. if it is exactly same as one line before, skip it
 #
                 line = time_list[i] + ' : ' + mssg_list[i] + '\n'
 
                 if line != prev_line:
-                    fo.write(line)
+                    sline = sline + line
                 prev_line = line
 
-            fo.close()
+            with open(zspace, 'w') as fo:
+                fo.write(sline)
 #
 #--- send email out
 #
-#            cmd = 'cp  ' + zspace + ' ' + '/data/mta/Script/Cron_check/Scripts/' + tag
-#            os.system(cmd)
             send_mail(tag, email_list)
 #
 #--- move the error list to Past_errors directory
@@ -166,35 +160,31 @@ def report_error():
             if os.path.isfile(efile):                   #--- 03/06/19
                 cmd = 'mv ' + efile + ' ' + pfile
                 os.system(cmd)
-#                cmd = 'chmod 755 ' + pfile
-#                os.system(cmd)
 
-
-#--------------------------------------------------------------------------------------------------------------------------
-#-- send_mail: sending email out                                                                                        ---
-#--------------------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- send_mail: sending email out                                                                ---
+#--------------------------------------------------------------------------------------------------
 
 def send_mail(tag, email_list):
-
     """
     sending email out
     Input:  tag     --- user and machine name in the form of c3po-v_mat
             email_list  --- a list of email address
     Output: email sent out
     """
+    if os.path.isfile(zspace):
+        if os.stat(zspace).st_size > 0:
 
-    chk   = mcf.isFileEmpty(zspace)
-    if chk > 0:
-        atemp = re.split('_', tag)
+            atemp = re.split('_', tag)
 
-        for email_address in email_list:
-            cmd = 'cat ' + zspace + ' | mailx -s "Subject: Cron Error : ' + atemp[1] + ' on ' + atemp[0] + '"  ' + email_address
-            os.system(cmd)
+            for email_address in email_list:
+                cmd = 'cat ' + zspace + ' | mailx -s "Subject: Cron Error : ' 
+                cmd = cmd    + atemp[1] + ' on ' + atemp[0] + '"  ' + email_address
+                os.system(cmd)
 
-    mcf.rm_file(zspace)
+    mcf.rm_files(zspace)
 
-#--------------------------------------------------------------------------------------------------------------------------
-
+#--------------------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 

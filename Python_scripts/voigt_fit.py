@@ -1,17 +1,17 @@
-#!/usr/bin/env  /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#####################################################################################################################
-#                                                                                                                   #
-#           voigt_fit.py: fitting Voigt line profile to the given data                                              #
-#                                                                                                                   #
-#                   author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                                   #
-#                   last update: Jul 25, 2013                                                                       #
-#                                                                                                                   #
-#           the code is copied from:                                                                                #
-#                   http://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html#fitting-voigt-profiles             #
-#                                                                                                                   #
-#####################################################################################################################
+#################################################################################################
+#                                                                                               #
+#           voigt_fit.py: fitting Voigt line profile to the given data                          #
+#                                                                                               #
+#                   author: t. isobe (tisobe@cfa.harvard.edu)                                   #
+#                                                                                               #
+#                   last update: Mar 14, 2019                                                   #
+#                                                                                               #
+#        the code is copied from:                                                               #
+#        http://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html#fitting-voigt-profiles    #
+#                                                                                               #
+#################################################################################################
 
 import os
 import sys
@@ -29,24 +29,10 @@ import matplotlib as mpl
 from matplotlib.pyplot import figure, show, rc
 from scipy.special import wofz
 #
-#--- reading directory list
-#
-path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
-
-for ent in data:
-    atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-#
 #--- append a path to a private folder to python directory
 #
-sys.path.append(bin_dir)
-sys.path.append(mta_dir)
+sp_dir = '/data/mta/Script/Python3.6/lib/python3.6/site-packages'
+sys.path.append(sp_dir)
 #
 #---  importing kapteyn routines
 #
@@ -54,12 +40,11 @@ from kapteyn import kmpfit
 
 ln2 = numpy.log(2)
 
-#-----------------------------------------------------------------------------------------------------
-#-- voigt: real part of Faddeeva function.                                                         ---
-#-----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
+#-- voigt: real part of Faddeeva function.                                     ---
+#---------------------------------------------------------------------------------
 
 def voigt(x, y):
-
    """
    The Voigt function is also the real part of 
    w(z) = exp(-z^2) erfc(iz), the complex probability function,
@@ -74,12 +59,11 @@ def voigt(x, y):
    I = wofz(z).real
    return I
 
-#-----------------------------------------------------------------------------------------------------
-#-- Voigt: voigt line shape                                                                        ---
-#-----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
+#-- Voigt: voigt line shape                                                    ---
+#---------------------------------------------------------------------------------
 
 def Voigt(nu, alphaD, alphaL, nu_0, A, a=0, b=0):
-
    """
    The Voigt line shape in terms of its physical parameters
    Input:   
@@ -98,12 +82,11 @@ def Voigt(nu, alphaD, alphaL, nu_0, A, a=0, b=0):
    V = A*f/(alphaD*numpy.sqrt(numpy.pi)) * voigt(x, y) + backg
    return V
 
-#-----------------------------------------------------------------------------------------------------
-#-- funcV: Compose the Voigt line-shape                                                             --
-#-----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
+#-- funcV: Compose the Voigt line-shape                                         --
+#---------------------------------------------------------------------------------
 
 def funcV(p, x):
-
     """
     Compose the Voigt line-shape
     Input: p       --- parameter list [alphaD, alphaL, nu_0, A, a, b]
@@ -113,12 +96,11 @@ def funcV(p, x):
     alphaD, alphaL, nu_0, I, a, b = p
     return Voigt(x, alphaD, alphaL, nu_0, I, a, b)
 
-#-----------------------------------------------------------------------------------------------------
-#-- funcG: Gaussina Model                                                                          ---
-#-----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
+#-- funcG: Gaussina Model                                                      ---
+#---------------------------------------------------------------------------------
 
 def funcG(p, x):
-
     """
     Model function is a gaussian
     Input: p       --- parameter list [A, mu, sigma, zerolev]
@@ -127,9 +109,9 @@ def funcG(p, x):
     A, mu, sigma, zerolev = p
     return( A * numpy.exp(-(x-mu)*(x-mu)/(2*sigma*sigma)) + zerolev )
 
-#-----------------------------------------------------------------------------------------------------
-#-- residualsV: Return weighted residuals of Voigt                                                 ---
-#-----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
+#-- residualsV: Return weighted residuals of Voigt                             ---
+#---------------------------------------------------------------------------------
 
 def residualsV(p, data):
     """
@@ -140,9 +122,9 @@ def residualsV(p, data):
     x, y, err = data
     return (y-funcV(p,x)) / err
 
-#-----------------------------------------------------------------------------------------------------
-#-- residualsG: Return weighted residuals of Gauss                                                 ---
-#-----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
+#-- residualsG: Return weighted residuals of Gauss                             ---
+#---------------------------------------------------------------------------------
 
 def residualsG(p, data):
     """
@@ -153,12 +135,11 @@ def residualsG(p, data):
     x, y, err = data
     return (y-funcG(p,x)) / err
 
-#-----------------------------------------------------------------------------------------------------
-#-- fit_voigt: a control function of fitting voigt profile to the given data                       ---
-#-----------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------
+#-- fit_voigt: a control function of fitting voigt profile to the given data   ---
+#---------------------------------------------------------------------------------
 
 def fit_voigt(data, p0,  plot_op='no', xname='X', yname='Cnts', tname='Voigt Fit', xmin='na', xmax='na', ymin='na', ymax = 'na', detail='no'):
-
     """
     a control function of fitting voigt profile to the given data
     Input:  data    --- data list of [x, y, err]

@@ -1,14 +1,14 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#################################################################################################################
-#                                                                                                               #
-#       fits_operation.py: collection of fits file related funcitons                                            #
-#                                                                                                               #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                           #
-#                                                                                                               #
-#           last update: Jan 12, 2016                                                                           #
-#                                                                                                               #
-#################################################################################################################
+#############################################################################################
+#                                                                                           #
+#       fits_operation.py: collection of fits file related funcitons                        #
+#                                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                       #
+#                                                                                           #
+#           last update: May 21, 2019                                                       #
+#                                                                                           #
+#############################################################################################
 
 import os
 import sys
@@ -18,35 +18,28 @@ import random
 import operator
 import math
 import numpy
+import astropy.io.fits  as pyfits
 
-from astropy.io import fits
-
-sys.path.append('/data/mta/Script/Python_script2.7/')
-
+sys.path.append('/data/mta/Script/Python3.6/MTA')
 #
-#--- import several functions
-#
-import convertTimeFormat       as tcnv       #---- contains MTA time conversion routines
 import mta_common_functions    as mcf        #---- contains other functions commonly used in MTA scripts
 
 #-------------------------------------------------------------------------------------------------------
 #-- findKeyWords: for a given fits file name, return a list of keyword lists and their values         --
 #-------------------------------------------------------------------------------------------------------
 
-def findKeyWords(file):
-
+def findKeyWords(ifile):
     """
     for a given fits file name, return a list of keyword lists and their values
-    Input:      file  -- fits file name
-    Oputput:    klist -- a list of keywords
-                val_list -- value of the keywords
+    Input:      ifile       -- fits file name
+    Oputput:    klist       -- a list of keywords
+                val_list    -- value of the keywords
     """
-
-    flist = fits.open(file)
+    flist = pyfits.open(ifile)
     flist.close()
 
     fhead = flist[1].header
-    klist = fhead.keys()
+    klist = list(fhead.keys())
 
     val_list = []
     for i in range(0, len(klist)):
@@ -59,15 +52,14 @@ def findKeyWords(file):
 #-- readHeaderLine: for a given fits file name and header keyword, return the value for the keyword ----
 #-------------------------------------------------------------------------------------------------------
 
-def readHeaderLine(file, kname):
-
+def readHeaderLine(ifile, kname):
     """
     for a given fits file name and header keyword, return the value for the keyword
-    Input:      file -- fits file name
-                name -- keyword
-    Output:     val  -- keyward value
+    Input:      ifile -- fits file name
+                name  -- keyword
+    Output:     val   -- keyward value
     """
-    flist = fits.open(file)
+    flist = pyfits.open(ifile)
     flist.close()
 
     val   = flist[0].header[kname]
@@ -78,14 +70,13 @@ def readHeaderLine(file, kname):
 #-- findTableCols: find column names of table fits data                                              ---
 #-------------------------------------------------------------------------------------------------------
 
-def findTableCols(file, extent=1):
-
+def findTableCols(ifile, extent=1):
     """
     find column names of table fits data
-    Input:   file       -- fits file name
+    Input:   ifile      -- fits file name
     Output:  col.name   -- a list of column names
     """
-    flist = fits.open(file)
+    flist = pyfits.open(ifile)
     flist.close()
     cols  = flist[extent].columns
 
@@ -95,22 +86,20 @@ def findTableCols(file, extent=1):
 #-- findTableData: extract a table data from a given fits file                                       ---
 #-------------------------------------------------------------------------------------------------------
 
-def findTableData(file, col= 'NA', extent=1):
-
+def findTableData(ifile, col= 'NA', extent=1):
     """
     extract a table data from a given fits file
-    Input:      file    -- fits file name
+    Input:      ifile   -- fits file name
                 col     -- column name. if it is not given, print out all data
                            this can be a list of column names or a single column name
     Output:     fdata   -- table data or a list of table data
     """
-
-    flist = fits.open(file)
+    flist = pyfits.open(ifile)
     fdata = flist[extent].data
     flist.close()
     
     if col != 'NA':
-        if isinstance(col, list) or isinstance(col, tuple):
+        if isinstance(col, (list, tuple)):
             data_list = []
             for ent in col:
                 odata = fdata[ent]
@@ -127,7 +116,6 @@ def findTableData(file, col= 'NA', extent=1):
 #-------------------------------------------------------------------------------------------------------
 
 def appendFitsTable(file1, file2, outname, extension = 1):
-
     """
     Appending one table fits file to the another
     the output table will inherit column attributes of the first fits table
@@ -136,9 +124,8 @@ def appendFitsTable(file1, file2, outname, extension = 1):
                 outname --- the name of the new fits file
     Output:     a new fits file "outname"
     """
-
-    t1 = fits.open(file1)
-    t2 = fits.open(file2)
+    t1 = pyfits.open(file1)
+    t2 = pyfits.open(file2)
 #
 #-- find numbers of rows (two different ways as examples here)
 #
@@ -148,7 +135,7 @@ def appendFitsTable(file1, file2, outname, extension = 1):
 #--- total numbers of rows to be created
 #
     nrows = nrow1 + nrow2
-    hdu   = fits.BinTableHDU.from_columns(t1[extension].columns, nrows=nrows)
+    hdu   = pyfits.BinTableHDU.from_columns(t1[extension].columns, nrows=nrows)
 #
 #--- append by the field names
 #
@@ -167,30 +154,29 @@ def appendFitsTable(file1, file2, outname, extension = 1):
 #-------------------------------------------------------------------------------------------------------
 
 def addTwoImages(file1, file2, outname, extension=0):
-
     """
     combine two image files
     Input:      file1 / file2  ---- two image files
                 outname        ---- the name of output fits image file
                 extension      ---- ext #. dfault = 0
     Output:     outname        ---- combined image fits file header is a copy of file1
+                chk            ---- 1 if completed. 0 if failed
     """
-
-    t1 = fits.open(file1)
-    t2 = fits.open(file2)
+    t1 = pyfits.open(file1)
+    t2 = pyfits.open(file2)
 
     img1 = t1[extension].data
     img2 = t2[extension].data
     (x1, y1) = img1.shape
     (x2, y2) = img2.shape
+
     if (x1 != x2) or (y1 != y2):
         chk = 0        
-
     else:
         new_img = img1 + img2
-        header  = fits.getheader(file1)
+        header  = pyfits.getheader(file1)
 
-        fits.writeto(outname, new_img, header)
+        pyfits.writeto(outname, new_img, header)
 
         chk =  1
 
@@ -203,11 +189,10 @@ def addTwoImages(file1, file2, outname, extension=0):
 #-- selectTableData: select data for a given colname and the condition and create a new table fits file-
 #-------------------------------------------------------------------------------------------------------
 
-def selectTableData(file, colname, condition, outname, extension = 1, clobber='no'):
-
+def selectTableData(ifile, colname, condition, outname, extension = 1, clobber='no'):
     """
     select data for a given colname and the condition and create a new table fits file
-    Input:      file     --- input table fits file
+    Input:      ifile    --- input table fits file
                 colname  --- column name
                 condition--- contidion of the data selection
                             if the selection is the interval, the format is in <start>:<stop>
@@ -215,16 +200,14 @@ def selectTableData(file, colname, condition, outname, extension = 1, clobber='n
                             if it is not equal: !=<value>
                 outname  --- output file name
                 clobber  --- overwrite the file if exists. if not given, 'no'
-
-
     """
-
     m1 = re.search('y', clobber)
     m2 = re.search('Y', clobber)
-    if (m1 is not None) or (m2 is not None):
-        mcf.rm_file(outname)
 
-    t     = fits.open(file)
+    if (m1 is not None) or (m2 is not None):
+        mcf.rm_files(outname)
+
+    t     = pyfits.open(ifile)
     tdata = t[extension].data
     
     mc    = re.search(':',  condition)
@@ -247,7 +230,7 @@ def selectTableData(file, colname, condition, outname, extension = 1, clobber='n
 
     else:
         condition = condition.replace('==', "")
-        if (isinstance(condition, float)) or (isinstance(condition, int)):
+        if isinstance(condition, (float, int)):
             mask  = tdata.field(colname) == condition
             modt2 = tdata[mask]
         else:
@@ -255,14 +238,14 @@ def selectTableData(file, colname, condition, outname, extension = 1, clobber='n
             chk = 1
 
 
-    header  = fits.getheader(file)
+    header  = pyfits.getheader(ifile)
     if chk == 0:
-        data    = fits.BinTableHDU(modt2, header)
+        data    = pyfits.BinTableHDU(modt2, header)
 
     data.writeto(outname)
 
 #-------------------------------------------------------------------------------------------------------
-#-------------------------------------------------------------------------------------------------------
+#-- select_data_with_logical_mask: select out data and return data table                             ---
 #-------------------------------------------------------------------------------------------------------
 
 def select_data_with_logical_mask(tbdata, col, mask):
@@ -272,7 +255,7 @@ def select_data_with_logical_mask(tbdata, col, mask):
             col     --- column name to be examined
             mask    --- original mask with possibly array of coditions
     output: ntbdata --- table data with selected data rows
-                                                    """
+    """
 #
 #--- find conlumn names
 #
@@ -319,8 +302,8 @@ def select_data_with_logical_mask(tbdata, col, mask):
         vcol = set_format_for_col(col, vdata)
         out.append(vcol)
 
-    dcol    = fits.ColDefs(out)
-    dbhdu   = fits.BinTableHDU.from_columns(dcol)
+    dcol    = pyfits.ColDefs(out)
+    dbhdu   = pyfits.BinTableHDU.from_columns(dcol)
     ntbdata = dbhdu.data
 
     return ntbdata
@@ -342,7 +325,7 @@ def set_format_for_col(name, cdata):
 #
 #--- check whether the value is numeric
 #
-    if mcf.chkNumeric(test):
+    if mcf.is_neumeric(test):
         ft = 'E'
 #
 #--- check whether the value is logical
@@ -357,14 +340,14 @@ def set_format_for_col(name, cdata):
         tcnt = len(test)
         ft   = str(tcnt) + 'A'
 
-    return fits.Column(name=name, format=ft, array=cdata)
+    return pyfits.Column(name=name, format=ft, array=cdata)
 
 
 #-------------------------------------------------------------------------------------------------------
 #-- fitsImgStat: find min, max, avg, std, and mediam of the image fits file                          ---
 #-------------------------------------------------------------------------------------------------------
 
-def fitsImgStat(file, extension=0):
+def fitsImgStat(ifile, extension=0):
 
     """
     find min, max, avg, std, and mediam of the image fits file
@@ -373,7 +356,7 @@ def fitsImgStat(file, extension=0):
     Output:     a list of [min, max, avg, std, med]
     """
 
-    t    = fits.open(file)
+    t    = pyfits.open(ifile)
     data = t[extension].data
 
     results = []
@@ -401,29 +384,28 @@ def fitsImgStat(file, extension=0):
 #-- maxPosImgFits: find physical location of max value                                               ---
 #-------------------------------------------------------------------------------------------------------
 
-def maxPosImgFits(file, extension=0):
-
+def maxPosImgFits(ifile, extension=0):
     """
     find physical location of max value.
     Input:      file    --- image fits file name
                 extension -- extension #. default = 0
     Output:     x, y, and max val in list form
     """
-
-    t    = fits.open(file)
+    t    = pyfits.open(ifile)
     data = t[extension].data
     max  = numpy.max(data)
 
     (xdim, ydim) = data.shape
     xdim -= 1
     ydim -= 1
-    chk = 0
+    chk   = 0
     for x in range(0, xdim):
         for y in range(0, ydim):
+
             if data[y, x] == max:
                 xpos = x
                 ypos = y
-                chk = 1
+                chk  = 1
                 break
 
         if chk > 0:
@@ -435,19 +417,17 @@ def maxPosImgFits(file, extension=0):
 #-- fitsImagThresh: trim the data at "thresh"                                                        ---
 #-------------------------------------------------------------------------------------------------------
 
-def fitsImagThresh(file, outname, thresh, val= 0, extension=0):
-
+def fitsImagThresh(ifile, outname, thresh, val= 0, extension=0):
     """
     trim the data at "thresh"
-    Input:      file      --- input image fits file
+    Input:      ifile     --- input image fits file
                 outname   --- output image fits file name
                 thresh    --- threshhold
                 val       --- value to be replaced. default = 0
                 extension --- ext #. defaul = 0
     Output:     outname   --- output fits image file
     """
-
-    t    = fits.open(file)
+    t    = pyfits.open(ifile)
     data = t[extension].data
 
     (xdim, ydim) = data.shape
@@ -456,11 +436,12 @@ def fitsImagThresh(file, outname, thresh, val= 0, extension=0):
     chk = 0
     for x in range(0, xdim):
         for y in range(0, ydim):
+
             if data[y, x] >= thresh:
                 data[y, x] = val
 
-    header  = fits.getheader(file)
-    fits.writeto(outname, data, header)
+    header  = pyfits.getheader(ifile)
+    pyfits.writeto(outname, data, header)
 
     t.close()
 
@@ -469,8 +450,7 @@ def fitsImagThresh(file, outname, thresh, val= 0, extension=0):
 #-- fitsImgSection: extract a x by y section of fits image file                                      ---
 #-------------------------------------------------------------------------------------------------------
 
-def fitsImgSection(file, x1, x2, y1, y2, outname, extension=0, clobber='no'):
-
+def fitsImgSection(ifile, x1, x2, y1, y2, outname, extension=0, clobber='no'):
     """
     extract a x by y section of fits image file
     Input:  file        --- input fits image file name
@@ -481,14 +461,12 @@ def fitsImgSection(file, x1, x2, y1, y2, outname, extension=0, clobber='no'):
             clobber     --- clobber or not. default = no
     Output: outname     --- fits image file of size x by y
     """
-
-
     m1 = re.search('y', clobber)
     m2 = re.search('Y', clobber)
     if (m1 is not None) or (m2 is not None):
-        mcf.rm_file(outname)
+        mcf.rm_files(outname)
 
-    t    = fits.open(file)
+    t    = pyfits.open(ifile)
     data = t[extension].data
 
     xsize = abs(x2 - x1)
@@ -502,8 +480,8 @@ def fitsImgSection(file, x1, x2, y1, y2, outname, extension=0, clobber='no'):
             newy = y - y1
             output[newy, newx] = data[y, x]
 
-    header = fits.getheader(file)
-    fits.writeto(outname, output, header)
+    header = pyfits.getheader(ifile)
+    pyfits.writeto(outname, output, header)
 
     t.close()
 
@@ -511,22 +489,21 @@ def fitsImgSection(file, x1, x2, y1, y2, outname, extension=0, clobber='no'):
 #-- fitsTableStat: find min, max, avg, std, and mediam of the column                                  --
 #-------------------------------------------------------------------------------------------------------
 
-def fitsTableStat(file, column, extension=1):
-
+def fitsTableStat(ifile, column, extension=1):
     """
     find min, max, avg, std, and mediam of the column. 
-    Input       file    --- table fits file name
+    Input       ifile   --- table fits file name
                 column  --- name of the column(s). if there are more than one, must be 
                             in the form of list or tuple
                 extension-- data extension #. default = 1
     Output      a list or a list of lists of [min, max, avg, std, med, sample size]
     """
 
-    t     = fits.open(file)
+    t     = pyfits.open(ifile)
     tdata = t[extension].data
     t.close()
 
-    if isinstance(column, list) or isinstance(column, tuple):
+    if isinstance(column, (list, tuple)):
 
         results = []
         for ent in column:

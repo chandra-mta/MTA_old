@@ -1,16 +1,16 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################
-#                                                                                                       #
-#       gaussian_fit.py: fitting a Gaussian profile for a given data                                    #
-#                                                                                                       #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                   #
-#                                                                                                       #
-#           last update: Jul 24, 2013                                                                   #
-#                                                                                                       #
-#           Ref: http://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html#gaussian-profiles         #
-#                                                                                                       #
-#########################################################################################################
+#####################################################################################################
+#                                                                                                   #
+#       gaussian_fit.py: fitting a Gaussian profile for a given data                                #
+#                                                                                                   #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                               #
+#                                                                                                   #
+#           last update: Mar 14, 2019                                                               #
+#                                                                                                   #
+#           Ref: http://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html#gaussian-profiles     #
+#                                                                                                   #
+#####################################################################################################
 
 import os
 import sys
@@ -27,36 +27,20 @@ import matplotlib as mpl
 
 from matplotlib.pyplot import figure, show, rc
 #
-#--- reading directory list
-#
-path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
-
-for ent in data:
-    atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-#
 #--- append a path to a private folder to python directory
 #
-sys.path.append(bin_dir)
-sys.path.append(mta_dir)
-
+sp_dir = '/data/mta/Script/Python3.6/lib/python3.6/site-packages'
+sys.path.append(sp_dir)
 #
 #---  importing kapteyn routines
 #
 from kapteyn import kmpfit
 
-#--------------------------------------------------------------------------------------------------------------
-#-- fit_gaussian: fitting gaussian profile: control function                                                ---
-#--------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- fit_gaussian: fitting gaussian profile: control function                                    ---
+#--------------------------------------------------------------------------------------------------
 
 def fit_gaussian(data, plot_op='no', xname='na', yname='na', tname='na', detail='no'):
-
     """
     fitting gaussian profile: control function
     Input:      data        --- input data list of lists [xdata, ydata, error]
@@ -69,13 +53,13 @@ def fit_gaussian(data, plot_op='no', xname='na', yname='na', tname='na', detail=
                 if plotting is asked, "out.png" is created
                 if detail is requested, kmpfit_info is created
     """
-
     x, y, err = data
 #
 #--- fitting parameters
 #
-    pinitial = [1600, 10.5, 1.5, 0]                     #---initial guess of:  [noarmalization, center, sigma, zero level]
-    param = fit_model(x, y, err, pinitial,  detail)
+    pinitial = [1600, 10.5, 1.5, 0]   #---initial guess of:  [noarmalization, center, sigma, zero level]
+    pinitial = [10, 0.0, 1,0,0]
+    param    = fit_model(x, y, err, pinitial,  detail)
 
     if plot_op == 'yes':
 #
@@ -85,18 +69,17 @@ def fit_gaussian(data, plot_op='no', xname='na', yname='na', tname='na', detail=
 
     return param
 
-#--------------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------------
-#--------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- fit_model: fitting a model to a given data                                                   --
+#--------------------------------------------------------------------------------------------------
 
 def fit_model(x, y, err, p0,  detail='no'):
-
     """
     fitting a model to a given data
-    Input:      data        --- input data list of lists [xdata, ydata, error]
-                p0          --- initial guess of the parameters in a list
-                detail      --- if you want to print out a detail fitting profile, set "yes'. Default: 'no'
-    Output:     fitting parameter [noarmalization, center, sigma, zero level]
+    Input:  data    --- input data list of lists [xdata, ydata, error]
+            p0      --- initial guess of the parameters in a list
+            detail  --- if you want to print out a detail fitting profile, set "yes'. Default: 'no'
+    Output: fitting parameter [noarmalization, center, sigma, zero level]
     """
 #
 #--- convert the data to numpy array
@@ -111,8 +94,8 @@ def fit_model(x, y, err, p0,  detail='no'):
 
     try:
         fitobj.fit(params0=p0)
-    except Exception, mes:
-        print "Something wrong with fit:", mes
+    except Exception as mes:
+        print("Something wrong with fit:", mes)
         raise SystemExit
 #
 #--- if detail fitting profile is asked, print it out
@@ -136,12 +119,11 @@ def fit_model(x, y, err, p0,  detail='no'):
 
     return fitobj.params
 
-#--------------------------------------------------------------------------------------------------------------
-#-- my_derivs: fitting derivatives                                                                          ---
-#--------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- my_derivs: fitting derivatives                                                              ---
+#--------------------------------------------------------------------------------------------------
 
 def my_derivs(p, data, dflags):
-
     """
     create fitting derivatives
     Input:  p       --- parameter list
@@ -149,7 +131,6 @@ def my_derivs(p, data, dflags):
             dflags  --- ??? but used by kmfit
     Output  pderiv  --- a list of derivatives
     """
-
     x, y, err = data
     A, mu, sigma, zerolev  = p
     pderiv = numpy.zeros([len(p), len(x)])      # You need to create the required array
@@ -175,46 +156,41 @@ def my_derivs(p, data, dflags):
     pderiv /= -err
     return pderiv
 
-#--------------------------------------------------------------------------------------------------------------
-#-- my_residuals: compute residuals                                                                         ---
-#--------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- my_residuals: compute residuals                                                             ---
+#--------------------------------------------------------------------------------------------------
 
 def my_residuals(p, data):
-
     """
     compute residuals
     Input:      p    --- parameter list
                 data --- data list [x, y, error], the data must be numpy array
     Output:     residuals
     """
-
     x, y, err = data
     
     return (y-my_model(p,x)) / err
 
-#--------------------------------------------------------------------------------------------------------------
-#-- my_model: model you want to fit on the data                                                             ---
-#--------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- my_model: model you want to fit on the data                                                 ---
+#--------------------------------------------------------------------------------------------------
 
 def my_model(p, x):
-
     """
     model you want to fit on the data
     Input:  p    ---- parameter list
             x    ---- an numpy array of independent variable
     Output  an numpy array of estimated values
     """
-
     A, mu, sigma, zerolev = p
 
     return( A * numpy.exp(-(x-mu)*(x-mu)/(2.0*sigma*sigma)) + zerolev )
 
-#--------------------------------------------------------------------------------------------------------------
-#-- plot_fig: plotting routine                                                                               --
-#--------------------------------------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+#-- plot_fig: plotting routine                                                                   --
+#--------------------------------------------------------------------------------------------------
 
 def plot_fig(x, y, p, xname, yname, tname):
-
     """
     plotting routine
     Input:  x        --- a list of x values
@@ -231,7 +207,7 @@ def plot_fig(x, y, p, xname, yname, tname):
 #
 #--- plot actual data points
 #
-    frame.plot(x, y,  color='red', lw =0 , marker='+', markersize=10.)
+    frame.plot(x, y, color='red', lw =0 , marker='+', markersize=10.)
 #
 #--- to make a model plot smooth, take  equally spanced 100 points between min and max value of x data
 #

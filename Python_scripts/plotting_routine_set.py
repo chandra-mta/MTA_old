@@ -1,33 +1,35 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#########################################################################################################################################
-#                                                                                                                                       #
-#           plotting_routine_set.py: contain plotting routines                                                                          #
-#                                                                                                                                       #
-#                                                                                                                                       #
-#--- single panel, single data set:                                     plot_single_panel                                               #
-#                                                                                                                                       #
-#--- multiple panels with single data set for each panel:               plot_multi_panel                                                #
-#                                                                                                                                       #
-#--- multiple pnaels with specified column #:                           plot_multi_columns                                              #
-#                                                                                                                                       #
-#--- single panel with multiple datasets:                               plot_multi_entries                                              #
-#                                                                                                                                       #
-#--- single panel with single data set with moving average envelope:    plot_moving_average                                             #
-#       this must use with     moving_avg = fmv.find_moving_average(xdata, ydata, 50.0, 5)                                              #
-#                                                                                                                                       #
-#--- setting min and max of plotting range                              set_min_max                                                     #
-#                                                                                                                                       #
-#       author: t. isobe (tisobe@cfa.harvard.edu)                                                                                       #
-#                                                                                                                                       #
-#       last update: Jun 19, 2014                                                                                                       #
-#                                                                                                                                       #
-#########################################################################################################################################
+#################################################################################################
+#                                                                                               #
+#           plotting_routine_set.py: contain plotting routines                                  #
+#                                                                                               #
+#                                                                                               #
+#--- single panel, single data set:                                     plot_single_panel       #
+#                                                                                               #
+#--- multiple panels with single data set for each panel:               plot_multi_panel        #
+#                                                                                               #
+#--- multiple pnaels with specified column #:                           plot_multi_columns      #
+#                                                                                               #
+#--- single panel with multiple datasets:                               plot_multi_entries      #
+#                                                                                               #
+#--- single panel with single data set with moving average envelope:    plot_moving_average     #
+#       this must use with     moving_avg = fmv.find_moving_average(xdata, ydata, 50.0, 5)      #
+#                                                                                               #
+#--- setting min and max of plotting range                              set_min_max             #
+#                                                                                               #
+#       author: t. isobe (tisobe@cfa.harvard.edu)                                               #
+#                                                                                               #
+#       last update: Mar 14, 2019                                                               #
+#                                                                                               #
+#################################################################################################
 
 import os
 import sys
 import re
 import string
+import numpy
+import time
 
 import matplotlib as mpl
 
@@ -42,7 +44,7 @@ import matplotlib.lines        as lines
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/Python_script2.7/dir_list_py'
+path = '/data/mta/Script/Python3.6/MTA/dir_list'
 
 f    = open(path, 'r')
 data = [line.strip() for line in f.readlines()]
@@ -52,17 +54,14 @@ for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append a path to a private folder to python directory
 #
-sys.path.append(bin_dir)
 sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat    as tcnv
-import mta_common_functions as mcf
 import find_moving_average  as fmv
 import robust_linear        as robust
 
@@ -72,7 +71,6 @@ import robust_linear        as robust
 #---------------------------------------------------------------------------------------------------
 
 def plot_multi_panel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, outname, yerror=0, fsize = 9, psize = 2.0, marker = 'o', pcolor =7, lcolor=7,lsize=0, resolution=100, linefit=0, connect=0):
-
     """
     This function plots multiple data in separate panels
     Input:  xmin, xmax  plotting range of x axis
@@ -129,12 +127,12 @@ def plot_multi_panel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname,
             line = str(tot) + '1' + str(j) + ', sharex=ax0'
             line = str(tot) + '1' + str(j)
 
-        exec "%s = plt.subplot(%s)"       % (axNam, line)
-        exec "%s.set_autoscale_on(False)" % (axNam)      #---- these three may not be needed for the new pylab, but 
-        exec "%s.set_xbound(xmin,xmax)"   % (axNam)      #---- they are necessary for the older version to set
+        exec("%s = plt.subplot(%s)"       % (axNam, line))
+        exec("%s.set_autoscale_on(False)" % (axNam))      #---- these three may not be needed for the new pylab, but 
+        exec("%s.set_xbound(xmin,xmax)"   % (axNam))      #---- they are necessary for the older version to set
 
-        exec "%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam)
-        exec "%s.set_ylim(ymin=yMinSets[i], ymax=yMaxSets[i], auto=False)" % (axNam)
+        exec("%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam))
+        exec("%s.set_ylim(ymin=yMinSets[i], ymax=yMaxSets[i], auto=False)" % (axNam))
 
         xdata  = xSets[i]
         ydata  = ySets[i]
@@ -159,7 +157,7 @@ def plot_multi_panel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname,
         leg = legend([p],  [entLabels[i]], prop=props, loc=2)
         leg.get_frame().set_alpha(0.5)
 
-        exec "%s.set_ylabel(yname, size=fsize)" % (axNam)
+        exec("%s.set_ylabel(yname, size=fsize)" % (axNam))
 
 #
 #--- add x ticks label only on the last panel
@@ -168,7 +166,7 @@ def plot_multi_panel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname,
         ax = 'ax' + str(i)
 
         if i != tot-1: 
-            exec "line = %s.get_xticklabels()" % (ax)
+            exec("line = %s.get_xticklabels()" % (ax))
             for label in  line:
                 label.set_visible(False)
         else:
@@ -268,12 +266,12 @@ def plot_multi_columns(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, ynam
             line = str(pcnt) + str(colnum) + str(j) + ', sharex=ax0'
             line = str(pcnt) + str(colnum) + str(j)
 
-        exec "%s = plt.subplot(%s)"       % (axNam, line)
-        exec "%s.set_autoscale_on(False)" % (axNam)      #---- these three may not be needed for the new pylab, but 
-        exec "%s.set_xbound(xmin,xmax)"   % (axNam)      #---- they are necessary for the older version to set
+        exec("%s = plt.subplot(%s)"       % (axNam, line))
+        exec("%s.set_autoscale_on(False)" % (axNam))      #---- these three may not be needed for the new pylab, but 
+        exec("%s.set_xbound(xmin,xmax)"   % (axNam))      #---- they are necessary for the older version to set
 
-        exec "%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam)
-        exec "%s.set_ylim(ymin=yMinSets[i], ymax=yMaxSets[i], auto=False)" % (axNam)
+        exec("%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam))
+        exec("%s.set_ylim(ymin=yMinSets[i], ymax=yMaxSets[i], auto=False)" % (axNam))
 
         xdata  = xSets[i]
         ydata  = ySets[i]
@@ -302,9 +300,9 @@ def plot_multi_columns(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, ynam
  
         if ynshare == 0:
             if i % colnum == 0:
-                exec "%s.set_ylabel(yname, size=fsize)" % (axNam)
+                exec("%s.set_ylabel(yname, size=fsize)" % (axNam))
         else:
-            exec "%s.set_ylabel(yname[i], size=fsize)" % (axNam)
+            exec("%s.set_ylabel(yname[i], size=fsize)" % (axNam))
 
 #
 #--- add x ticks label only on the panels of the last row
@@ -319,7 +317,7 @@ def plot_multi_columns(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, ynam
                 chk += 1
 
         if chk == 0:
-            exec "line = %s.get_xticklabels()" % (ax)
+            exec("line = %s.get_xticklabels()" % (ax))
             for label in  line:
                 label.set_visible(False)
         else:
@@ -396,16 +394,16 @@ def plot_multi_entries(xmin, xmax, ymin, ymax, xSets, ySets, xname, yname, entLa
         if tot > 1:
             lnam = 'p' + str(i)
             lnamList.append(lnam)
-            exec "%s, = plt.plot(xdata, ydata, color=colorList[i], lw =lsize , marker=markerList[i], markersize=psize, label=entLabels[i])" % (lnam)
+            exec("%s, = plt.plot(xdata, ydata, color=colorList[i], lw =lsize , marker=markerList[i], markersize=psize, label=entLabels[i])" % (lnam))
 
             if yerror != 0:
-                exec "%s, = plt.errorbar(xdata, ydata, yerr=yerror[i], lw = 0, elinewidth=1)" % (lnam)
+                exec("%s, = plt.errorbar(xdata, ydata, yerr=yerror[i], lw = 0, elinewidth=1)" % (lnam))
 
             if linefit > 0:
                 (sint, slope,serror) = robust.robust_fit(xdata, ydata)
                 start = sint + slope * xmin
                 stop  = sint + slope * xmax
-                exec "%s, = plt.plot([xmin, xmax],[start,stop], color=colorList[i], lw =connect)" % (lnam)
+                exec("%s, = plt.plot([xmin, xmax],[start,stop], color=colorList[i], lw =connect)" % (lnam))
 
         else:
 #
@@ -434,7 +432,7 @@ def plot_multi_entries(xmin, xmax, ymin, ymax, xSets, ySets, xname, yname, entLa
                 line = line +', ' +  ent
         line = line + ']'
 
-        exec "leg = legend(%s,  entLabels, prop=props)" % (line)
+        exec("leg = legend(%s,  entLabels, prop=props)" % (line))
         leg.get_frame().set_alpha(0.5)
 
     ax.set_xlabel(xname, size=fsize)
@@ -483,7 +481,8 @@ def plot_moving_average(xmin, xmax, ymin, ymax, x, y, moving_avg, xname, yname, 
 #
 #--- y range is set to the average +/- 4.0 * std
 #
-    (ymean, ystd) = mcf.avgAndstd(y)
+    ymean = numpy.mean(y)
+    ystd  = numpy.std(y)
 
     dist  = 4.0 * ystd
     ymin  = ymean - dist
@@ -677,8 +676,7 @@ def set_min_max(xdata, ydata, xtime = 0, ybot = -999):
 
     if xtime > 0:
         xmin  = 1999
-        tlist = tcnv.currentTime()
-        xmax  = tlist[0] + 1
+        xmax  = int(float(time.strtime("%Y", time.gmtime())))  + 1
 
     ymin  = min(ydata)
     ymax  = max(ydata)

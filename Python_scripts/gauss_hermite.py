@@ -1,17 +1,17 @@
-#!/usr/bin/env  /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#################################################################################################################
-#                                                                                                               #
-#               gauss_hermite.py: fit Gauss-Hermite profile on a given data                                     #
-#                                                                                                               #
-#                   author: t. isobe (tisobe@cfa.harvard.edu)                                                   #
-#                                                                                                               #
-#                   last update: Sep 24, 2013                                                                   #
-#                                                                                                               #
-#               the code is copied from:                                                                        #
-#               http://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html#fitting-gauss-hermite-series       #
-#                                                                                                               #
-#################################################################################################################
+#################################################################################################
+#                                                                                               #
+#               gauss_hermite.py: fit Gauss-Hermite profile on a given data                     #
+#                                                                                               #
+#                   author: t. isobe (tisobe@cfa.harvard.edu)                                   #
+#                                                                                               #
+#                   last update: Mar 14, 2019                                                   #
+#                                                                                               #
+#   code is copied from:                                                                        #
+#   http://www.astro.rug.nl/software/kapteyn/kmpfittutorial.html#fitting-gauss-hermite-series   #
+#                                                                                               #
+#################################################################################################
 
 import numpy
 import os
@@ -31,43 +31,25 @@ from matplotlib.pyplot import figure, show, rc
 
 from scipy.special import wofz
 from scipy.optimize import fsolve
-
-#
-#--- reading directory list
-#
-path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
-
-for ent in data:
-    atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
 #
 #--- append a path to a private folder to python directory
 #
-sys.path.append(bin_dir)
-sys.path.append(mta_dir)
-
+sp_dir = '/data/mta/Script/Python3.6/lib/python3.6/site-packages'
+sys.path.append(sp_dir)
 #
 #---  importing kapteyn routines
 #
 from kapteyn import kmpfit
 
-
 ln2 = numpy.log(2)
 PI = numpy.pi
 from math import sqrt
 
-#-----------------------------------------------------------------------------------------------------
-#-- gausshermiteh3h4: The Gauss-Hermite function                                                    --
-#-----------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-- gausshermiteh3h4: The Gauss-Hermite function                                    --
+#-------------------------------------------------------------------------------------
 
 def gausshermiteh3h4(x, A, x0, s, h3, h4):
-
     """
     The Gauss-Hermite function is a superposition of functions of the form
     F = (x-xc)/s                                            
@@ -84,14 +66,13 @@ def gausshermiteh3h4(x, A, x0, s, h3, h4):
 
     return E
 
-#-----------------------------------------------------------------------------------------------------
-#-- hermite2gauss: Convert Gauss-Hermite parameters to Gauss(like)parameters                       ---
-#-----------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-- hermite2gauss: Convert Gauss-Hermite parameters to Gauss(like)parameters       ---
+#-------------------------------------------------------------------------------------
 
 def hermite2gauss(par, dpar):
     """
     Convert Gauss-Hermite parameters to Gauss(like)parameters.                                        
-                                                                
     We use the first derivative of the Gauss-Hermite function   
     to find the maximum, usually around 'x0' which is the center
     of the (pure) Gaussian part of the function.                          
@@ -161,10 +142,9 @@ def hermite2gauss(par, dpar):
               d_dispersion=d_dispersion, d_skewness=d_skewness, d_kurtosis=d_kurtosis)
     return res
  
-
-#-----------------------------------------------------------------------------------------------------
-#-- funcG: gaussian function model                                                                ----
-#-----------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-- funcG: gaussian function model                                                ----
+#-------------------------------------------------------------------------------------
 
 def funcG(p, x):
     """
@@ -174,9 +154,9 @@ def funcG(p, x):
 
     return( A * numpy.exp(-(x-mu)*(x-mu)/(2*sigma*sigma)) + zerolev )
 
-#-----------------------------------------------------------------------------------------------------
-#-- funcGH: Gauss-Hermite function model                                                           ---
-#-----------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-- funcGH: Gauss-Hermite function model                                           ---
+#-------------------------------------------------------------------------------------
 
 def funcGH(p, x):
     """
@@ -186,9 +166,9 @@ def funcGH(p, x):
    
     return gausshermiteh3h4(x, A, xo, s, h3, h4) + zerolev
 
-#-----------------------------------------------------------------------------------------------------
-#-- residualsG: Return weighted residuals of Gauss                                                 ---
-#-----------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-- residualsG: Return weighted residuals of Gauss                                 ---
+#-------------------------------------------------------------------------------------
 
 def residualsG(p, data):
     """
@@ -198,9 +178,9 @@ def residualsG(p, data):
 
     return (y-funcG(p,x)) / err
 
-#-----------------------------------------------------------------------------------------------------
-#-- residualsGH: Return weighted residuals of Gauss-Hermite                                        ---
-#-----------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-- residualsGH: Return weighted residuals of Gauss-Hermite                        ---
+#-------------------------------------------------------------------------------------
 
 def residualsGH(p, data):
     """
@@ -210,9 +190,9 @@ def residualsGH(p, data):
     return (y-funcGH(p,x)) / err
 
 
-#-----------------------------------------------------------------------------------------------------
-#-- gauss_hermite_fit: control function of Gauss-Hermite fitting                                   ---
-#-----------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------------
+#-- gauss_hermite_fit: control function of Gauss-Hermite fitting                   ---
+#-------------------------------------------------------------------------------------
 
 def gauss_hermite_fit(data, p0, plot_op='no', xname='X', yname='Cnts', tname='Voigt Fit', xmin='na', xmax='na', ymin='na', ymax = 'na', detail='no'):
 
@@ -254,7 +234,7 @@ def gauss_hermite_fit(data, p0, plot_op='no', xname='X', yname='Cnts', tname='Vo
 #---- Fit the Gaussian model
 #
     [A1, X1, S1, h31, h41, z01] = p0
-    pg = [A1, X1, S1, z01]                  #--- approximate the initial values using GH initial estimates
+    pg = [A1, X1, S1, z01]      #--- approximate the initial values using GH initial estimates
 
     fitterG = kmpfit.Fitter(residuals=residualsG, data=(x,y,err))
     fitterG.fit(params0=pg)
