@@ -1,67 +1,57 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#       sib_corr_functions.py: save sib correlation related functions                                       #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           Last Update: Spe 04, 2018                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#################################################################################
+#                                                                               #
+#       sib_corr_functions.py: save sib correlation related functions           #
+#                                                                               #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                           #
+#                                                                               #
+#           Last Update: Jun 25, 2019                                           #
+#                                                                               #
+#################################################################################
 
 import sys
 import os
 import string
 import re
-import copy
 import math
-import Cookie
 import unittest
 import time
+import Chandra.Time
 import random
-
 #
 #--- from ska
 #
 from Ska.Shell import getenv, bash
 
-ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param ', shell='tcsh')
-#ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/Reportdir/'
+ascdsenv = getenv('source /home/ascds/.ascrc -r release; \
+                   source /home/mta/bin/reset_param ', shell='tcsh')
 #
 #--- reading directory list
 #
-path = '/data/mta/Script/Python_script2.7/dir_list_py'
+path = '/data/mta/Script/ACIS/SIB/house_keeping/dir_list_py'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-#
-#--- directory path
-#
-s_dir = '/data/mta/Script/ACIS/SIB/Correct_excess/'
-b_dir = s_dir + 'Sib_corr/'
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folders
 #
 sys.path.append(mta_dir)
-sys.path.append(b_dir)
+sys.path.append(sybase_dir)
+sys.path.append(bin_dir)
 
-import mta_common_functions as mcf
-import convertTimeFormat    as tcnv
-import OcatSQL              as sql
-from OcatSQL        import OcatDB
-
+import mta_common_functions   as mcf
+import set_sybase_env_and_run as sser
 #
 #--- temp writing file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 NULL   = 'na'
@@ -77,37 +67,42 @@ def sib_corr_comp_sib(lev):
             the data is also read from ./Input/*fits
     output: proccessed fits files in out_dir/lres/*fits
     """
-
+#
+#--- set pipe process environment
+#
     ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/SIB/Correct_excess/'+ lev + '/Reportdir/'
 
-    bin_dir =  s_dir + 'Sib_corr/'
-    ldir    =  s_dir + lev + '/'
-    indir   =  ldir  + 'Input/'
-    outdir  =  ldir  + 'Outdir/'
-    repdir  =  ldir  + 'Reportdir/'
+    ldir    =  cor_dir + lev + '/'
+    indir   =  ldir    + 'Input/'
+    outdir  =  ldir    + 'Outdir/'
+    repdir  =  ldir    + 'Reportdir/'
 
     cmd  = 'ls ' + indir + '/* > ' + zspace
     os.system(cmd)
-    f    = open(zspace, 'r')
-    test = f.read()
-    f.close()
-    mcf.rm_file(zspace)
 
+    with open(zspace, 'r') as f:
+        test = f.read()
+    mcf.rm_files(zspace)
+#
+#--- check whether fits files around
+#
     mc  = re.search('fits', test)
     if mc is not None:
         cmd = 'ls ' +indir + '*fits > ' +  indir + 'input_dat.lis'
     else:
         cmd = 'echo "" > ' + indir + 'input_dat.lis'
     os.system(cmd)
-
-
-    cmd = ' flt_run_pipe -i ' + indir + '  -r input -o ' + outdir + ' -t  mta_monitor_sib.ped -a "genrpt=no"'
+#
+#--- run flt_run_pipe and process the data
+#
+    cmd = ' flt_run_pipe -i ' + indir + '  -r input -o ' 
+    cmd = cmd + outdir + ' -t  mta_monitor_sib.ped -a "genrpt=no"'
     run_ascds(cmd)
 
     cmd = ' mta_merge_reports sourcedir=' + outdir + ' destdir=' + repdir
-    cmd = cmd + ' limits_db=foo groupfile=foo stprocfile=foo grprocfile=foo compprocfile=foo cp_switch=yes'
+    cmd = cmd + ' limits_db=foo groupfile=foo stprocfile=foo grprocfile=foo '
+    cmd = cmd + ' compprocfile=foo cp_switch=yes'
     run_ascds(cmd)
-
 
 #-----------------------------------------------------------------------------------------
 #-- find_observation: find information about observations in the time period            --
@@ -124,11 +119,10 @@ def find_observation(start, stop, lev):
 #
 #--- run arc5gl to get observation list
 #
-    run_arc5gl_browse(start, stop,lev, zspace)
+    data = run_arc5gl_browse(start, stop, lev)
 #
 #--- create obsid list
 #
-    data = read_file(zspace, remove=1)
     obsid_list = []
     for ent in data:
         mc = re.search('acisf', ent)
@@ -153,6 +147,7 @@ def find_observation(start, stop, lev):
     tlist = []
     for obsid in obsid_list:
         out = get_data_from_db(obsid)
+        #print("I AM ERE: " + str(obsid) + '<-->' + str(out))
         if out != NULL:
             [tsec, line] = out
             tlist.append(tsec)
@@ -160,7 +155,7 @@ def find_observation(start, stop, lev):
 
     tlist.sort()
 
-    mcf.rm_file('./acis_obs')
+    mcf.rm_files('./acis_obs')
     fo = open('./acis_obs', 'w')
     for ent in tlist:
         fo.write(save[ent])
@@ -171,7 +166,7 @@ def find_observation(start, stop, lev):
 #-- run_arc5gl_browse: run arc5gl to get a list of fits files in the given time period  --
 #-----------------------------------------------------------------------------------------
 
-def run_arc5gl_browse(start, stop, lev='Lev1', outfile=zspace):
+def run_arc5gl_browse(start, stop, lev='Lev1'):
     """
     run arc5gl to get a list of fits files in the given time period
     input:  start   --- starting time in the format of <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss>
@@ -194,15 +189,9 @@ def run_arc5gl_browse(start, stop, lev='Lev1', outfile=zspace):
     line = line + 'tstop='  + stop  + '\n'
     line = line + 'go\n'
 
-    fo   = open('./input_line', 'w')
-    fo.write(line)
-    fo.close()
+    f_list = mcf.run_arc5gl_process(line)
 
-    #cmd  = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ./input_line > ' + outfile 
-    cmd  = ' /proj/sot/ska/bin/arc5gl -user isobe -script ./input_line > ' + outfile 
-    os.system(cmd)
-    #run_ascds(cmd, clean=0)
-
+    return f_list
 
 #-----------------------------------------------------------------------------------------
 #-- get_data_from_db: extract observation information from the database                 --
@@ -217,55 +206,37 @@ def get_data_from_db(obsid):
                         <obsid> <target name> <obs date> <obs date in sec>
                         <target id> < sequence number>
     """
+#
+#-- sql command
+#
+    cmd = 'select targname,instrument,soe_st_sched_date,targid,'
+    cmd = cmd + 'seq_nbr from target where obsid=' + str(obsid)
 
     try:
-        dbase  = OcatDB(obsid)
-        tname  = dbase.origValue('targname')
-        target = clean_name(tname)              #--- limit target name to 14 characters
-        inst   = dbase.origValue('instrument')
-        odate  = dbase.origValue('soe_st_sched_date')
-        tsec   = convert_date_to_sectime(odate)
-        targid = dbase.origValue('targid')
-        seqno  = dbase.origValue('seq_nbr')
+#
+#--- call sql database
+#
+        out    = sser.set_sybase_env_and_run(cmd, fetch='fetchone')
+#
+#--- output is a list of the data
+#
+        target = clean_name(out[0])
+        inst   = out[1]
+        odate  = out[2]
+        targid = out[3]
+        seqno  = out[4]
+#
+#--- convert time into sec from 1998.1.1
+#
+        tsec   = mcf.convert_date_format(odate, ifmt='%Y-%m-%dT%H:%M:%S', ofmt='chandra')
 
         line   = str(obsid) + '\t' + target      + '\t' + str(odate) + '\t' + str(tsec) 
         line   = line       + '\t' + str(targid) + '\t' + str(seqno) + '\n'
 
         return [tsec, line]
+
     except:
         return NULL
-
-#-----------------------------------------------------------------------------------------
-#-- convert_date_to_sectime: convert time in <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss> to seconds from 1998.1.1
-#-----------------------------------------------------------------------------------------
-
-def convert_date_to_sectime(odate):
-    """
-    convert time in <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss> to seconds from 1998.1.1
-    input:  odate   --- date in the format of <yyyy>-<mm>-<dd>T<hh>:<mm>:<ss>
-    output: tsce    --- date in seconds from 1998.1.1
-    """
-
-    atemp  = re.split('\s+', str(odate))
-    mon    = tcnv.changeMonthFormat(atemp[0])
-    day    = int(float(atemp[1]))
-    year   = int(float(atemp[2]))
-
-    mc     = re.search('AM', atemp[3])
-    if mc is not None:
-        time  = atemp[3].replace('AM','')    
-        btemp = re.split(':', time)
-        hrs   = int(float(btemp[0]))
-        mins  = int(float(btemp[1]))
-    else:
-        time  = atemp[3].replace('PM','')
-        btemp = re.split(':', time)
-        hrs   = int(float(btemp[0])) + 12
-        mins  = int(float(btemp[1]))
-
-    tsec  = tcnv.convertDateToTime2(year, mon, day, hours=hrs, minutes=mins)
-
-    return tsec
 
 #-----------------------------------------------------------------------------------------
 #-- clean_name: convert the name into 14 character string                               --
@@ -277,7 +248,6 @@ def clean_name(name):
     input:  name    --- the string of the name
     output: cname   --- the string of the name in 14 characters
     """
-
     name  = str(name)
     nlen  = len(name)
     cname = name[0]
@@ -314,31 +284,48 @@ def run_ascds(cmd, clean =0):
     bash(acmd, env=ascdsenv)
 
 #-----------------------------------------------------------------------------------------
-#-- read_file: read a file                                                             ---
+#-- remove_old_reg_file: remove old reg files                                           --
 #-----------------------------------------------------------------------------------------
 
-def read_file(file, remove=0):
+def remove_old_reg_file(lev):
     """
-    read a file 
-    input:  file    --- a file to be read
-            remove  --- indicator whether to remove the file after it was read default=0 (no)
-    output: data    --- a list of the data
+    remove old reg files
+    input:  lev --- level 1 or 2
+    output: none
     """
+#
+#--- set the cut time to 90 days ago
+#
+    now = time.strftime('%Y:%j:%H:%M:%S', time.gmtime())
+    now = Chandra.Time.DateTime(now).secs
+    cut = now - 86400 * 90.0
 
-    f    = open(file, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    cmd = 'ls ' + cor_dir + 'Lev' + str(lev) + '/Reg_files/* > ' + zspace
+    os.system(cmd)
 
-    if remove > 0:
-        mcf.rm_file(file)
+    data = mcf.read_data_file(zspace, remove=1)
 
-    return data
+    for ifile in data:
+        out  = os.path.getmtime(ifile)
+        out  = time.strftime('%Y:%j:%H:%M:%S', time.gmtime(out))
+        comp = Chandra.Time.DateTime(out).secs
+        if comp < cut:
+            cmd = 'rm -rf ' + ifile
+            os.system(cmd)
 
 #-----------------------------------------------------------------------------------------
+
 if __name__ == '__main__':
 
-#    sib_corr_comp_sib()
+    start = '2019-04-20T00:00:00'
+    stop  = '2019-04-30T00:00:00'
+    out   = find_observation(start, stop, 2)
+    print(str(out))
 
-    start = '2017-01-13T00:00:00'
-    stop  = '2017-02-01T00:00:00'
-    find_observation(start, stop, 2)
+    out   = get_data_from_db(21494)
+    print('Sybase out: ' + str(out[1]))
+
+
+
+#    remove_old_reg_file(1)
+#    remove_old_reg_file(2)

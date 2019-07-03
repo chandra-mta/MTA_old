@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
 #############################################################################################
 #                                                                                           #
@@ -7,7 +7,7 @@
 #                                                                                           #
 #               author: t. isobe (tisobe@cfa.harvard.edu)                                   #
 #                                                                                           #
-#               Last Update: May 23, 2018                                                   #
+#               Last Update: Jun 25, 2019                                                   #
 #                                                                                           #
 #############################################################################################
 
@@ -16,9 +16,9 @@ import sys
 import re
 import string
 import operator
-import pyfits
 import numpy
 import time
+import astropy.io.fits as pyfits
 
 import matplotlib as mpl
 
@@ -26,36 +26,23 @@ if __name__ == '__main__':
 
     mpl.use('Agg')
 
+from pylab import *
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as font_manager
+import matplotlib.lines as lines
 #
 #--- reading directory list
 #
-comp_test = 'live'
+path = '/data/mta/Script/ACIS/SIB/house_keeping/dir_list_py'
 
-if comp_test == 'test' or comp_test == 'test2':
-    path = '/data/mta/Script/ACIS/SIB/house_keeping/dir_list_py_test'
-else:
-    path = '/data/mta/Script/ACIS/SIB/house_keeping/dir_list_py'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
-
-#
-#--- check whether this is run for lev2
-#
-level = 1
-if len(sys.argv) == 2:
-    if sys.argv[1] == 'lev2':
-        data_dir = data_dir2
-        web_dir  = web_dir + 'Lev2/'
-        level = 2
-
+    exec("%s = %s" %(var, line))
 #
 #--- append a path to a private folder to python directory
 #
@@ -64,25 +51,30 @@ sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat    as tcnv
 import mta_common_functions as mcf
 import robust_linear        as robust
 #
 #--- temp writing file name
 #
-rtail  = int(time.time())
+import random
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 #
 #--- set a list of the name of the data
 #
-nameList = ['Super Soft Photons', 'Soft Photons', 'Moderate Energy Photons', 'Hard Photons', 'Very Hard Photons', 'Beyond 10 keV']
+nameList = ['Super Soft Photons', 'Soft Photons', 'Moderate Energy Photons',\
+            'Hard Photons', 'Very Hard Photons', 'Beyond 10 keV']
+#
+#--- set line color list
+#
+colorList = ('blue', 'green', 'red', 'aqua', 'lime', 'fuchsia', 'maroon',\
+             'black', 'yellow', 'olive')
 
-#---------------------------------------------------------------------------------------------------
-#-- ccd_comb_plot: a control script to create plots                                              ---
-#---------------------------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------
+#-- ccd_comb_plot: a control script to create plots                          ---
+#-------------------------------------------------------------------------------
 
-def ccd_comb_plot(choice, syear = 2000, smonth = 1, eyear = 2000, emonth = 1, header = 'plot_ccd'):
-
+def ccd_comb_plot(choice='normal', syear = 2000, smonth = 1, eyear = 2000, emonth = 1, header = 'plot_ccd'):
     """
     a control script to create plots
     Input:  choice      --- if normal, monthly updates of plots are created.
@@ -95,15 +87,27 @@ def ccd_comb_plot(choice, syear = 2000, smonth = 1, eyear = 2000, emonth = 1, he
     Output: png formated plotting files
     """
 #
+#--- special case which we need to specify periods
+#
+    if choice == 'check':
+        dlist    = collect_data_file_names('check', syear, smonth, eyear, emonth)
+        plot_out = web_dir + 'Plots/Plot_' + str(syear) + '_' + mcf.add_leading_zero(smonth) + '/'
+        check_and_create_dir(plot_out)
+        plot_data(dlist, plot_out, header, yr=syear, mo=smonth)
+#
+#--- normal monthly operation
+#
+    else:
+#
 #--- find today's date, and set a few thing needed to set output directory and file name
 #
-    if choice != 'check':
-        [year, mon, day, hours, min, sec, weekday, yday, dst] = tcnv.currentTime()
+        out = time.strftime('%Y:%m', time.gmtime())
+        [year, mon] = re.split(':', out)
+        year = int(year)
+        mon  = int(mon)
 
         syear  = str(year)
-        smonth = str(mon)
-        if mon < 10:
-            smonth = '0'+ smonth
+        smonth = mcf.add_leading_zero(mon)
 
         lyear = year 
         lmon  = mon - 1
@@ -112,13 +116,7 @@ def ccd_comb_plot(choice, syear = 2000, smonth = 1, eyear = 2000, emonth = 1, he
             lyear -= 1
     
         slyear  = str(lyear)
-        slmonth = str(lmon)
-        if lmon < 10:
-            slmonth = '0' + slmonth
-#
-#--- normal monthly operation
-#
-    if choice == 'normal':
+        slmonth = mcf.add_leading_zero(lmon)
 #
 #--- monthly plot
 #
@@ -159,76 +157,39 @@ def ccd_comb_plot(choice, syear = 2000, smonth = 1, eyear = 2000, emonth = 1, he
         check_and_create_dir(plot_out)
         header   = 'full_plot_ccd'
         plot_data(dlist, plot_out, header, xunit='year')
-#
-#--- special case which we need to specify periods
-#
-    elif choice == 'check':
-    
-        dlist  = collect_data_file_names('check', syear, smonth, eyear, emonth)
-        plot_out = web_dir + '/Plot/'
-        check_and_create_dir(plot_out)
-#        header   = 'plot_special_ccd'
-        plot_data(dlist, plot_out, header, yr=syear, mo=smonth)
-#
-#--- extra...
-#
-    else:
-        for year in range(2000, 2014):
-
-            dlist  = collect_data_file_names('check', year, 1, year, 12)
-            plot_out = web_dir + '/Plots/Plot_' + str(year) + '/'
-            check_and_create_dir(plot_out)
-            header = 'one_year_plot_ccd'
-            plot_data(dlist, plot_out, header, yr = str(year))
-
-            for month in range(1, 13):
-                print " Processing: " + str(year) + ' / ' + str(month)
-                smonth = str(month)
-                if month < 10:
-                    smonth = '0' + smonth
-    
-                dlist = collect_data_file_names('check', year, month, year, month)
-                plot_out = web_dir + '/Plots/Plot_' + str(year) + '_' + smonth +  '/'
-                check_and_create_dir(plot_out)
-                header = 'month_plot_ccd'
-                plot_data(dlist, plot_out, header, yr=str(year), mo=smonth, psize=2.5)
      
-#---------------------------------------------------------------------------------------------------
-#-- check_and_create_dir: check whether a directory exist, if not, create one                    ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- check_and_create_dir: check whether a directory exist, if not, create one    ---
+#-----------------------------------------------------------------------------------
 
-def check_and_create_dir(dir):
-
+def check_and_create_dir(idir):
     """
     check whether a directory exist, if not, create one
-    Input:      dir --- directory name
+    Input:      idir --- directory name
     Output:     directory created if it was not there.
     """
-
-    chk = mcf.chkFile(dir)
-    if chk == 0:
-        cmd = 'mkdir ' + dir
+    if not os.path.isdir(idir):
+        cmd = 'mkdir -p ' + idir
         os.system(cmd)
 
-#---------------------------------------------------------------------------------------------------
-#-- define_x_range: set time plotting range                                                      ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- define_x_range: set time plotting range                                      ---
+#-----------------------------------------------------------------------------------
 
 def define_x_range(dlist, xunit=''):
-
     """
     set time plotting range
     Input:  dlist       --- list of data files (e.g., Data_2012_09)
-    Output: start       --- starting time in either DOM or fractional year
-            end         --- ending time in either DOM or fractional year
+    Output: start       --- starting time in either ydate or fractional year
+            end         --- ending time in either ydate or fractional year
     """
-
     num = len(dlist)
     if num == 1:
-        atemp  = re.split('Data_', dlist[0])
-        btemp  = re.split('_',     atemp[1])
-        year   = int(btemp[0])
-        month  = int(btemp[1])
+        atemp  = re.split('\/',    dlist[0])
+        btemp  = re.split('Data_', atemp[-1])
+        ctemp  = re.split('_',     btemp[1])
+        year   = int(ctemp[0])
+        month  = int(ctemp[1])
         nyear  = year
         nmonth = month + 1
         if nmonth > 12:
@@ -236,50 +197,62 @@ def define_x_range(dlist, xunit=''):
             nyear += 1
     else:
         slist  = sorted(dlist)
-        atemp  = re.split('Data_', slist[0])
-        btemp  = re.split('_',     atemp[1])
-        year   = int(btemp[0])
-        month  = int(btemp[1])
+        atemp  = re.split('\/',    slist[0])
+        btemp  = re.split('Data_', atemp[-1])
+        ctemp  = re.split('_',     btemp[1])
+        year   = int(ctemp[0])
+        month  = int(ctemp[1])
 
-        atemp  = re.split('Data_', slist[len(slist)-1])
-        btemp  = re.split('_',     atemp[1])
-        tyear  = int(btemp[0])
-        tmonth = int(btemp[1])
+        atemp  = re.split('\/',    slist[len(slist)-1])
+        btemp  = re.split('Data_', atemp[-1])
+        ctemp  = re.split('_',     btemp[1])
+        tyear  = int(ctemp[0])
+        tmonth = int(ctemp[1])
         nyear  = tyear
         nmonth = tmonth + 1
         if nmonth > 12:
             nmonth = 1
             nyear += 1
-
-    start  = tcnv.findDOM(year,  month,  1, 0, 0, 0)
-    end    = tcnv.findDOM(nyear, nmonth, 1, 0, 0, 0)   
 #
-#--- if it is a long term, unit is in year
+#--- get day of year
+#
+    start = str(year)  + ':' + mcf.add_leading_zero(month)  + ':01'
+    stop  = str(nyear) + ':' + mcf.add_leading_zero(nmonth) + ':01'
+    start = int(mcf.convert_date_format(start, ifmt='%Y:%m:%d', ofmt='%j'))
+    stop  = int(mcf.convert_date_format(stop,  ifmt='%Y:%m:%d', ofmt='%j'))
+#
+#--- for te case it is a month plot
+#
+    if nyear > year:
+        if mcf.is_leapyear(year):
+            end = stop + 366
+        else:
+            end = stop + 365
+    else:
+        end = stop
+#
+#--- for the case it is a longer plot
 #
     if xunit == 'year':
-        [syear, sydate] = tcnv.DOMtoYdate(start)
-        chk = 4.0 * int(0.25 * syear)
-        if chk == syear:
-            base = 366
+        if mcf.is_leapyear(year):
+            base = 366.0
         else:
-            base = 365
-        start = syear + sydate/base
-        [eyear, eydate] = tcnv.DOMtoYdate(end)
-        chk = 4.0 * int(0.25 * eyear)
-        if chk == eyear:
-            base = 366
+            base = 365.0
+        start = year + float(start) / base
+
+        if mcf.is_leapyear(nyear):
+            base = 366.0
         else:
-            base = 365
-        end   = eyear + eydate/base
+            base = 365.0
+        end = year + float(stop) / base
 
     return [start, end]
 
-#---------------------------------------------------------------------------------------------------
-#-- plot_data: for a given data directory list, prepare data sets and create plots               ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- plot_data: for a given data directory list, prepare data sets and create plots--
+#-----------------------------------------------------------------------------------
 
 def plot_data(dlist, plot_out, header, yr='', mo='', xunit='', psize=1):
-
     """
     for a given data directory list, prepare data sets and create plots
     Input:  dlist   --- a list of input data directories
@@ -320,7 +293,7 @@ def plot_data(dlist, plot_out, header, yr='', mo='', xunit='', psize=1):
 
         if len(atime) > 0:
 #
-#--- if the plot is a long term, use the unit of year. otherwise, dom
+#--- if the plot is a long term, use the unit of year. otherwise,  day of year
 #
             if xunit == 'year':
                 xtime = convert_time(atime, format=1) 
@@ -334,25 +307,27 @@ def plot_data(dlist, plot_out, header, yr='', mo='', xunit='', psize=1):
             for i in range(0, len(xtime)):
                 time_full.append(xtime[i])
                 xdata.append(xtime[i])
-                sum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
-                count_full.append(sum)
-                ydata.append(sum)
+                asum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
+                count_full.append(asum)
+                ydata.append(asum)
 
             if ccd == 5:
                 time_ccd5 = xtime
                 for i in range(0, len(xtime)):
-                    sum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
-                    count_ccd5.append(sum)
-            if ccd == 6:
+                    asum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
+                    count_ccd5.append(asum)
+
+            elif ccd == 6:
                 time_ccd6 = xtime
                 for i in range(0, len(xtime)):
-                    sum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
-                    count_ccd6.append(sum)
-            if ccd == 7:
+                    asum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
+                    count_ccd6.append(asum)
+
+            elif ccd == 7:
                 time_ccd7 = xtime
                 for i in range(0, len(xtime)):
-                    sum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
-                    count_ccd7.append(sum)
+                    asum = assoft[i] + asoft[i] + amed[i] + ahard[i] + aharder[i] + ahardest[i]
+                    count_ccd7.append(asum)
 #
 #--- prepare for the indivisual plot
 #
@@ -361,7 +336,7 @@ def plot_data(dlist, plot_out, header, yr='', mo='', xunit='', psize=1):
                 xsets.append(xtime)
             data_list = (assoft, asoft, amed, ahard, aharder, ahardest)
 #
-#--- plottting data
+#--- plotting data
 #
             entLabels = nameList
             plot_data_sub(xsets, data_list, entLabels, xmin, xmax,  outname, xunit=xunit)
@@ -409,13 +384,11 @@ def plot_data(dlist, plot_out, header, yr='', mo='', xunit='', psize=1):
     if (ptype == 'month') or (ptype == 'year'):
         add_html_page(ptype, plot_out, yr, mo)
 
-
-#---------------------------------------------------------------------------------------------------
-#-- add_html_page: update/add html page to Plot directory                                        ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- add_html_page: update/add html page to Plot directory                        ---
+#-----------------------------------------------------------------------------------
 
 def add_html_page(ptype, plot_out,  yr, mo):
-
     """
     update/add html page to Plot directory
     Input:  ptype       --- indiecator of which html page to be updated
@@ -424,40 +397,33 @@ def add_html_page(ptype, plot_out,  yr, mo):
             mo          --- a month of the file
     Output: either month.html or year.hmtl in an appropriate directory
     """
-
-    current = tcnv.currentTime(format='Display')
+    current = time.strftime('%m-%d-%Y', time.gmtime())
     lmon    = ''
 
     if ptype == 'month':
         ofile  = plot_out + 'month.html'
-        lmon   = tcnv.changeMonthFormat(int(mo))
-        if level == 2:
-            file = house_keeping + 'month2.html'
-        else:
-            file = house_keeping + 'month.html'
+        lmon   = mcf.change_month_format(int(mo))
+        ifile  = house_keeping + 'month.html'
 
     elif ptype == 'year':
         ofile  = plot_out + 'year.html'
-        if level == 2:
-            file = house_keeping + 'year2.html'
-        else:
-            file = house_keeping + 'year.html'
+        ifile = house_keeping + 'year.html'
 
-    text = open(file, 'r').read()
-    text = text.replace('#YEAR#',  yr)
-    text = text.replace('#MONTH#', lmon)
-    text = text.replace('#DATE#',  current)
+    with open(ifile, 'r') as f:
+        text = f.read()
+
+    text = text.replace('#YEAR#',  str(yr))
+    text = text.replace('#MONTH#', str(lmon))
+    text = text.replace('#DATE#',  str(current))
     
-    f     = open(ofile, 'w')
-    f.write(text)
-    f.close()
+    with open(ofile, 'w') as fo:
+        fo.write(text)
 
-#---------------------------------------------------------------------------------------------------
-#-- change_outname_comb: change file name to "comb" form                                         ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- change_outname_comb: change file name to "comb" form                         ---
+#-----------------------------------------------------------------------------------
 
 def change_outname_comb(header, plot_out, ccd):
-
     """
     change file name to "comb" form
     Input:  header      --- original header form
@@ -465,7 +431,6 @@ def change_outname_comb(header, plot_out, ccd):
             ccd         --- ccd #
     Output: outname     --- <plot_out>_<modified header>_ccd<ccd#>.png
     """
-
     for nchk in ('month', 'quarter', 'one_year', 'year_plot', 'full_plot'):
         n1 = re.search(nchk, header)
         if n1 is not None:
@@ -479,12 +444,11 @@ def change_outname_comb(header, plot_out, ccd):
 
     return outname
 
-#---------------------------------------------------------------------------------------------------
-#-- plot_data_sub: plotting data                                                                 ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- plot_data_sub: plotting data                                                 ---
+#-----------------------------------------------------------------------------------
 
 def plot_data_sub(xSets, data_list, entLabels, xmin, xmax,  outname, xunit=0, psize=1.0):
-
     """
     plotting data
     Input:  XSets       --- a list of lists of x values
@@ -497,11 +461,11 @@ def plot_data_sub(xSets, data_list, entLabels, xmin, xmax,  outname, xunit=0, ps
             psize       --- size of the plotting point
     Output: outname     --- a png formated plot 
     """
-     
+    xmin = int(xmin)
+    xmax = int(xmax)
     try:
         if xunit == 'year':
-            xmin = int(xmin)
-            xmax = int(xmax) + 2
+            xmax += 2
         else:
             xdiff = xmax - xmin
             xmin -= 0.05 * xdiff
@@ -525,22 +489,22 @@ def plot_data_sub(xSets, data_list, entLabels, xmin, xmax,  outname, xunit=0, ps
         if xunit == 'year':
             xname = 'Time (Year)'
         else:
-            xname = 'Time (DOM)'
+            xname = 'Time (Year Date)'
         yname = 'cnts/s'
 #
 #--- actual plotting is done here
 #
-        plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, outname, psize=psize)
+        plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname,\
+                  entLabels, outname, psize=psize)
     except:
         cmd = 'cp ' + house_keeping + 'no_data.png ' + outname
         os.system(cmd)
 
-#---------------------------------------------------------------------------------------------------
-#-- set_Ymax: find a plotting range                                                              ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- set_Ymax: find a plotting range                                              ---
+#-----------------------------------------------------------------------------------
 
 def set_Ymax(data):
-
     """
     find a plotting range
     Input:      data --- data
@@ -554,15 +518,15 @@ def set_Ymax(data):
 
     return ymax
 
-#---------------------------------------------------------------------------------------------------
-#-- collect_data_file_names: or a given period, create a list of directory names                 ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- collect_data_file_names: or a given period, create a list of directory names ---
+#-----------------------------------------------------------------------------------
 
 def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12):
-
     """
     for a given period, create a list of directory names
-    Input:  period   --- indicator of which peirod, "month", "quarter", "year", "lyear", "full", and "check'"
+    Input:  period   --- indicator of which peirod, "month", "quarter", 
+                         "year", "lyear", "full", and "check'"
             if period == 'check', then you need to give a period in year and month
             syear    --- year of the starting date
             smonth   --- month of the starting date
@@ -570,14 +534,15 @@ def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12)
             emonth   --- month of the ending date
     Output  data_lst --- a list of the directory names
     """
-    
 #
 #--- find today's date
 #
-    [year, mon, day, hours, min, sec, weekday, yday, dst] = tcnv.currentTime()
+    out         = time.strftime('%Y:%m', time.gmtime())
+    [year, mon] = re.split(':', out)
+    year = int(year)
+    mon  = int(mon)
 
     data_list = []
-
 #
 #--- find the last month 
 #
@@ -587,11 +552,7 @@ def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12)
             mon = 12
             year -= 1
 
-        if mon < 10:
-            cmon = '0' + str(mon)
-        else: 
-            cmon = str(mon)
-
+        cmon  = mcf.add_leading_zero(mon)
         dfile = data_dir + 'Data_' + str(year) + '_' + cmon
         data_list.append(dfile)
 #
@@ -605,35 +566,25 @@ def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12)
                 month = 12 + month
                 lyear = year -1
 
-            if month < 10:
-                cmon = '0' + str(month)
-            else: 
-                cmon = str(month)
-
+            cmon  = mcf.add_leading_zero(month)
             dfile = data_dir + 'Data_' + str(lyear) + '_' + cmon
             data_list.append(dfile)
 #
 #--- find data for the last one year (ending the last month)
 #
     elif period == 'year':
-        
         cnt = 0
         if mon > 1:
             for i in range(1, mon):
-                if i < 10:
-                    cmon = '0' + str(i)
-                else:
-                    cmon = str(i)
+                cmon  = mcf.add_leading_zero(i)
                 dfile = data_dir + 'Data_' + str(year) + '_' + cmon
                 data_list.append(dfile)
+
                 cnt += 1
         if cnt < 11:
             year -= 1
             for i in range(mon, 13):
-                if i < 10:
-                    cmon = '0' + str(i)
-                else:
-                    cmon = str(i)
+                cmon  = mcf.add_leading_zero(i)
                 dfile = data_dir + 'Data_' + str(year) + '_' + cmon
                 data_list.append(dfile)
 #
@@ -642,10 +593,7 @@ def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12)
     elif period == 'lyear':
         year -= 1
         for i in range(1, 13):
-            if i < 10:
-                cmon = '0' + str(i)
-            else:
-                cmon = str(i)
+            cmon  = mcf.add_leading_zero(i)
             dfile = data_dir + 'Data_' + str(year) + '_' + cmon
             data_list.append(dfile)
 #
@@ -654,10 +602,7 @@ def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12)
     elif period == 'full':
         for iyear in range(2000, year+1):
             for i in range (1, 13):
-                if i < 10:
-                    cmon = '0' + str(i)
-                else:
-                    cmon = str(i)
+                cmon  = mcf.add_leading_zero(i)
                 dfile = data_dir + 'Data_' + str(iyear) + '_' + cmon
                 data_list.append(dfile)
 #
@@ -670,10 +615,7 @@ def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12)
         emonth = int(emonth)
         if syear == eyear:
             for i in range(smonth, emonth+1):
-                if i < 10:
-                    cmon = '0' + str(i)
-                else:
-                    cmon = str(i)
+                cmon  = mcf.add_leading_zero(i)
                 dfile = data_dir + 'Data_' + str(syear) + '_' + cmon
                 data_list.append(dfile)
 
@@ -681,46 +623,37 @@ def collect_data_file_names(period, syear=2000, smonth=1, eyear=2000, emonth=12)
             for iyear in range(syear, eyear+1):
                 if iyear == syear:
                     for month in range(smonth, 13):
-                        if i < 10:
-                            cmon = '0' + str(i)
-                        else:
-                            cmon = str(i)
+                        cmon  = mcf.add_leading_zero(i)
                         dfile = data_dir + 'Data_' + str(iyear) + '_' + cmon
                         data_list.append(dfile)
+
                 elif iyear == eyear:
                     for month in range(1, emonth+1):
-                        if i < 10:
-                            cmon = '0' + str(i)
-                        else:
-                            cmon = str(i)
+                        cmon  = mcf.add_leading_zero(i)
                         dfile = data_dir + 'Data_' + str(iyear) + '_' + cmon
                         data_list.append(dfile)
+
                 else:
                     for month in range(1, 13):
-                        if i < 10:
-                            cmon = '0' + str(i)
-                        else:
-                            cmon = str(i)
+                        cmon  = mcf.add_leading_zero(i)
                         dfile = data_dir + 'Data_' + str(iyear) + '_' + cmon
                         data_list.append(dfile)
 
     return data_list
 
-#---------------------------------------------------------------------------------------------------
-#-- read_data_file: read out needed data from a given file                                       ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- read_evt_data: read out needed data from a given file                       ---
+#-----------------------------------------------------------------------------------
 
-def read_data_file(file):
-
+def read_evt_data(fits):
     """
     read out needed data from a given file
-    Input:  file    --- input file name
+    Input:  fits    --- input file name
     Output: a list of lists of data: [time, ssoft, soft, med, hard, harder, hardest]
     """
-
     try:
-        hdulist = pyfits.open(file)
-        tbdata = hdulist[1].data
+        hdulist = pyfits.open(fits)
+        tbdata  = hdulist[1].data
 #
 #--- extracted data are 5 minutes accumulation; convert it into cnt/sec
 #
@@ -738,19 +671,17 @@ def read_data_file(file):
     except:
         return [[], [], [], [], [], [], []]
 
-#---------------------------------------------------------------------------------------------------
-#-- accumulate_data: combine the data in the given period                                        ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#-- accumulate_data: combine the data in the given period                        ---
+#-----------------------------------------------------------------------------------
 
-def accumulate_data(inlist, file):
-
+def accumulate_data(inlist, ifile):
     """
     combine the data in the given period
     Input:  inlist: a list of data directories to extract data
             file:   a file name of the data
     Output: a list of combined data lst: [atime, assoft, asoft, amed, ahard, aharder, ahardest]
     """
-
     atime    = []
     assoft   = []
     asoft    = []
@@ -759,14 +690,18 @@ def accumulate_data(inlist, file):
     aharder  = []
     ahardest = []
     for dname in inlist:
-        infile = dname + '/' + file
+        infile = dname + '/' + ifile
 
-        chk = mcf.chkFile(infile)
-        if chk == 0:
-            infile = infile + '.gz'
+        test_file = infile + '.gz'
+        if os.path.isfile(test_file):
+            infile = test_file
+        elif os.path.isfile(infile):
+            pass
+        else:
+            continue
 
         try:
-            [time, ssoft, soft, med, hard, harder, hardest] = read_data_file(infile)
+            [time, ssoft, soft, med, hard, harder, hardest] = read_evt_data(infile)
             atime    = atime    + time
             assoft   = assoft   + ssoft
             asoft    = asoft    + soft
@@ -779,47 +714,33 @@ def accumulate_data(inlist, file):
 
     return [atime, assoft, asoft, amed, ahard, aharder, ahardest]
 
-
 #---------------------------------------------------------------------------------------------------
 #-- convert_time: convert time format from seconds from 1998.1.1 to dom or fractional year       ---
 #---------------------------------------------------------------------------------------------------
 
 def convert_time(time, format  = 0):
-
     """
-    convert time format from seconds from 1998.1.1 to dom or fractional year
+    convert time format from seconds from 1998.1.1 to data of year or fractional year
     Input:  time    --- a list of time in seconds
-            format  --- if 0, convert into dom, otherwise, fractional year
+            format  --- if 0, convert into day of year, otherwise, fractional year
     Output: timeconverted --- a list of conveted time
     """
-
-    timeconverted = []
-    for ent in time:
-        stime = tcnv.convertCtimeToYdate(ent)
-        atime = tcnv.dateFormatConAll(stime)
-
-        if format == 0: 
-            timeconverted.append(float(atime[7]))
-        else:
-            year  = float(atime[0])
-            ydate = float(atime[6])
-            chk   = 4.0 *  int(0.25 * year)
-            if chk == year:
-                base = 366
-            else:
-                base = 365
-            year += ydate /base
-
-            timeconverted.append(year)
+    t_list = []
+    if format == 0:
+        for ent in time:
+            t_list.append(mcf.chandratime_to_yday(ent))
+    else:
+        for ent in time:
+            t_list.append(mcf.chandratime_to_fraq_year(ent))
         
-    return timeconverted
+    return t_list
 
-#---------------------------------------------------------------------------------------------------
-#--- plotPanel: plots multiple data in separate panels                                           ---
-#---------------------------------------------------------------------------------------------------
+#-----------------------------------------------------------------------------------
+#--- plotPanel: plots multiple data in separate panels                           ---
+#-----------------------------------------------------------------------------------
 
-def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLabels, outname, psize=1.0):
-
+def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname,\
+              entLabels, outname, psize=1.0):
     """
     This function plots multiple data in separate panels
     Input:  xmin, xmax, ymin, ymax: plotting area
@@ -831,10 +752,6 @@ def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLab
 
     Output: a png plot: out.png
     """
-#
-#--- set line color list
-#
-    colorList = ('blue', 'green', 'red', 'aqua', 'lime', 'fuchsia', 'maroon', 'black', 'yellow', 'olive')
 #
 #--- clean up the plotting device
 #
@@ -862,21 +779,19 @@ def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLab
             line = str(tot) + '1' + str(j) + ', sharex=ax0'
             line = str(tot) + '1' + str(j)
 
-        exec "%s = plt.subplot(%s)"       % (axNam, line)
-        exec "%s.set_autoscale_on(False)" % (axNam)      #---- these three may not be needed for the new pylab, but 
-        exec "%s.set_xbound(xmin,xmax)"   % (axNam)      #---- they are necessary for the older version to set
+        exec("%s = plt.subplot(%s)"       % (axNam, line))
+        exec("%s.set_autoscale_on(False)" % (axNam))
+        exec("%s.set_xbound(xmin,xmax)"   % (axNam))
 
-        exec "%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam)
-        exec "%s.set_ylim(ymin=yMinSets[i], ymax=yMaxSets[i], auto=False)" % (axNam)
+        exec("%s.set_xlim(xmin=xmin, xmax=xmax, auto=False)" % (axNam))
+        exec("%s.set_ylim(ymin=yMinSets[i], ymax=yMaxSets[i], auto=False)" % (axNam))
 
         xdata  = xSets[i]
         ydata  = ySets[i]
-  
 #
 #---- actual data plotting
 #
         p, = plt.plot(xdata, ydata, color=colorList[i], marker='.', markersize=psize, lw =0)
-
 #
 #---- compute fitting line
 #
@@ -895,8 +810,7 @@ def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLab
         leg = legend([p],  [tline], prop=props, loc=2)
         leg.get_frame().set_alpha(0.5)
 
-        exec "%s.set_ylabel(yname, size=8)" % (axNam)
-
+        exec("%s.set_ylabel(yname, size=8)" % (axNam))
 #
 #--- add x ticks label only on the last panel
 #
@@ -904,14 +818,13 @@ def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLab
         ax = 'ax' + str(i)
 
         if i != tot-1: 
-            exec "line = %s.get_xticklabels()" % (ax)
+            line = eval("%s.get_xticklabels()" % (ax))
             for label in  line:
                 label.set_visible(False)
         else:
             pass
 
     xlabel(xname)
-
 #
 #--- set the size of the plotting area in inch (width: 10.0in, height 2.08in x number of panels)
 #
@@ -921,23 +834,12 @@ def plotPanel(xmin, xmax, yMinSets, yMaxSets, xSets, ySets, xname, yname, entLab
 #
 #--- save the plot in png format
 #
-    plt.savefig(outname, format='png', dpi=100)
-
+    plt.savefig(outname, format='png', dpi=200)
 
 #--------------------------------------------------------------------
 
-#
-#--- pylab plotting routine related modules
-#
-
-from pylab import *
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as font_manager
-import matplotlib.lines as lines
-
 if __name__ == '__main__':
-    ccd_comb_plot('normal')
-#    ccd_comb_plot('other')
-#    ccd_comb_plot('check', syear=2014, smonth=2, eyear=2014, emonth=2, header='plot_ccd')
+    ccd_comb_plot()
+    #ccd_comb_plot('check', syear=2019, smonth=6, eyear=2019, emonth=6, header='month_plot_ccd')
 
 

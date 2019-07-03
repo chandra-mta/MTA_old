@@ -1,46 +1,37 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#           create_sib_data.py: create sib data for report                                                  #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           Last Update: May 23, 2018                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#############################################################################
+#                                                                           #
+#           create_sib_data.py: create sib data for report                  #
+#                                                                           #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                       #
+#                                                                           #
+#           Last Update: Jun 25, 2019                                       #
+#                                                                           #
+#############################################################################
 
 import sys
 import os
 import string
 import re
-import copy
 import math
 import unittest
+import astropy.io.fits as pyfits
 import time
+import Chandra.Time
 import random
-
-#
-#--- from ska
-#
-from Ska.Shell import getenv, bash
-
-ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param ', shell='tcsh')
-ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/Reportdir/'
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/ACIS/SIB/house_keeping/dir_list_py'
-
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folders
 #
@@ -48,30 +39,31 @@ sys.path.append(bin_dir)
 sys.path.append(mta_dir)
 
 import mta_common_functions as mcf
-import convertTimeFormat    as tcnv
 import sib_corr_functions   as scf
 import ccd_comb_plot        as ccp
 import update_html          as uph
 #
 #--- temp writing file name
 #
-rtail  = int(time.time())
+rtail  = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #-----------------------------------------------------------------------------------------
 #-- create_report: process the accumulated sib data and create a month long data fits files 
 #-----------------------------------------------------------------------------------------
 
-def create_report():
+def create_report(year='', mon=''):
     """
     process the accumulated sib data and create a month long data fits files
-    input:  none but read from <lev>/Outdir/lres/*fits
+    input:  year    --- year; optional, if it is not given, the script will assign
+            mon     --- mon; optional, if it is not given, the script will assign
+            read from <lev>/Outdir/lres/*fits
     output: lres_ccd<ccd>_merged.fits in ./Data/ directory
     """
 #
 #--- find data periods
 #
-    [begin, end, syear, smon, eyear, emon] = set_date()
+    [begin, end, syear, smon, eyear, emon] = set_date(year, mon)
 #
 #--- process all data for the month
 #
@@ -119,23 +111,25 @@ def create_sib_data(lev, begin, end, syear, smon):
         lmon = '0' + lmon
 
     if lev == 'Lev1':
-        dname = data_dir  + '/Data_' + str(syear) + '_' + lmon
+        dname = data_dir  + 'Data_' + str(syear) + '_' + lmon
     else:
-        dname = data_dir2 + '/Data_' + str(syear) + '_' + lmon
-    cmd   = 'mkdir ' + dname
+        dname = data_dir2 + 'Data_' + str(syear) + '_' + lmon
+
+    cmd   = 'mkdir -p ' + dname
     os.system(cmd)
 
-    cmd   = 'mv ' + main_dir  + lev +  '/Data/* ' + dname
+    cmd   = 'mv -f ' + cor_dir  + lev +  '/Data/* ' + dname
     os.system(cmd)
 
 #-----------------------------------------------------------------------------------------
 #-- set_date: set the data for the last month                                          ---
 #-----------------------------------------------------------------------------------------
 
-def set_date():
+def set_date(year, mon):
     """
     set the data for the last month
-    input:  none
+    input:  year    --- year; optional
+            mon     --- mon; optional
     output: begni   --- starting date in <yyyy>:<ddd>:<hh>:<mm>:<ss>
             end     --- stopping date in <yyyy>:<ddd>:<hh>:<mm>:<ss>
             syear   --- year of the starting time
@@ -144,14 +138,21 @@ def set_date():
             emon    --- month of the ending time
     """
 #
-#--- find today's date information (in local time)
+#--- if the year/month are not give, find today's date information (in local time)
 #
-    tlist = time.localtime()
+    if year == '':
+        tlist = time.localtime()
 #
 #--- set data time interval to the 1st of the last month to the 1st of this month
 #
-    eyear  = tlist[0]
-    emon   = tlist[1]
+        eyear  = tlist[0]
+        emon   = tlist[1]
+    else:
+        eyear  = year
+        emon   = mon + 1
+        if emon > 12:
+            emon   = 1
+            eyear += 1
 
     tline = str(eyear) + ' ' +str(emon) + ' 1'
     tlist = time.strptime(tline, "%Y %m %d")
@@ -185,19 +186,18 @@ def cleanup_sib_dir(lev, mon, year):
             year    --- year of the data processd
     output: none
     """
-
-    lmon = tcnv.changeMonthFormat(mon)
+    lmon = mcf.change_month_format(mon)
     lmon = lmon.lower()
 
-    cmd = 'mv ' + main_dir + lev + '/Outdir/lres ' 
-    cmd = cmd   + main_dir + lev + '/Outdir/lres_' + lmon +str(year) + '_modified'
+    cmd = 'mv ' + cor_dir + lev + '/Outdir/lres ' 
+    cmd = cmd   + cor_dir + lev + '/Outdir/lres_' + lmon +str(year) + '_modified'
     os.system(cmd)
 
-    cmd = 'rm -rf ' + main_dir + lev + '/Outdir/ctirm_dir'
+    cmd = 'rm -rf ' + cor_dir + lev + '/Outdir/ctirm_dir'
     os.system(cmd)
-    cmd = 'rm -rf ' + main_dir + lev + '/Outdir/filtered'
+    cmd = 'rm -rf ' + cor_dir + lev + '/Outdir/filtered'
     os.system(cmd)
-    cmd = 'rm -rf ' + main_dir + lev + '/Outdir/hres'
+    cmd = 'rm -rf ' + cor_dir + lev + '/Outdir/hres'
     os.system(cmd)
 
 #-----------------------------------------------------------------------------------------
@@ -213,12 +213,11 @@ def correct_factor(lev):
 #
 #--- read all correciton factor information
 #
-    file = main_dir + lev + '/Reg_files/ratio_table'
-    data = scf.read_file(file)
+    ifile = cor_dir + lev + '/Reg_files/ratio_table'
+    data  = mcf.read_data_file(ifile)
 
     ratio    = {}
     for ent in data:
-        #atemp = re.split('\s+', ent)
         atemp = re.split(':', ent)
         rate  = float(atemp[1].strip())
 
@@ -239,9 +238,9 @@ def correct_factor(lev):
 #
 #--- find all fits file names processed
 #
-    cmd = 'ls ' + main_dir + lev + '/Outdir/lres/mtaf*.fits > ' + zspace
+    cmd = 'ls ' + cor_dir + lev + '/Outdir/lres/mtaf*.fits > ' + zspace
     os.system(cmd)
-    data = scf.read_file(zspace, remove=1)
+    data = mcf.read_data_file(zspace, remove=1)
 
     for fits in data:
         atemp = re.split('N', fits)
@@ -266,20 +265,24 @@ def correct_factor(lev):
         if div >= 1:
             continue
 #
-#--- correct the observation rate by devided by the ratio (all sources removed area)/(original are)
+#--- correct the observation rate by devided by the ratio 
+#--- (all sources removed area)/(original are)
 #
         elif div > 0:
-            line  = 'SSoft=SSoft/' + str(div) + ',Soft=Soft/' + str(div) + ',Med=Med/' + str(div) + ','
-            line  = line + 'Hard=Hard/' + str(div) + ',Harder=Harder/' + str(div) + ',Hardest=Hardest/' + str(div)
+            line = 'SSoft=SSoft/'      + str(div)     + ',Soft=Soft/'
+            line = line + str(div)     + ',Med=Med/'  + str(div) + ','
+            line = line + 'Hard=Hard/' + str(div)     + ',Harder=Harder/' 
+            line = line + str(div)     + ',Hardest=Hardest/' + str(div)
 
-            cmd   = 'dmtcalc infile =' + ent + ' outfile=out.fits expression="' + line + '" clobber=yes'
+            cmd  = 'dmtcalc infile =' + ent + ' outfile=out.fits expression="' 
+            cmd  = cmd  + line + '" clobber=yes'
             scf.run_ascds(cmd)
 
             cmd   = 'mv out.fits ' + ent
             os.system(cmd)
 
         else:
-            print "Warning!!! div < 0 for " + str(ent)
+            print("Warning!!! div < 0 for " + str(ent))
             continue
 
 #-----------------------------------------------------------------------------------------
@@ -293,13 +296,12 @@ def find_excess_file(lev = 'Lev2'):
     input:  lev --- level. default Lev2 (other option is Lev1)
     output: excess radiation data fits files in ./lres/Save/.
     """
-
     if lev == 'Lev2':
-        lres = main_dir + lev + '/Outdir/lres/'
+        lres = cor_dir + lev + '/Outdir/lres/'
 
         cmd  = 'ls ' + lres + 'mtaf*fits > ' + zspace
         os.system(cmd)
-        data = scf.read_file(zspace, remove=1)
+        data = mcf.read_data_file(zspace, remove=1)
     
         cmd  = 'mkdir ' + lres + 'Save'
         os.system(cmd)
@@ -311,25 +313,27 @@ def find_excess_file(lev = 'Lev2'):
             except:
                 continue
 
-            out = scf.read_file(zspace, remove=1)
+            out = mcf.read_data_file(zspace, remove=1)
             ssoft   = 0.0
             soft    = 0.0
             med     = 0.0
             hard    = 0.0
             harder  = 0.0
             hardest = 0.0
-            tot     = 0
+            tot     = 0.0
             for val in out:
                 atemp    = re.split('\s+', val)
-                if mcf.chkNumeric(atemp[0]):
+                try:
+                    chk      = float(atemp[0])
+
                     ssoft   += float(atemp[6])
                     soft    += float(atemp[7])
                     med     += float(atemp[8])
                     hard    += float(atemp[9])
                     harder  += float(atemp[10])
                     hardest += float(atemp[11])
-                    tot     += 1
-                else:
+                    tot     += 1.0
+                except:
                     continue
 
             if tot > 1:
@@ -358,14 +362,14 @@ def find_excess_file(lev = 'Lev2'):
 #--- for Lev1, we move the files which removed in Lev2. we assume that we already
 #--- run Lev2 on this function
 #
-        epath =  main_dir + '/Lev2/Outdir/lres/Save/'
+        epath =  cor_dir + '/Lev2/Outdir/lres/Save/'
         if os.listdir(epath) != []:
 
-            cmd = 'ls ' + main_dir + '/Lev2/Outdir/lres/Save/*fits > ' + zspace
+            cmd = 'ls ' + cor_dir + '/Lev2/Outdir/lres/Save/*fits > ' + zspace
             os.system(cmd)
-            data = scf.read_file(zspace, remove=1)
+            data = mcf.read_data_file(zspace, remove=1)
     
-            l1_lres =  main_dir + '/Lev1/Outdir/lres/'
+            l1_lres =  cor_dir + '/Lev1/Outdir/lres/'
             l1_dir  =  l1_lres  + '/Save/'
             cmd     = 'mkdir ' + l1_dir
             os.system(cmd)
@@ -403,21 +407,19 @@ def sib_corr_comb(start, stop, lev):
 #
 #--- convert the time to seconds from 1998.1.1
 #
-    tstart = tcnv.axTimeMTA(start)
-    tstop  = tcnv.axTimeMTA(stop)
+    tstart = Chandra.Time.DateTime(start).secs
+    tstop  = Chandra.Time.DateTime(stop).secs
 #
 #--- make a list of data fits files
 #
-    lres = main_dir + lev + '/Outdir/lres/'
+    lres = cor_dir + lev + '/Outdir/lres/'
     cmd  = 'ls ' + lres + '*fits > ' + zspace
     os.system(cmd)
-    data = scf.read_file(zspace, remove=1)
+    data = mcf.read_data_file(zspace, remove=1)
 #
-#--- initialize ccd_list<ccd>
+#--- initialize ccd_list
 #
-    for ccd in range(0, 10):
-        exec 'ccd_list%s = []' % (str(ccd))
-
+    ccd_list = [[] for x in range(0, 10)]
     for ent in data:
 #
 #--- check whether the data are inside of the specified time period
@@ -433,24 +435,22 @@ def sib_corr_comb(start, stop, lev):
                 chk = 'acis' + str(ccd)
                 mc = re.search(chk, ent)
                 if mc is not None:
-                    line = str(ent)
-                    exec "ccd_list%s.append('%s')" % (str(ccd), line)
+                    ccd_list[ccd].append(str(ent))
                     break
 #
 #--- combined all fits files of a specific ccd into one fits file
 #
     for ccd in range(0, 10):
-        exec "alist = ccd_list%s"  % (str(ccd))
-        if len(alist) > 0:
+        if len(ccd_list[ccd]) > 0:
 #
 #--- the first of the list is simply copied to temp.fits
 #
-            cmd = 'cp ' + alist[0] + ' temp.fits'
+            cmd = 'cp ' + ccd_list[ccd][0] + ' temp.fits'
             os.system(cmd)
 
-            for k in range(1, len(alist)):
-
-                cmd = 'dmmerge "' + alist[k] + ',temp.fits" outfile=zmerged.fits outBlock=""'
+            for k in range(1, len(ccd_list[ccd])):
+                cmd = 'dmmerge "' + ccd_list[ccd][k] 
+                cmd = cmd + ',temp.fits" outfile=zmerged.fits outBlock=""'
                 cmd = cmd + 'columnList="" clobber="yes"'
                 try:
                     scf.run_ascds(cmd)
@@ -460,7 +460,8 @@ def sib_corr_comb(start, stop, lev):
                 cmd = 'mv ./zmerged.fits ./temp.fits'
                 os.system(cmd)
 
-            cmd = 'mv ./temp.fits ' + main_dir + lev +  '/Data/lres_ccd' + str(ccd) + '_merged.fits'
+            cmd = 'mv ./temp.fits ' + cor_dir + lev +  '/Data/lres_ccd' 
+            cmd = cmd + str(ccd) + '_merged.fits'
             os.system(cmd)
 
 #-----------------------------------------------------------------------------------------
@@ -473,37 +474,23 @@ def find_time_interval(fits):
     input:  fits            --- fits file name
     output: [tmin, tmax]    --- start and stop time in seconds from 1998.1.1
     """
-    cmd = 'dmstat "' + fits + '[cols time]" centroid=no >' + zspace
-    try:
-        scf.run_ascds(cmd)
-    except:
-        return [0, 0]
+    fout  = pyfits.open(fits)
+    fdata = fout[1].data
+    tout  = fdata['time']
 
-    out = scf.read_file(zspace, remove=1)
-
-    chk = 0
-    for val in out:
-        mc1 = re.search('min', val)
-        mc2 = re.search('max', val)
-
-        if mc1 is not None:
-            atemp = re.split('\s+', val)
-            tmin  = int(float(atemp[1]))
-            chk  += 1
-
-        elif mc2 is not None:
-            atemp = re.split('\s+', val)
-            tmax  = int(float(atemp[1]))
-            chk  += 1
-
-        if chk > 1:
-            break
+    tmin  = min(tout)
+    tmax  = max(tout)
 
     return [tmin, tmax]
-
 
 #-----------------------------------------------------------------------------------------
 
 if __name__ == '__main__':
 
-    create_report()
+    if len(sys.argv)  == 3:
+        year = int(sys.argv[1])
+        mon  = int(sys.argv[2])
+
+        create_report(year=year, mon=mon)
+    else:
+        create_report()

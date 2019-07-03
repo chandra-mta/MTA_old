@@ -1,65 +1,49 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#           run_evt_script.py: extract sib data from event 1 or 2 acis data                                 #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           Last Update: May 23, 2018                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#########################################################################################
+#                                                                                       #
+#           run_evt_script.py: extract sib data from event 1 or 2 acis data             #
+#                                                                                       #
+#           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
+#                                                                                       #
+#           Last Update: Jun 25, 2019                                                   #
+#                                                                                       #
+#########################################################################################
 
 import sys
 import os
 import string
 import re
-import copy
 import math
-import Cookie
 import unittest
 import time
 import random
-
-#
-#--- from ska
-#
-from Ska.Shell import getenv, bash
-
-ascdsenv = getenv('source /home/ascds/.ascrc -r release; source /home/mta/bin/reset_param ', shell='tcsh')
-#ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/Reportdir/'
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/ACIS/SIB/house_keeping/dir_list_py'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folders
 #
 sys.path.append(mta_dir)
-#
-#--- directory path
-#
 sys.path.append(bin_dir)
 
 import mta_common_functions as mcf
-import convertTimeFormat    as tcnv
 import exclude_srouces      as es
 import sib_corr_functions   as scf
-
 #
 #--- temp writing file name
 #
-rtail  = int(10000 * random.random())       #---- put a romdom # tail so that it won't mix up with other scripts space
+rtail  = int(time.time() * random.random()) 
 zspace = '/tmp/zspace' + str(rtail)
 
 #-----------------------------------------------------------------------------------------
@@ -83,7 +67,7 @@ def run_evt_script(lev="Lev1"):
 #
 #--- if today is before the 5th day of the month, complete the last month
 #
-    if eday < 3:
+    if eday <= 4:
         eday = 1
         syear = eyear
         smon  = emon -1
@@ -94,49 +78,32 @@ def run_evt_script(lev="Lev1"):
         syear = eyear
         smon  = emon
 #
-#--- find the last date of the previous data anlyzed
+#--- find the last date of the previous data analyzed
 #
     sday   = find_prev_date(smon, lev)
 #
 #--- now convert the date format 
 #
-    temp   = str(eyear)
-    leyear = temp[2] + temp[3]
-    lemon  = str(emon)
-    if emon < 10:
-        lemon = '0' + lemon
-    leday  = str(eday)
-    if eday < 10:
-        leday = '0' + leday
+    lemon = mcf.add_leading_zero(emon)
+    leday = mcf.add_leading_zero(eday)
+    stop  = str(eyear) + '-' + lemon + '-' + leday + 'T00:00:00'
 
-    #stop = lemon + '/' + leday + '/'  + leyear + ',00:00:00'
-    stop = temp + '-' +  lemon + '-' + leday + 'T00:00:00'
-
-
-    temp   = str(syear)
-    lsyear = temp[2] + temp[3]
-    lsmon  = str(smon)
-    if smon < 10:
-        lsmon = '0' + lsmon
-    lsday  = str(sday)
-    if int(float(sday)) < 10:
-        lsday = '0' + lsday
-
-    #start = lsmon + '/' + lsday + '/' + lsyear + ',00:00:00'
-    start = temp + '-' + lsmon + '-' + lsday + 'T00:00:00'
-
+    lsmon = mcf.add_leading_zero(smon)
+    lsday = mcf.add_leading_zero(sday)
+    start = str(syear) + '-' + lsmon + '-' + lsday + 'T00:00:00'
 #
 #--- extract obsid list for the period
 #
-    try:
+    xxx = 999
+    if xxx == 999:
+    #try:
         scf.find_observation(start, stop, lev=lev)
 #
 #---  run the main script
 #
         process_evt(lev)
-    except:
-        pass
-
+    #except:
+    #    pass
 
 #-----------------------------------------------------------------------------------------
 #-- find_prev_date: find the last extreacted obsid date                                 --
@@ -149,15 +116,12 @@ def find_prev_date(cmon, lev):
             lev     --- data level
     output: date    --- the date which to be used to start extracting data
     """
-
-    afile = main_dir + lev + '/acis_obs'
+    afile = cor_dir + lev + '/acis_obs'
 #
 #--- check whether file exist
 #
     if os.path.isfile(afile):
-        f     = open(afile, 'r')
-        data  = [line.strip() for line in f.readlines()]
-        f.close()
+        data = mcf.read_data_file(afile)
     
         if len(data) > 0:
             atemp = re.split('\s+', data[-1])
@@ -165,7 +129,7 @@ def find_prev_date(cmon, lev):
 #
 #--- just in a case acis_obs is from the last month..
 #
-            dmon  = tcnv.changeMonthFormat(mon)
+            dmon  = mcf.change_month_format(mon)
             if dmon == cmon:
                 date  = atemp[-6]
             else:
@@ -173,24 +137,10 @@ def find_prev_date(cmon, lev):
         else:
             date = '1'
     else:
-        date = "1"
+        date = '1'
 
     return date
 
-
-#-----------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------
-#-----------------------------------------------------------------------------------------
-
-def clean_up_dir(ldir):
-
-    if os.path.isdir(ldir):
-        cmd = 'rm -rf ' + ldir + '*'
-        os.system(cmd)
-    else:
-        cmd = 'mkdir ' + ldir
-        os.system(cmd)
-        
 #-----------------------------------------------------------------------------------------------
 #-- convert_time_format: convert time format to be acceptable by arc5gl                      ---
 #-----------------------------------------------------------------------------------------------
@@ -237,20 +187,20 @@ def process_evt(lev= 'Lev1'):
             it also reads acis_obs file to find fits file names
     output: processed fits files in <out_dir>/lres/
     """
-    ldir    =  main_dir + lev + '/'
+    ldir    =  cor_dir + lev + '/'
     indir   =  ldir  + 'Input/'
     outdir  =  ldir  + 'Outdir/'
     repdir  =  ldir  + 'Reportdir/'
 
-    f    = open('./acis_obs', 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data    = mcf.read_data_file('./acis_obs')
 
     for obs in data:
         atemp = re.split('\s+', obs)
         obsid = atemp[0].strip()
-        print "OBSID: " + str(obsid)
-
+        print("OBSID: " + str(obsid))
+#
+#--- extract evt 1/2 file
+#
         line = 'operation=retrieve\n'
         line = line + 'dataset=flight\n'
         line = line + 'detector=acis\n'
@@ -263,23 +213,7 @@ def process_evt(lev= 'Lev1'):
         line = line + 'obsid=' + str(obsid) + '\n'
         line = line + 'go\n'
 
-        fo   = open('./input_line', 'w')
-        fo.write(line)
-        fo.close()
-
-        cmd1 = "/usr/bin/env PERL5LIB= "
-        cmd2 = ' /proj/axaf/simul/bin/arc5gl -user isobe -script ./input_line '
-        cmd  = cmd1 + cmd2
-        #scf.run_ascds(cmd, clean=0)
-        bash(cmd,  env=ascdsenv)
-
-        cmd   = 'ls acisf*fits* > ' + zspace
-        os.system(cmd)
-        f     = open(zspace, 'r')
-        flist = [line.strip() for line in f.readlines()]
-        f.close()
-        mcf.rm_file(zspace)
-        mcf.rm_file('./input_list')
+        flist = mcf.run_arc5gl_process(line)
 
         for fits in flist:
 #
@@ -294,6 +228,8 @@ def process_evt(lev= 'Lev1'):
         os.system(cmd)
 #
 #--- extract acis evt1 files from archeive, and compute SIB
+#--- at some occasion, the process dies with unknown reason; so repeat twice
+#--- to cover the failed case
 #
         try:
             scf.sib_corr_comp_sib(lev)
@@ -307,7 +243,6 @@ def process_evt(lev= 'Lev1'):
 #
         cmd  = 'rm -rf ' + indir + '/*fits ' + outdir + '/*fits ' + outdir + '/*ped* '
         os.system(cmd)
-
     
 #-----------------------------------------------------------------------------------------
 
@@ -318,6 +253,5 @@ if __name__ == '__main__':
         lev = sys.argv[1]
         lev = lev.strip()
 
-    ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/SIB/Correct_excess/' + lev + '/Reportdir/'
     run_evt_script(lev)
 

@@ -2,9 +2,6 @@
 ACIS SIB Computation
 #####################
 
-Dir: /data/mta/Script/ACIS/SIB/Correct_excess
-See also: https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_acis_sib.html
-
 ++++++++
 Scripts
 ++++++++
@@ -13,7 +10,6 @@ run_extract_evt1_wrap_script
 run_extract_evt1_main_script  
     --- environment setting wrapping script. extracting  level 1 data
         call run_evt_script.py
-
 
 run_extract_evt2_wrap_script
 run_extract_evt2_main_script
@@ -25,7 +21,6 @@ run_create_main_script
     --- combine the data for the month and create plots and update html pages
         call create_sib_data.py
 
-
 run_evt_script.py
 ------------------
 extract sib data from event 1 or 2 acis data
@@ -36,13 +31,13 @@ create_sib_data.py
 ------------------
 create sib data for report
     input:  none, but read ./Output/lres/mtaf*_acis<ccd>_skbgk.fits from both Lev1 and Lev2
-    output: <Lev#>/Data/Data_<yyyy>_<mm>/lres_ccd<ccd>_merged.fits
-            /data/mta_www/mta_sib/Plots/Plots_<yyyy>_<mm>/combined_month_plot_ccd<ccd>.png
-            /data/mta_www/mta_sib/Plots/Plots_<yyyy>_<mm>/month_plot_ccd<ccd>.png
-            /data/mta_www/mta_sib/Plots/Plot_<yyyy>/*png
-            /data/mta_www/mta_sib/Plots/Plot_long_term/*png
-            /data/mta_www/mta_sib/Plots/Plot_past_year/*png
-            /data/mta_www/mta_sib/Plots/Plot_quater/*png
+    output: <data_dir>/<Lev#>/Data_<yyyy>_<mm>/lres_ccd<ccd>_merged.fits
+            <web_dir>/Plots/Plots_<yyyy>_<mm>/combined_month_plot_ccd<ccd>.png
+            <web_dir>/Plots/Plots_<yyyy>_<mm>/month_plot_ccd<ccd>.png
+            <web_dir>/Plots/Plot_<yyyy>/*png
+            <web_dir>/Plots/Plot_long_term/*png
+            <web_dir>/Plots/Plot_past_year/*png
+            <web_dir>/Plots/Plot_quater/*png
 
 exclude_srouces.py
 ------------------
@@ -80,51 +75,48 @@ update the main sib page (sib_main.html) and update modified dates for a few sub
             <xxx>/quarter.html
             where <xxx> are 'Plots/Plot_long_term/', ''Plots/Plot_past_year/', 'Plots/Plot_quarter/' etc
 
-OcatSQL.py
------------
-read data from sql database to fill all Ocat Data Page pamater values 
-    input:  sybase data
-    output: various --- read the top part of the file for example. 
-
-    This one was developed for Ocat Data Page. You may occasionally want to check update there.
-
-DBI.py
-------
-Ska.DBI provides simple methods for database access and data insertion.
-    read the file for the details. you may occasionally check update of this file at sot ska site.
-
+<sybase_dir>/set_sybase_env_and_run.py
+--------------------------------------
+this script access to sybase. See /data/mta/Script/Python3.6/Sybase/README for more details
 
 ++++++++++++++++++++
 Environment setting
 ++++++++++++++++++++
-The location must be able to access to the path:  /proj/sot/ska/bin/python. it is not 
-compatible with ascds environment. if you like to run under ascds environment, run:
 
-setenv PYTHONPATH "/proj/sot/ska/arch/x86_64-linux_CentOS-5/lib/python2.7/site-packages:$PYTHONPATH"
-
+setenv PYTHONPATH "/data/mta/Script/Python3.6/envs/ska3/lib/python3.6/site-packages:/data/mta/Script/Pyt
+hon3.6/lib/python3.6/site-packages/"
 
 ++++++++++++
 Directories
 ++++++++++++
 
-/data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr       ---- this directory, containing all scripts
-/data/mta/Script/ACIS/SIB/Correct_excess/Lev1           ---- level 1 related output kept here
-                                                             esp. see Outidr/lres/ and Reg_files
-/data/mta/Script/ACIS/SIB/Correct_excess/Lev2           ---- level 2 related output kept here
-                                                             esp. see Outidr/lres/ and Reg_files
-/data/mta/Script/ACIS/SIB/Data/Data_<yyyy>_<mm>         ---- lev 1 data for <yyyy> <mm> are kept
-/data/mta/Script/ACIS/SIB/Lev2/Data/Data_<yyyy>_<mm>    ---- lev 2 data for <yyyy> <mm> are kept
-/data/mta/Script/ACIS/SIB/house_keeping                 ---- templates for html pages are kept here
+'/data/mta/Script/ACIS/SIB/Scripts/'                        : bin_dir
+'/data/mta/Script/ACIS/SIB/Data/Lev1/'                      : data_dir
+'/data/mta/Script/ACIS/SIB/Data/Lev2/'                      : data_dir2
+'/data/mta/www/mta_sib/'                                    : web_dir
+'/data/mta/Script/ACIS/SIB/Correct_excess/'                 : cor_dir
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/'            : lev1_dir
+'/data/mta/Script/ACIS/SIB/Correct_excess/Lev2/'            : lev2_dir
+'/data/mta_www/mta_sib/Plots/'                              : plot_dir
+'/data/mta/Script/ACIS/SIB/house_keeping/'                  : house_keeping
+'/data/mta/Script/Python3.6/MTA/'                           : mta_dir
+'/data/mta/Script/Python3.6/Sybase/'                        : sybase_dir
 
-/data/mta/www/mta_sib                                   ---- html page related files, including plots 
-
++++++++++++++
+HTML address
++++++++++++++
+https://cxc.cfa.harvard.edu/mta_days/mta_sib/sib_main.html
 
 +++++++++
 Cron Jobs
 +++++++++
-50 22 2,10,20,30  * * cd /data/mta/Script/ACIS/SIB/Correct_excess/Lev2; /data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr/run_extract_evt2_wrap_script>> $HOME/Logs/sib_lev2_data.cron
 
-50 22 2,10,20,30  * * cd /data/mta/Script/ACIS/SIB/Correct_excess/Lev1; /data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr/run_extract_evt1_wrap_script>> $HOME/Logs/sib_lev1_data.cron
+mta@luke-v
+35 22 *  * * cd /data/mta/Script/ACIS/SIB/Correct_excess/Lev1; /data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr/run_extract_evt1_wrap_script>> $HOME/Logs/sib_lev1_data.cron 2>&1
+14 5  *  * * cd /data/mta/Script/ACIS/SIB/Correct_excess/Lev1; rm -rf *fits*
 
-15 3  3 * *   cd /data/mta/Script/ACIS/SIB/Correct_excess/; /data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr/run_create_wrap_script >> $HOME/Logs/sib_lev2_create.cron
+35 20 2,10,20,30  * * cd /data/mta/Script/ACIS/SIB/Correct_excess/Lev2; /data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr/run_extract_evt2_wrap_script>> $HOME/Logs/sib_lev2_data.cron 2>&1
+14 3  *  * * cd /data/mta/Script/ACIS/SIB/Correct_excess/Lev2; rm -rf *fits*
+
+15 4  3 * *   cd /data/mta/Script/ACIS/SIB/Correct_excess/; /data/mta/Script/ACIS/SIB/Correct_excess/Sib_corr/run_create_wrap_script >> $HOME/Logs/sib_lev2_create.cron 2>&1
 

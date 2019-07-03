@@ -1,17 +1,17 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.6/envs/ska3/bin/python
 
-#############################################################################################################
-#                                                                                                           #
-#           exclude_srouces.py:   remove the area around the main source and all point sources from data    #
-#                                 probably this is a good one to use evt2 files as it takes too much time   #
-#                                 run on evt1 file. The results save in Reg_files can be used to removed    #
-#                                 sources from evt 1 files.                                                 #
-#                                                                                                           #
-#           author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
-#                                                                                                           #
-#           Last Update: May 23, 2018                                                                       #
-#                                                                                                           #
-#############################################################################################################
+#####################################################################################################
+#                                                                                                   #
+#   exclude_srouces.py:   remove the area around the main source and all point sources from data    #
+#                         probably this is a good one to use evt2 files as it takes too much time   #
+#                         run on evt1 file. The results save in Reg_files can be used to removed    #
+#                         sources from evt 1 files.                                                 #
+#                                                                                                   #
+#   author: t. isobe (tisobe@cfa.harvard.edu)                                                       #
+#                                                                                                   #
+#   Last Update: Jun 25, 2019                                                                       #
+#                                                                                                   #
+#####################################################################################################
 
 import sys
 import os
@@ -19,31 +19,30 @@ import string
 import re
 import copy
 import math
-import Cookie
 import unittest
 import time
-
+import random
+import numpy
+import astropy.io.fits as pyfits
 #
 #--- from ska
 #
 from Ska.Shell import getenv, bash
 
 ascdsenv = getenv('source /home/ascds/.ascrc -r release;  source /home/mta/bin/reset_param ', shell='tcsh')
-#ascdsenv['MTA_REPORT_DIR'] = '/data/mta/Script/ACIS/SIB/Correct_excess/Lev1/Reportdir/'
 #
 #--- reading directory list
 #
 path = '/data/mta/Script/ACIS/SIB/house_keeping/dir_list_py'
 
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
+with open(path, 'r') as f:
+    data = [line.strip() for line in f.readlines()]
 
 for ent in data:
     atemp = re.split(':', ent)
     var  = atemp[1].strip()
     line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+    exec("%s = %s" %(var, line))
 #
 #--- append path to a private folders
 #
@@ -51,13 +50,11 @@ sys.path.append(bin_dir)
 sys.path.append(mta_dir)
 
 import mta_common_functions as mcf
-import convertTimeFormat    as tcnv
 import sib_corr_functions   as scf
-
 #
 #--- temp writing file name
 #
-rtail  = int(time.time())
+rtail   = int(time.time() * random.random())
 zspace = '/tmp/zspace' + str(rtail)
 
 #-----------------------------------------------------------------------------------------
@@ -71,48 +68,46 @@ def exclude_sources(fits):
     output: out_name    --- source removed fits file (<header>_ccd<ccd>_cleaned.fits)
     """
 #
-#--- read which ccds are used and several other info from fits header
+#--- read fits header
 #
-    cmd = ' dmlist ' + fits + ' opt=head > ' + zspace
-    scf.run_ascds(cmd)
-
-    data = scf.read_file(zspace, remove=1)
-
+    fout = pyfits.open(fits)
+#
+#--- find which ccds used
+#
     ccd_list = []
-    for ent in data:
-        mc = re.search('bias file used', ent)
-        if mc is not None:
-            atemp = re.split('CCD', ent)
-            val   = atemp[1].strip()
-            ccd_list.append(val)
+    for k in range(0, 10):
+        bname = 'BIASFIL' + str(k)
+        try:
+            val = fout[1].header[bname]
+            ccd_list.append(k)
+        except:
             continue
 
-        for name in ['SIM_X', 'SIM_Y', 'SIM_Z', 'RA_NOM', 'DEC_NOM', 'ROLL_NOM', 'RA_TARG', 'DEC_TARG']:
-            mc = re.search(name, ent)
-            if mc is not None:
-                lname = name.lower()
-                atemp = re.split('\s+', ent)
-                val   = atemp[2].strip()
-                exec "%s = %s" % (lname, val)
-
-                break
-#
-#--- sort ccd list
-#
     ccd_list.sort()
+#
+#--- create key word dictionary
+#
+    v_dict = {}
+    for name in ['SIM_X', 'SIM_Y', 'SIM_Z', 'RA_NOM', 'DEC_NOM', 'ROLL_NOM', 'RA_TARG', 'DEC_TARG']:
+        lname = name.lower()
+        try:
+            out = fout[1].header[name]
+            v_dict[lname] = str(out)
+        except:
+            v_dict[lname] =  'NA'
 #
 #--- guess a source center position on the sky coordinates from the information extracted from the header
 #
     cmd = ' dmcoords none none opt=cel '
-    cmd = cmd + ' ra=' + str(ra_targ)  + ' dec=' + str(dec_targ )
-    cmd = cmd + ' sim="' + str(sim_x) + ' ' +  str(sim_y) + ' ' + str(sim_z) + '" ' 
-    cmd = cmd + ' detector=acis celfmt=deg '
-    cmd = cmd + ' ra_nom=' + str(ra_nom) + ' dec_nom=' + str(dec_nom) + ' roll_nom=' + str(roll_nom) + ' ' 
+    cmd = cmd + ' ra=' + v_dict['ra_targ'] + ' dec=' + v_dict['dec_targ']
+    cmd = cmd + ' sim="' + v_dict['sim_x'] + ' ' +  v_dict['sim_y'] + ' ' + v_dict['sim_z'] + '" ' 
+    cmd = cmd + ' detector=acis celfmt=deg '   + ' ra_nom=' + v_dict['ra_nom'] 
+    cmd = cmd + ' dec_nom=' + v_dict['dec_nom']  + ' roll_nom=' + v_dict['roll_nom'] + ' ' 
     cmd = cmd + ' ra_asp=")ra_nom" dec_asp=")dec_nom" verbose=1 >' + zspace 
 
     scf.run_ascds(cmd)
 
-    data = scf.read_file(zspace, remove=1)
+    data = mcf.read_data_file(zspace, remove=1)
 
     for ent in data:
         mc = re.search('SKY', ent)
@@ -129,9 +124,8 @@ def exclude_sources(fits):
     ofile      = './Reg_files/' + coord_file
     line       = str(skyx) + ':' + str(skyy) + '\n'
 
-    fo         = open(ofile, 'w')
-    fo.write(line)
-    fo.close()
+    with open(ofile, 'w') as fo:
+        fo.write(line)
 #
 #-- remove the 200 pix radius area around the source
 #
@@ -145,22 +139,23 @@ def exclude_sources(fits):
 #
     size = {}
     for ccd in ccd_list:
-        cmd = ' dmcopy "' + fits + '[ccd_id=' + str(ccd) + ']" outfile=test.fits clobber=yes'
+        cmd = ' dmcopy "' + fits + '[ccd_id=' + str(ccd) 
+        cmd = cmd + ']" outfile=test.fits clobber=yes'
         scf.run_ascds(cmd)
         
         cmd  = 'ls -l test.fits > ' + zspace
         os.system(cmd)
 
-        data = scf.read_file(zspace, remove=1)
+        data = mcf.read_data_file(zspace, remove=1)
 
         for line in data:
             atemp = re.split('\s+', line)
-            if mcf.chkNumeric(atemp[4]):
+            try:
                 size[ccd] = int(float(atemp[4]))
-            else:
+            except:
                 size[ccd] = int(float(atemp[3]))
 
-        mcf.rm_file('test.fits')
+        mcf.rm_files('test.fits')
 #
 #--- now separate observations to indivisual ccds
 #
@@ -170,10 +165,11 @@ def exclude_sources(fits):
         out  = o_fits.replace('.fits', tail)
         file_list.append(out)
 
-        cmd = ' dmcopy "source_removed.fits[ccd_id=' + ccd + ']" outfile= ' + out + ' clobber=yes'
+        cmd = ' dmcopy "source_removed.fits[ccd_id=' + str(ccd)
+        cmd = cmd + ']" outfile= ' + out + ' clobber=yes'
         scf.run_ascds(cmd)
 
-    mcf.rm_file('source_removed.fits')
+    mcf.rm_files('source_removed.fits')
 #
 #--- process each ccd
 #
@@ -183,16 +179,17 @@ def exclude_sources(fits):
 #--- find point sources
 #
         cmd = ' celldetect infile=' + pfits 
-        cmd = cmd + ' outfile=acisi_block_src.fits regfile=acisi_block_src.reg clobber=yes'
+        cmd = cmd + ' fixedcell=9 outfile=acisi_block_src.fits regfile=acisi_block_src.reg clobber=yes'
         scf.run_ascds(cmd)
 
-        data = scf.read_file('acisi_block_src.reg')
+        data = mcf.read_data_file('acisi_block_src.reg')
         
         exclude = []
         for ent in data:
             atemp =  re.split('\,', ent)
 #
-#--- increase the area covered around the sources 3time to make sure leaks from a bright source is minimized
+#--- increase the area covered around the sources 3 times to make sure leaks 
+#--- from a bright source is minimized
 #
             val2 = float(atemp[2]) * 3
             val3 = float(atemp[3]) * 3
@@ -226,13 +223,15 @@ def exclude_sources(fits):
 
                 cnt += 6
                 if round == 0:
-                    cmd = ' dmcopy "' + pfits + '[exclude sky=' + line +']" outfile=out.fits clobber="yes"'
+                    cmd = ' dmcopy "' + pfits + '[exclude sky=' + line 
+                    cmd = cmd +']" outfile=out.fits clobber="yes"'
                     scf.run_ascds(cmd)
                     round += 1
                 else:
                     cmd = 'mv out.fits temp.fits'
                     os.system(cmd)
-                    cmd = ' dmcopy "temp.fits[exclude sky=' + line +']" outfile=out.fits clobber="yes"'
+                    cmd = ' dmcopy "temp.fits[exclude sky=' + line 
+                    cmd = cmd +']" outfile=out.fits clobber="yes"'
                     scf.run_ascds(cmd)
                     round += 1
 
@@ -241,7 +240,7 @@ def exclude_sources(fits):
                 else:
                     line = ''
 
-            mcf.rm_file('temp.fits')
+            mcf.rm_files('temp.fits')
             cmd = 'mv out.fits ' + out_name
             os.system(cmd)
         else:
@@ -253,13 +252,13 @@ def exclude_sources(fits):
         cmd = 'ls -l ' + out_name + '>' + zspace
         os.system(cmd)
 
-        data = scf.read_file(zspace, remove=1)
+        data = mcf.read_data_file(zspace, remove=1)
 
         for line in data:
             atemp = re.split('\s+', line)
-            if mcf.chkNumeric(atemp[4]):
+            try:
                 asize = float(atemp[4])
-            else:
+            except:
                 asize = float(atempp[3])
     
         for pccd in range(0, 10):
@@ -268,21 +267,21 @@ def exclude_sources(fits):
             if mc is not None:
                 break
 #
-#--- compute the ratio of the cleaned to the original file; 1 - ratio is the  potion that we removed
-#--- from the original data
+#--- compute the ratio of the cleaned to the original file; 
+#--- 1 - ratio is the  potion that we removed from the original data
 #
-        ratio = asize / float(size[str(pccd)])
+        #ratio = asize / float(size[str(pccd)])
+        ratio = asize / float(size[pccd])
 #
 #--- record the ratio for later use
 #
-        fo   = open('./Reg_files/ratio_table', 'a')
-        line = reg_file + ': ' + str(ratio) + '\n'
-        fo.write(line)
-        fo.close()
+        with open('./Reg_files/ratio_table', 'a') as fo:
+            line = reg_file + ': ' + str(ratio) + '\n'
+            fo.write(line)
                     
         cmd = 'mv acisi_block_src.reg ./Reg_files/' + reg_file
         os.system(cmd)
-        mcf.rm_file('acisi_block_src.fits')
+        mcf.rm_files('acisi_block_src.fits')
 
 #-----------------------------------------------------------------------------------------
 
@@ -292,5 +291,8 @@ if __name__ == '__main__':
         fits = sys.argv[1]
         fits.strip()
 
-    exclude_sources(fits)
+        exclude_sources(fits)
+
+    else:
+        print("Provide a fits file name")
 
