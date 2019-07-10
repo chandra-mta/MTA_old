@@ -6,7 +6,7 @@
 #                                                                               #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                           #
 #                                                                               #
-#           Last Update: Jun 25, 2019                                           #
+#           Last Update: Jul 11, 2019                                           #
 #                                                                               #
 #################################################################################
 
@@ -155,12 +155,11 @@ def find_observation(start, stop, lev):
 
     tlist.sort()
 
-    mcf.rm_files('./acis_obs')
-    fo = open('./acis_obs', 'w')
-    for ent in tlist:
-        fo.write(save[ent])
-
-    fo.close()
+    if len(tlist) > 0:
+        mcf.rm_files('./acis_obs')
+        with open('./acis_obs', 'w') as fo:
+            for ent in tlist:
+                fo.write(save[ent])
 
 #-----------------------------------------------------------------------------------------
 #-- run_arc5gl_browse: run arc5gl to get a list of fits files in the given time period  --
@@ -317,13 +316,13 @@ def remove_old_reg_file(lev):
 
 if __name__ == '__main__':
 
-    start = '2019-04-20T00:00:00'
-    stop  = '2019-04-30T00:00:00'
+    start = '2019-07-01T00:00:00'
+    stop  = '2019-07-10T00:00:00'
     out   = find_observation(start, stop, 2)
     print(str(out))
 
-    out   = get_data_from_db(21494)
-    print('Sybase out: ' + str(out[1]))
+#    out   = get_data_from_db(21494)
+#    print('Sybase out: ' + str(out[1]))
 
 
 
