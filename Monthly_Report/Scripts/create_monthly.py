@@ -1008,10 +1008,15 @@ def send_email_to_admin():
     btemp = re.split('-', ctime)
     year  = btemp[0]
     mon   = int(float(btemp[1]))
+    mon = mon - 1 #Pulls current month, report is for previous month.
+    if (mon == 0):#If current month is Jan, then monthly report records Dec of previous year.
+       year = int(float(year))
+       year = year - 1
+       mon = 12
 
     mon   = mcf.change_month_format(mon).upper()
 
-    line = 'Monthly Report  is created. Please create exposure maps and copy solar cycle plots.\n '
+    line = 'Monthly Report is created. Please create exposure maps and copy solar cycle plots.\n '
     line = line + 'https://cxc.harvard.edu/mta/REPORTS/MONTHLY/'
     line = line + str(year) + str(mon) + '/MONTHLY.html\n\n'
     line = line + "Don't forget to edit index file: /data/mta4/www/REPORTS/MONTHLY/index.html.\n"
