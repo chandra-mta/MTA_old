@@ -5,11 +5,6 @@ Monthly Report Creation
 
 This directory contains scripts creates a monthly report.
 
-Dir: /data/mta/Script/Month/Scripts
-See also:
-https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_monthly_fp_temp.html
-https://cxc.cfa.harvard.edu/mta_days/mta_script_list/MTA/ti_monthly_sib.html
-
 =======
 Scripts
 =======
@@ -17,17 +12,18 @@ Scripts
 monthly_wrap_script:    a environment setting script
 monthly_main_script:    the main script to run the python script
 create_monthly.py:      the python script which actually runs all needed tasks
-dose_map_creation.py:   the python script to created cleaner ACIS and HRC dose maps
 
 create_monthly.py uses other python scripts saved in:
 
-    /data/mta/Script/Month/Config
     /data/mta/Script/Month/CTI
     /data/mta/Script/Month/FOCAL
     /data/mta/Script/Month/SIB
-    /data/mta/Script/Month/SIMI
+    /data/mta/Script/Month/SIM
 
 All have their own REAME files (usually in Scripts dir); please refer it for more details.
+
+create_monthly.py sends an alert email to admin when the report is completed
+---Extra Emails can be passed through sys.argv 'email=<address>' or 'email={<address1>,<address2>}' for multiple emails
 
 ============================
 How to Create Monthly Report
@@ -36,25 +32,24 @@ How to Create Monthly Report
 The monthly report is automatically created by cron job on 3rd of every month.
 However, it cannot run ds9 without the screen and you need to run it manually. 
 
-    1. open a clean window (no ascds)
-    2. source /proj/sot/ska/bin/ska_envs.csh
-    3. run:  /data/mta/Script/Month/Scripts/dose_map_creation.py
+setenv PYTHONPATH "/data/mta/Script/Python3.8/envs/ska3-shiny/lib/python3.8/site-packages:/data/mta/Script/Python3.8/lib/python3.8/site-packages/"
 
-If you like to run the entier process manually:
+go to:  cd /data/mta/Script/Exposure/Scripts/ACIS_Scripts/
+run :   acis_dose_create_image.py <year> <month>
 
-    1. open a clean window (no ascds)
-    2. source /proj/sot/ska/bin/ska_envs.csh
-    3. run: /data/mta/Script/Month/Scripts/create_monthly.py
+go to:  cd /data/mta/Script/Exposure/Scripts/HRC_Scripts/
+run :   hrc_dose_create_image.py <year> <month>
 
-For the latter, you don't need to run dose_map_creation.py separately. 
+Solar cycle plot now need to download manyally:
 
-You can also run a specific month by:
+go to: https://www.swpc.noaa.gov/products/solar-cycle-progression
+and download the first solar cycle plot (png)
 
-    3. run: /data/mta/Script/Month/Scripts/create_monthly.py <yyyy> <m>
-        e.g., /data/mta/Script/Month/Scripts/create_monthly.py 2016 5
+
+
 
 
 Cron job:
-On r2d2-v as mta:
-40 6 3 * *  cd /data/mta/Script/Month; /data/mta/Script/Month/monthly_wrap_script > /data/mta/Script/Month/report_creation.cron
-    
+On c3po-v as mta:
+10 5 3 * *  cd /data/mta/Script/Month; /data/mta/Script/Month/Scripts/monthly_wrap_script > /data/mta/Script/Month/report_creation.cron 2>&1
+

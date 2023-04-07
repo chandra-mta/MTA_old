@@ -1,4 +1,4 @@
-#!/usr/bin/env /proj/sot/ska/bin/python
+#!/usr/bin/env /data/mta/Script/Python3.8/envs/ska3-shiny/bin/python
 
 #########################################################################################
 #                                                                                       #
@@ -6,7 +6,7 @@
 #                                                                                       #
 #           author: t. isobe (tisobe@cfa.harvard.edu)                                   #
 #                                                                                       #
-#           last update: Oct 25, 2018                                                   #
+#           last update: Oct 07, 2022                                                   #
 #                                                                                       #
 #########################################################################################
 
@@ -17,6 +17,8 @@ import re
 import getpass
 import fnmatch
 import math
+import time
+import Chandra.Time
 import numpy
 #
 #--- from ska
@@ -25,25 +27,33 @@ from Ska.Shell import getenv, bash
 
 ascdsenv = getenv('source /home/ascds/.ascrc -r release', shell='tcsh')
 
-path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
-f    = open(path, 'r')
-data = [line.strip() for line in f.readlines()]
-f.close()
-
-for ent in data:
-    atemp = re.split(':', ent)
-    var  = atemp[1].strip()
-    line = atemp[0].strip()
-    exec "%s = %s" %(var, line)
+#path = '/data/mta/Script/Python_script2.7/house_keeping/dir_list'
+#f    = open(path, 'r')
+#data = [line.strip() for line in f.readlines()]
+#f.close()
+#
+#for ent in data:
+#    atemp = re.split(':', ent)
+#    var  = atemp[1].strip()
+#    line = atemp[0].strip()
+#    exec "%s = %s" %(var, line)
 #
 #--- append path to a private folder
 #
-sys.path.append(bin_dir)
+mta_dir = '/data/mta/Script/Python3.8/MTA/'
+sys.path.append(mta_dir)
 #
 #--- converTimeFormat contains MTA time conversion routines
 #
-import convertTimeFormat    as tcnv
 import mta_common_functions as mcf
+
+#
+#--- Recieve Admin email list from sys args
+#
+ADMIN = ['mtadude@cfa.harvard.edu']
+for i in range(1,len(sys.argv)):
+    if sys.argv[i][:6] == 'email=':
+        ADMIN.append(sys.argv[i][6:])
 
 #-----------------------------------------------------------------------------------
 #-- create_monthly: create monthly report                                         --
@@ -63,13 +73,14 @@ def create_monthly(year='', mon=''):
 #
 #--- find today's date
 #
-        ltime = tcnv.currentTime()
-        year  = ltime[0]
+        out   = time.strftime("%Y:%m:%d", time.gmtime())
+        ltime = re.split(':', out)
+        year  = int(float(ltime[0]))
         lyear = str(year)                           #--- '2016'
 #
 #--- set the last month's month and year
 #
-        mon   = ltime[1] -1    
+        mon   = int(float(ltime[1])) -1 
 
         if mon < 1:
             mon   = 12
@@ -80,7 +91,7 @@ def create_monthly(year='', mon=''):
     if mon < 10:
         cmon = '0' + cmon                           #--- e.g. 03 or 11
 
-    lmon   = tcnv.changeMonthFormat(mon)            #--- e.g. Mar or Nov
+    lmon   = mcf.change_month_format(mon)           #--- e.g. Mar or Nov
 
     lmonyr = lmon.lower() + lyear[2] + lyear[3]     #--- e.g. jan16
     lm_y   = cmon + '_' + lyear                     #--- e.g. 03_2016
@@ -96,7 +107,7 @@ def create_monthly(year='', mon=''):
 #
 #--- set month interval depending on leap year or not
 #
-    if tcnv.isLeapYear(year) == 0:
+    if mcf.is_leapyear(year):
         sdate = ['001', '032', '060', '091', '121', '152', '182', '213', '244', '274', '305', '335']
         edate = ['032', '060', '091', '121', '152', '182', '213', '244', '274', '305', '335', '001']
     else:
@@ -112,14 +123,8 @@ def create_monthly(year='', mon=''):
         eyear = year + 1
     tstop  = str(eyear) + ':' + edate[mon-1] + ':00:00:00' 
 #
-#--- create configulation plot
-#
-    cmd = "cd /data/mta/Script/Month/Config/; create_config_plot.py " +  tstart + ' ' + tstop
-    os.system(cmd)
-#
 #--- create CTI plots
 #
-    os.system("cd /data/mta/Script/Month/CTI/;    monthly_report_cti_avg_plots.py")
     os.system("cd /data/mta/Script/Month/CTI/;    monthly_report_cti_avg_plots_two_section.py")
 #
 #--- create Focal Plane temperature plots
@@ -136,8 +141,6 @@ def create_monthly(year='', mon=''):
 #
 #--- copy the created plots to the report directory
 #
-    cmd = "cp /data/mta/Script/Month/Config/rad_use_*.png " + odir 
-    os.system(cmd)
     cmd = "cp /data/mta/Script/Month/CTI/Plots/*png "       + odir 
     os.system(cmd)
     cmd = "cp -rf /data/mta/Script/Month/CTI/Data "         + odir 
@@ -160,18 +163,17 @@ def create_monthly(year='', mon=''):
     os.system(cmd)
     cmd = "cp /data/mta/Script/Month/SIM/*.png "                     + odir 
     os.system(cmd)
-    cmd = "cp /data/mta4/www/DAILY/mta_rad/mon_per_diff_last_one_year.gif " + odir 
-    os.system(cmd)
     cmd = "cp /data/mta4/www/RADIATION_new/ACIS_Rad/Plots/rad_cnts_" + lmonyr + ".png "    + odir 
     os.system(cmd)
     cmd = "cp /data/mta4/www/DAILY/mta_pcad/IRU/Plots_new/" + lyear + '/' +  lmonyr + "_bias.png " + odir 
     os.system(cmd)
     cmd = "cp /data/mta/www/mta_max_exp/Images/hrc_max_exp.gif "           + odir 
     os.system(cmd)
+    cmd = 'cp /data/mta4/www/RADIATION_new/ACIS_Rad/Plots/rad_use_' + lmonyr + '.png ' + odir
+    os.system(cmd)
 #
 #--- move the plots to past plot saving directories
 #
-    os.system("mv -f /data/mta/Script/Month/Config/*.png /data/mta/Script/Month/Config/Plots/.")
     os.system("mv -f /data/mta/Script/Month/FOCAL/Plots/*gif /data/mta/Script/Month/FOCAL/Plots/Past/.")
     os.system("mv -f /data/mta/Script/Month/SIB/*png /data/mta/Script/Month/SIB/Plots/.")
 #
@@ -183,9 +185,16 @@ def create_monthly(year='', mon=''):
 #--- now copy  month depend plot files and set the template file for the month
 #
     if mon == 1 or mon == 7:
-        cmd = "cp /data/mta_www/mta_acis_sci_run/Corner_pix/Trend_Plots/I3cp.gif " + odir
+        cmd = "cp /data/mta_www/mta_sib/Plots/Plot_long_term/full_plot_ccd3.png " + odir
         os.system(cmd)
-        cmd = "cp /data/mta_www/mta_acis_sci_run/Corner_pix/Trend_Plots/S3cp.gif " + odir
+        cmd = "cp /data/mta_www/mta_sib/Plots/Plot_long_term/full_plot_ccd5.png " + odir
+        os.system(cmd)
+        cmd = "cp /data/mta_www/mta_sib/Plots/Plot_long_term/full_plot_ccd7.png " + odir
+        os.system(cmd)
+
+        cmd = "cp /data/mta_www/mta_acis_sci_run/Corner_pix/Plots/I3_all_norm_cent.png " + odir
+        os.system(cmd)
+        cmd = "cp /data/mta_www/mta_acis_sci_run/Corner_pix/Plots/S3_all_norm_cent.png " + odir
         os.system(cmd)
 
         cmd = "cp /data/mta_www/mta_bias_bkg/Plots/Overclock/ccd2.png " + odir + 'ccd2_oc.png'
@@ -193,16 +202,16 @@ def create_monthly(year='', mon=''):
         cmd = "cp /data/mta_www/mta_bias_bkg/Plots/Sub/ccd2.png       " + odir + 'ccd2_sub.png'
         os.system(cmd)
 
-        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/TOTAL/Report/MAG_I_AVG_2.png  " + odir
+        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/Plots/acis_1_full.png   " + odir
         os.system(cmd)
-        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/TOTAL/Report/MAG_I_AVG_6.png  " + odir
+        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/Plots/acis_6_full.png   " + odir
         os.system(cmd)
-        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/TOTAL/Report/MAG_I_AVG_7.png  " + odir
+        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/Plots/hrc_i_1_full.png  " + odir
         os.system(cmd)
-        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/TOTAL/Report/MAG_I_AVG_11.png " + odir
+        cmd = "cp /data/mta4/www/DAILY/mta_pcad/ACA/Plots/hrc_s_1_full.png  " + odir
         os.system(cmd)
 
-        file = '/data/mta/Script/Month/Scripts/Templates/MONTHLY1.html'             #--- template file name
+        ifile = '/data/mta/Script/Month/Scripts/Templates/MONTHLY1.html'             #--- template file name
 
     elif mon == 2 or mon == 8:
         cmd = "cp /data/mta4/www/DAILY/mta_src/ACIS-I_d_tyear10_psf.gif " + odir
@@ -236,7 +245,7 @@ def create_monthly(year='', mon=''):
         cmd = "cp -r /data/mta4/www/DAILY/mta_src/Plots " + odir + 'HRMA_Plots'
         os.system(cmd)
 
-        file = '/data/mta/Script/Month/Scripts/Templates/MONTHLY2.html'
+        ifile = '/data/mta/Script/Month/Scripts/Templates/MONTHLY2.html'
 
     elif mon == 3 or mon == 9:
         cmd = "cp /data/mta_www/mta_acis_sci_run/Events_rej/Plots/ccd3_cti.png " + odir
@@ -257,7 +266,7 @@ def create_monthly(year='', mon=''):
         cmd = "cp /data/mta/www/mta_acis_gain/Plots/offset_plot_ccd5.png " + odir
         os.system(cmd)
 
-        file = '/data/mta/Script/Month/Scripts/Templates/MONTHLY3.html'
+        ifile = '/data/mta/Script/Month/Scripts/Templates/MONTHLY3.html'
 
     elif mon == 4 or mon == 10:
         #cmd = "cp /data/mta_www/mta_grat/EdE/heg_all.gif  " + odir
@@ -266,12 +275,15 @@ def create_monthly(year='', mon=''):
         #os.system(cmd)
         #cmd = "cp /data/mta_www/mta_grat/EdE/leg_all.gif  " + odir
         #os.system(cmd)
-        cmd = "cp /data/mta_www/mta_grat/EdE/*_2019.png " + odir
+#
+#--- this part should be rewritten after year 2019
+#
+        cmd = "cp /data/mta_www/mta_grat/EdE/Plots/*_2019.png " + odir
         os.system(cmd)
         cmd = "cp /data/mta_www/mta_sim_twist/Plots/twist_plot.png " + odir
         os.system(cmd)
 
-        file = '/data/mta/Script/Month/Scripts/Templates/MONTHLY4.html'
+        ifile = '/data/mta/Script/Month/Scripts/Templates/MONTHLY4.html'
 
     elif mon == 5 or mon == 11:
         cmd = "cp /data/mta_www/mta_sib/Plots/Plot_long_term/full_plot_ccd3.png " + odir
@@ -288,7 +300,7 @@ def create_monthly(year='', mon=''):
         cmd = "cp /data/mta_www/mta_acis_hist/Html_pages/acis_hist_cccd3_high_cnt.html   " + odir
         os.system(cmd)
 
-        file = '/data/mta/Script/Month/Scripts/Templates/MONTHLY5.html'
+        ifile = '/data/mta/Script/Month/Scripts/Templates/MONTHLY5.html'
 
     elif mon == 6 or mon == 12:
         cmd = "cp /data/mta_www/mta_sim_twist/Plots/I-1.png   " + odir
@@ -300,19 +312,20 @@ def create_monthly(year='', mon=''):
         cmd = "cp /data/mta_www/mta_sim_twist/Plots/H-S-2.png " + odir
         os.system(cmd)
 
-        file = '/data/mta/Script/Month/Scripts/Templates/MONTHLY6.html'
+        ifile = '/data/mta/Script/Month/Scripts/Templates/MONTHLY6.html'
 #
 #--- create clean acis and hrc exposure maps using ds9
 #
-    run_exposure_maps(lyear, cmon)
+    #run_exposure_maps(lyear, cmon)
+
+    send_email_to_admin()
 
 #--------------------------------------------------
 #--- read the template and substitute the contents 
 #--------------------------------------------------
 
-    fx   = open(file, 'r')
-    text = fx.read()
-    fx.close()
+    with  open(ifile, 'r') as fx:
+        text = fx.read()
 #
 #--- substitute values
 #
@@ -331,21 +344,24 @@ def create_monthly(year='', mon=''):
 
     line = cmon + '_' + lyear
     text = text.replace('#LMONYR#', line)       #--- mon_year e.g. 07_2016
+
+    line = lmonyr.upper()
+    text = text.replace('#UMONYR#', line)       #--- e.g., OCT16
 #
 #--- acis exposure tables
 #
     os.system("cd /data/mta/Script/Exposure/Exc/; /data/mta/Script/Exposure/Scripts/ACIS_Scripts/acis_dose_monthly_report.py")
 
     line = '/data/mta/Script/Exposure/Exc/monthly_diff_' +  cmon + '_' + lyear
-    f    = open(line, 'r')
-    dout = f.read()
-    f.close()
+    with  open(line, 'r') as f:
+        dout = f.read()
+    
     text = text.replace('#ACISMON#', dout)       #--- acis monthly dose
 
     line = '/data/mta/Script/Exposure/Exc/monthly_acc_' +  cmon + '_' + lyear
-    f    = open(line, 'r')
-    dout = f.read()
-    f.close()
+    with open(line, 'r') as f:
+        dout = f.read()
+    
     text = text.replace('#ACISCMON#', dout)     #--- acis cumulative dose
 #
 #--- last 12 months exposure maps
@@ -358,9 +374,7 @@ def create_monthly(year='', mon=''):
 #
 #---- acis focal
 #
-    fx    = open('/data/mta/Script/Month/FOCAL/Plots/month_avg', 'r')
-    data  = [line.strip() for line in fx.readlines()]
-    fx.close()
+    data  = mcf.read_data_file('/data/mta/Script/Month/FOCAL/Plots/month_avg')
 
     atemp = re.split(':', data[0])
     btemp = re.split('\+\/\-', atemp[1])
@@ -432,9 +446,8 @@ def create_monthly(year='', mon=''):
 #--- finally print out the report
 #
     ofile = odir + "MONTHLY.html"
-    fo    = open(ofile, 'w')
-    fo.write(text)
-    fo.close()
+    with open(ofile, 'w') as fo:
+        fo.write(text)
 #
 #--- chnage permission and owners
 #
@@ -475,7 +488,7 @@ def past_data_entry(setno, mpos, mon, byear, text):
     yset  = '#YSET'  + str(setno) + '#'
     myset = '#MYSET' + str(setno) + '#'
 
-    text  = text.replace(mset,  tcnv.changeMonthFormat(test))
+    text  = text.replace(mset,  mcf.change_month_format(test))
     text  = text.replace(yset,  str(byear))
     text  = text.replace(myset, line)
 
@@ -499,9 +512,8 @@ def hrc_monthly_report(hrc, cmon, lmon, lyear):
 #--- hrc s monthly dose
 #
     line = '/data/mta/www/mta_max_exp/Data/' + hrc.lower() + '_dff_out'
-    f    = open(line, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(line)
+    
     test = data[-1]
     mc   = re.search('NA', test)
 #
@@ -556,9 +568,8 @@ def hrc_cumulative_report(hrc, cmon, lmon, lyear):
     monyear = cmon + '_' + lyear
 
     line = '/data/mta/www/mta_max_exp/Data/'+ hrc.lower() + '_acc_out'
-    f    = open(line, 'r')
-    data = [line.strip() for line in f.readlines()]
-    f.close()
+    data = mcf.read_data_file(line)
+    
     test = data[-1]
     atemp = re.split('\s+', test)
 
@@ -571,10 +582,23 @@ def hrc_cumulative_report(hrc, cmon, lmon, lyear):
     line = line + "</a> </div>\n"
     line = line + "<pre style='padding-left:30px; padding-bottom:30px'>\n"
     line = line + "IMAGE                       NPIX      MEAN    STDDEV      MIN       MAX\n"
-    a1   = '%.3f ' % round(float(atemp[2]), 3)
-    a2   = '%.3f ' % round(float(atemp[3]), 3)
-    a3   = '%.3f ' % round(float(atemp[4]), 3)
-    a4   = '%.3f ' % round(float(atemp[6]), 3)
+    try:
+        a1   = '%.3f ' % round(float(atemp[2]), 3)
+    except:
+        a1   = 'na'
+    try:
+        a2   = '%.3f ' % round(float(atemp[3]), 3)
+    except:
+        a2   = 'na'
+    try:
+        a3   = '%.3f ' % round(float(atemp[4]), 3)
+    except:
+        a3   = 'na'
+    try:
+        a4   = '%.3f ' % round(float(atemp[6]), 3)
+    except:
+        a4   = 'na'
+
     line = line  + hrc.upper() + "_08_1999_" + monyear + ".fits  16777216\t"+ a1 +'\t'+ a2 + '\t' + a3 + '\t' + a4 + "\n"
     line = line + "</pre> \n"
 
@@ -593,7 +617,8 @@ def run_critical_trend(text):
 #
 #--- critical trends which are reported on Mar, Jun, Sep, and Dec
 #
-    namlist = ['1PDEAAT', '1PIN1AT']
+    #namlist = ['1PDEAAT', '1PIN1AT']
+    namlist = ['1PDEAAT',]
     line    = trend_data_extract('acistemp', namlist, part='max')
     text = text.replace("#CRITACIS#", line)
 
@@ -613,7 +638,7 @@ def run_critical_trend(text):
     line    = trend_data_extract('sc_anc_temp', namlist, part='max')
     text = text.replace("#CRITTSC#", line)
 
-    namlist = ['PM1THV1T', 'PLINE02T', 'PLINE03T', 'PLINE04T']
+    namlist = ['PM1THV1T', 'PM2THV1T', 'PM1THV2T', 'PM2THV2T', 'PLINE02T', 'PLINE03T', 'PLINE04T']
     line    = trend_data_extract('mups', namlist, part='max')
     text = text.replace("#CRITMUPS#", line)
 
@@ -635,7 +660,7 @@ def run_month_trend(mon, text):
 #
     if mon == 1 or mon == 7:
 
-        namlist = ['1CBAT', '1CRAT', '1CRBT', '1DACTBT', '1DEAMZT', '1DPAMYT', '1DPAMZT', '1OAHAT', '1OAHBT', '1PDEAAT', '1PDEABT', '1PIN1AT', '1WRAT', '1WRBT']
+        namlist = ['1CBAT', '1CRAT', '1CRBT', '1DACTBT', '1DEAMZT', '1DPAMYT', '1DPAMZT', '1OAHAT', '1OAHBT', '1PDEAAT', '1PDEABT', '1WRAT', '1WRBT']
         line    = trend_data_extract('acistemp', namlist)
         text = text.replace("#TREND_ACISTEMP#", line)
 
@@ -654,7 +679,8 @@ def run_month_trend(mon, text):
         line    = trend_data_extract('hrctemp', namlist)
         text = text.replace("#TREND_HRCTEMP#", line)
 
-        namlist = ['FE00ATM', 'FEPRATM', 'IMHVATM', 'IMINATM', 'LVPLATM', 'PRBSCR', 'PRBSVL', 'SMTRATM', 'SPHVATM', 'SPINATM']
+        #namlist = ['FE00ATM', 'FEPRATM', 'IMHVATM', 'IMINATM', 'LVPLATM', 'PRBSCR', 'PRBSVL', 'SMTRATM', 'SPHVATM', 'SPINATM']
+        namlist = ['2FE00ATM', '2FEPRATM', '2IMHVATM', '2IMINATM', '2LVPLATM', '2PRBSCR', '2PRBSVL', '2SMTRATM', '2SPHVATM', '2SPINATM']
         line    = trend_data_extract('hrchk', namlist)
         text = text.replace("#TREND_HRCHK#", line)
 
@@ -739,7 +765,7 @@ def create_index(year, mon):
             if (xyear == year) and (xmonth >= mon):
                 line = line + '<td>&#160</td>\n'
             else:
-                stmon  = tcnv.changeMonthFormat(xmonth)
+                stmon  = mcf.change_month_format(xmonth)
                 ltmon  = stmon.upper()
                 tyear  = str(xyear)
                 line = line + '<td><a href="/mta/REPORTS/MONTHLY/' 
@@ -765,9 +791,7 @@ def trend_data_extract(group, msid_list, part=''):
     cgroup = group.capitalize()
 
     line = '/data/mta4/www/MSID_Trends/' + cgroup + '/' + group  + '_mid_static_short_main.html'
-    fx   = open(line, 'r')
-    data = [line.strip() for line in fx.readlines()]
-    fx.close()
+    data = mcf.read_data_file(line)
 
     #ifile = '/data/mta4/www/MSID_Trends/' + cgroup + '/' + group + '_mid_static_short_main.html'
     #hgrp  = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends/' + cgroup + '/' + group + '_mid_static_short_main.html'
@@ -775,22 +799,54 @@ def trend_data_extract(group, msid_list, part=''):
     hline = ''
     for msid in msid_list:
         msid = msid.lower()
-        for ent in data:
+        for m in range(0, len(data)):
+            ent = data[m]
             mc = re.search(msid, ent)
             if mc is None:
                 continue
 
-            atemp = re.split('</th>', ent)
-            temp = re.split('"',  atemp[0])
             html  = 'https://cxc.cfa.harvard.edu/mta/MSID_Trends/' + cgroup + '/'
             if part == 'max':
                 html  = html + msid.capitalize()  + '/' + msid + '_max_static_long_plot.html'
             else:
                 html  = html + msid.capitalize()  + '/' + msid + '_mid_static_short_plot.html'
 
-            hline = hline + '<tr><th><a href="javascript:WindowOpener3(\''+  html + '\')">' + msid + '</th>'
-            btemp = re.split('<th', atemp[1])
-            hline = hline + btemp[0] + '</tr>\n'
+            hline = hline + '<tr><th><a href="javascript:WindowOpener3(\''+  html 
+#
+#--- check multi row entries
+#
+            mc = re.search('rowspan', ent)
+            if mc is not None:
+                ctemp = re.split('>', ent)
+                dtemp = re.split('rowspan=', ctemp[0])
+                rowno = int(float(dtemp[1]))
+                hline = hline +  html + '\')" rowspan=' + str(rowno) + '>' + msid + '</th>'
+                for n in range(0, rowno):
+                    line  = data[m+2*n]
+#
+#--- first line has a bit more info than the following lines
+#
+                    if n == 0:
+                        atemp = re.split('</th>', line)
+                        btemp = re.split('<th ',  atemp[1])
+                        hline = hline + btemp[0] + '</tr>\n'
+#
+#--- other lines
+#
+                    else:
+                        atemp = re.split('<th ', line)
+                        hline = hline + '<td>&#160;</td>' +  atemp[0] + '</tr>\n'
+#
+#--- single row entry case
+#
+            else:
+
+                hline = hline + '\')">' + msid + '</th>'
+                atemp = re.split('</th>', ent)
+                btemp = re.split('"',  atemp[0])
+                btemp = re.split('<th', atemp[2])
+                hline = hline + '<td>&#160;</td>' +  btemp[0] + '</tr>\n'
+
             break
 
     return hline
@@ -807,9 +863,7 @@ def get_envelope_trending(mon, odir):
     output: selected envelope trending plot html files; they are also modified
     """
 
-    fx   = open('/data/mta_www/mta_envelope_trending/envelope_main.html')
-    data = [line.strip() for line in fx.readlines()]
-    fx.close()
+    data = mcf.read_data_file('/data/mta_www/mta_envelope_trending/envelope_main.html')
 #
 #--- extract name and html address of possible near future violation cases
 #
@@ -859,21 +913,18 @@ def get_envelope_trending(mon, odir):
 #
 #--- remove the part we don't need for the monthly report
 #
-        file = odir + selected_html[i]
-        fx   = open(file, 'r')
-        data = [line.strip() for line in fx.readlines()]
-        fx.close()
+        ifile = odir + selected_html[i]
+        data  = mcf.read_data_file(ifile)
 
-        fo   = open(file, 'w')
-        for ent in data:
-            mc = re.search('<\/script><ul><li', ent)
-            if mc is not None:
-                fo.write('</script>\n')
-                break
-            fo.write(ent)
-            fo.write('\n')
+        with open(ifile, 'w') as fo:
+            for ent in data:
+                mc = re.search('<\/script><ul><li', ent)
+                if mc is not None:
+                    fo.write('</script>\n')
+                    break
+                fo.write(ent)
+                fo.write('\n')
 
-        fo.close()
 
     return oline
 
@@ -891,17 +942,17 @@ def run_exposure_maps(lyear, cmon):
                               HRCI_08_1999_<mon>_<year>.png
     """
 
-    file = '/data/mta_www/mta_max_exp/Cumulative/ACIS_07_1999_' + cmon + '_' + lyear
+    ifile = '/data/mta_www/mta_max_exp/Cumulative/ACIS_07_1999_' + cmon + '_' + lyear
 
     for tail in ['', '_i2', '_i3', '_s2', '_s3']:
-        fits  = file + tail + '.fits*'
+        fits  = ifile + tail + '.fits*'
         create_exposure_map(fits)
 
 
-    file = '/data/mta_www/mta_max_exp/Month/ACIS_' + cmon + '_' + lyear
+    ifile = '/data/mta_www/mta_max_exp/Month/ACIS_' + cmon + '_' + lyear
 
     for tail in ['', '_i2', '_i3', '_s2', '_s3']:
-        fits  = file + tail + '.fits*'
+        fits  = ifile + tail + '.fits*'
         create_exposure_map(fits)
 
     fits = '/data/mta_www/mta_max_exp/Cumulative_hrc/HRCI_08_1999_' + cmon + '_' + lyear + '.fits*'
@@ -941,11 +992,43 @@ def create_exposure_map(fits):
     except:
         pass
 
+#----------------------------------------------------------------------------------
+#-- send_email_to_admin: send out a notification email to admin                  --
+#----------------------------------------------------------------------------------
+
+def send_email_to_admin():
+    """
+    send out a notification email to admin
+    input:  none
+    output: email to admin
+    """
+    out   = Chandra.Time.DateTime().date
+    atemp = re.split('\.', out)
+    ctime = time.strftime('%Y-%m', time.strptime(atemp[0], '%Y:%j:%H:%M:%S'))
+    btemp = re.split('-', ctime)
+    year  = btemp[0]
+    mon   = int(float(btemp[1]))
+    mon = mon - 1 #Pulls current month, report is for previous month.
+    if (mon == 0):#If current month is Jan, then monthly report records Dec of previous year.
+       year = int(float(year))
+       year = year - 1
+       mon = 12
+
+    mon   = mcf.change_month_format(mon).upper()
+
+    line = 'Monthly Report is created. Please create exposure maps and copy solar cycle plots.\n '
+    line = line + 'https://cxc.harvard.edu/mta/REPORTS/MONTHLY/'
+    line = line + str(year) + str(mon) + '/MONTHLY.html\n\n'
+    line = line + "Don't forget to edit index file: /data/mta4/www/REPORTS/MONTHLY/index.html.\n"
+    
+    cmd = f'echo "{line}" | mailx -s "Subject: Monthly Report for {str(mon)} Created" {" ".join(ADMIN)}'
+    os.system(cmd)
+
 #-----------------------------------------------------------------
 
 if __name__ == "__main__":
 
-    if len(sys.argv) == 3:
+    if (len(sys.argv) >= 3 and sys.argv[1][:6] != 'email=' and sys.argv[2][:6] != 'email='):
         year = sys.argv[1]
         year = int(float(year))
         mon  = sys.argv[2]

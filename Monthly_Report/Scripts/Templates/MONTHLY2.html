@@ -73,11 +73,11 @@ for(var ii=0; ii<14; ii++) {
 }
 
 function WindowOpener2(imgname) {
-    msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=no,status=no,width=720,height=570,resize=no");
+    msgWindow = open("","displayname","toolbar=no,directories=no,menubar=no,location=no,scrollbars=no,status=no,width=800,height=800,resize=no");
     msgWindow.document.clear();
     msgWindow.document.write("<html><title>larger plot:   "+imgname+"</title>");
     msgWindow.document.write("<body bgcolor='white'>");
-    msgWindow.document.write("<img src='https://cxc.cfa.harvard.edu/"+imgname+"' border=0 width=720 height=550><P></body></html>")
+    msgWindow.document.write("<img src='https://cxc.cfa.harvard.edu/"+imgname+"' border=0 width=720 height=700><P></body></html>")
     msgWindow.document.close();
     msgWindow.focus();
 }
@@ -885,15 +885,77 @@ pages.
 
 <a name="ACA"></a>
 <h3>
-<a href="/mta/DAILY/mta_pcad/ACA/TOTAL/Report/acatrd.html">ACA Trending
-</h3> 
-
+<a href="/mta/DAILY/mta_pcad/ACA/index.html">ACA Trending
+</h3>
+<style>
+span.rotate{
+writing-mode: vertical-lr;
+text-orientation: upright;
+padding-right:20px;
+}
+</style>
 <p>
-<a href="/mta/DAILY/mta_pcad/ACA/TOTAL/Report/acatrd.html"> ACA Trending - Entire Period </A>
+<a href="https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/acatrd.html"> ACA Trending - May  2020 </A>
 </p>
-<p>
-<a href="https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/NOV16/Report/acatrd.html"> ACA Trending - #SMON#  #YEAR# </A>
-</p>
+<table border=1 cellpadding=2>
+<tr>
+<th rowspan=2 ><span class='rotate'>ACIS</span></th>
+<td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_1.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_1.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_2.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_2.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_3.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_3.png' style='width:90%' />
+</td>
+<td>&#160;</td>
+</tr><tr>
+<td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_4.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_4.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_5.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_5.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_6.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_6.png' style='width:90%' />
+<td>&#160;</td>
+</tr>
+<tr>
+<th><span class='rotate'>HRCI</span></th>
+<td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_7.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_7.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_8.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_8.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_9.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_9.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_10.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_10.png' style='width:90%' />
+</td>
+</tr>
+<tr>
+<th><span class='rotate'>HRCI</span></th>
+<td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_11.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_11.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_12.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_12.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_13.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_13.png' style='width:90%' />
+</td><td>
+<a href ="javascript:WindowOpener2('/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_14.png')">
+<img src='https://cxc.cfa.harvard.edu/mta_days/mta_aiming/ACA/#UMONYR#/Plots/MAG_I_AVG_14.png' style='width:90%' />
+</td>
+</tr>
+</table>
 
 
 <!--
@@ -1014,15 +1076,14 @@ Plotted below are radiation zone timing plots based on the following definitions
 <h4>Radiation Count Rates of #SMON# #YEAR#</h4>
 
 <p class='center'>
-<img src="rad_cnts_#SMONYR#.png" />
+<img src="rad_cnts_#SMONYR#.png" style='width:95%' />
 </p>
 
 <hr class='short'>
 
-<h4>Sun Spot History</h4>
-<p style='text-align:center;'>
-<img src="solar-cycle-sunspot-number.gif" />
-</p>											<!-- ### (http://www.swpc.noaa.gov/products/solar-cycle-progression) ### -->
+<h4>Sun Spot History (See:<a href='https://www.swpc.noaa.gov/products/solar-cycle-progression'>NOAA Page</a>)</h4>
+<img src="ises-solar-cycle-sunspot.png" style='width:80%' />
+</p>                                            <!-- ### (https://www.swpc.noaa.gov/products/solar-cycle-progression) ### -->
 
 <hr class='short'>
 
@@ -1050,13 +1111,14 @@ Plotted below are radiation zone timing plots based on the following definitions
 
 <a name="QTR"></a>
 <h3>
-<a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/mta_trending_main.html">Quarterly Trends</a>
+<a href='../../../MSID_Trends/mta_trending_main.html'>
+Quarterly Trends
 </h3>
 <ul>
 <table border=1 cellpadding=3>
 <font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Hrctemp/hrctemp_mid_static_short_main.html">HRC Temperature</a></li></font>
-<tr align=center><td colspan=7> Previous Quarter</tr>
-<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<tr align=center><td colspan=8> Previous Quarter</tr>
+<tr align=center><td>MSID<td>&#160;<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
 #TREND_HRCTEMP#
 </table>
 </ul>
@@ -1065,8 +1127,8 @@ Plotted below are radiation zone timing plots based on the following definitions
 <ul>
 <table border=1 cellpadding=3>
 <font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Hrchk/hrchk_mid_static_short_main.html">HRC HK</a></li></font>
-<tr align=center><td colspan=7> Previous Quarter</tr>
-<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<tr align=center><td colspan=8> Previous Quarter</tr>
+<tr align=center><td>MSID<td>&#160;<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
 #TREND_HRCHK#
 </table>
 </ul>
@@ -1075,8 +1137,8 @@ Plotted below are radiation zone timing plots based on the following definitions
 <ul>
 <table border=1 cellpadding=3>
 <font color="#FFFFFF"><li type=disk><a href="https://cxc.cfa.harvard.edu/mta/MSID_Trends/Pcadtemp/pcadtemp_mid_static_short_main.html">PCAD Temperature</a></li></font>
-<tr align=center><td colspan=7> Previous Quarter</tr>
-<tr align=center><td>MSID<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
+<tr align=center><td colspan=8> Previous Quarter</tr>
+<tr align=center><td>MSID<td>&#160;<td> MEAN<td> RMS<td> DELTA/YR<td> DELTA/YR/YR<td> UNITS<td>DESCRIPTION</tr>
 #TREND_PCADTEMP#
 </table>
 </ul>
