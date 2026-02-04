@@ -1,0 +1,3 @@
+cd /data/mta/Script/Trending/Scripts
+
+/data/mta/Script/Trending/Scripts/extract_data.py -m flight
